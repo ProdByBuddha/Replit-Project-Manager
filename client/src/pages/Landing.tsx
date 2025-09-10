@@ -14,7 +14,7 @@ export default function Landing() {
   const [adminPassword, setAdminPassword] = useState("");
   const { toast } = useToast();
 
-  const handleFamilyLogin = (e: React.FormEvent) => {
+  const handleFamilyLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!familyCode.trim()) {
@@ -25,6 +25,9 @@ export default function Landing() {
       });
       return;
     }
+    
+    // Store family code in session storage for after auth
+    sessionStorage.setItem('pendingFamilyCode', familyCode);
     
     // Redirect to Replit Auth
     window.location.href = "/api/login";

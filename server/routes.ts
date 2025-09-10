@@ -113,6 +113,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Join family endpoint
+  app.post('/api/families/join', isAuthenticated, async (req: any, res) => {
+    try {
+      const { familyCode } = req.body;
+      const userId = req.user.claims.sub;
+      
+      if (!familyCode) {
+        return res.status(400).json({ message: "Family code is required" });
+      }
+
+      const family = await storage.getFamilyByCode(familyCode);
+      if (!family) {
+        return res.status(404).json({ message: "Invalid family code" });
+      }
+
+      // Update user to join the family
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await storage.upsertUser({
+        ...user,
+        familyId: family.id,
+        role: 'family'
+      });
+
+      res.json({ message: "Successfully joined family", family });
+    } catch (error) {
+      console.error("Error joining family:", error);
+      res.status(500).json({ message: "Failed to join family" });
+    }
+  });
+
+  // Admin setup endpoint
+  app.post('/api/admin/setup', async (req, res) => {
+    try {
+      const { adminEmail, setupKey } = req.body;
+      
+      // Simple setup key check - in production this would be more secure
+      if (setupKey !== 'admin-setup-2024') {
+        return res.status(403).json({ message: "Invalid setup key" });
+      }
+
+      // Check if any admins exist
+      const existingAdmins = await storage.getAdminUsers();
+      if (existingAdmins.length > 0) {
+        return res.status(400).json({ message: "Admin already exists" });
+      }
+
+      // This endpoint allows setting up the first admin
+      // The actual user creation will happen via Replit Auth
+      res.json({ message: "Admin setup ready", adminEmail });
+    } catch (error) {
+      console.error("Error in admin setup:", error);
+      res.status(500).json({ message: "Admin setup failed" });
+    }
+  });
+
   // Task endpoints
   app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
@@ -361,7 +420,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize sample data and default tasks
+  await initializeSampleData();
+  await initializeDefaultTasks();
+  
   return httpServer;
+}
+
+// Initialize sample data for testing
+async function initializeSampleData() {
+  try {
+    const existingAdmins = await storage.getAdminUsers();
+    if (existingAdmins.length > 0) {
+      return; // Sample data already initialized
+    }
+
+    console.log("Initializing sample data...");
+
+    // Create sample admin user
+    await storage.upsertUser({
+      id: "admin-sample-123",
+      email: "admin@familyportal.com",
+      name: "Portal Administrator",
+      role: "admin",
+      familyId: null,
+    });
+
+    // Create sample family
+    const sampleFamily = await storage.createFamily({
+      name: "Johnson Family",
+      familyCode: "JOHNSON2024",
+      contactEmail: "johnson@example.com",
+    });
+
+    // Create sample family member
+    await storage.upsertUser({
+      id: "family-sample-456",
+      email: "mary@johnson.com",
+      name: "Mary Johnson",
+      role: "family",
+      familyId: sampleFamily.id,
+    });
+
+    console.log(`Sample data initialized: Family ${sampleFamily.name} with code ${sampleFamily.familyCode}`);
+  } catch (error) {
+    console.error("Error initializing sample data:", error);
+  }
 }
 
 // Initialize default tasks from the PDF checklist

@@ -62,6 +62,9 @@ export interface IStorage {
     pendingReviews: number;
     totalDocuments: number;
   }>;
+  
+  // Admin operations
+  getAdminUsers(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -278,6 +281,11 @@ export class DatabaseStorage implements IStorage {
       pendingReviews,
       totalDocuments: allDocuments.length,
     };
+  }
+
+  // Admin operations
+  async getAdminUsers(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, 'admin'));
   }
 }
 
