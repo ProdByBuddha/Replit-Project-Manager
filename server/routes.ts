@@ -442,7 +442,8 @@ async function initializeSampleData() {
     await storage.upsertUser({
       id: "admin-sample-123",
       email: "admin@familyportal.com",
-      name: "Portal Administrator",
+      firstName: "Portal",
+      lastName: "Administrator",
       role: "admin",
       familyId: null,
     });
@@ -451,14 +452,14 @@ async function initializeSampleData() {
     const sampleFamily = await storage.createFamily({
       name: "Johnson Family",
       familyCode: "JOHNSON2024",
-      contactEmail: "johnson@example.com",
     });
 
     // Create sample family member
     await storage.upsertUser({
       id: "family-sample-456",
       email: "mary@johnson.com",
-      name: "Mary Johnson",
+      firstName: "Mary",
+      lastName: "Johnson",
       role: "family",
       familyId: sampleFamily.id,
     });
