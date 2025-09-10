@@ -37,6 +37,7 @@ export interface IStorage {
   getAllTasks(): Promise<Task[]>;
   initializeFamilyTasks(familyId: string): Promise<void>;
   getFamilyTasks(familyId: string): Promise<(FamilyTask & { task: Task })[]>;
+  getFamilyTask(familyTaskId: string): Promise<FamilyTask | undefined>;
   updateFamilyTaskStatus(familyTaskId: string, status: string, notes?: string): Promise<FamilyTask>;
   
   // Document operations
@@ -150,6 +151,14 @@ export class DatabaseStorage implements IStorage {
       },
       orderBy: (familyTasks, { asc }) => [asc(familyTasks.createdAt)],
     });
+  }
+
+  async getFamilyTask(familyTaskId: string): Promise<FamilyTask | undefined> {
+    const [task] = await db
+      .select()
+      .from(familyTasks)
+      .where(eq(familyTasks.id, familyTaskId));
+    return task;
   }
 
   async updateFamilyTaskStatus(familyTaskId: string, status: string, notes?: string): Promise<FamilyTask> {

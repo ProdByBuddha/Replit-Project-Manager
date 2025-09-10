@@ -1,12 +1,21 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { MessageSquare, Eye } from "lucide-react";
+import FamilyDetailModal from "./FamilyDetailModal";
+import MessageModal from "./MessageModal";
 import type { FamilyWithStats } from "@/lib/types";
+import type { Family } from "@shared/schema";
 
 export default function FamilyManagement() {
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedFamilyForMessage, setSelectedFamilyForMessage] = useState<Family | null>(null);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+
   const { data: families = [], isLoading } = useQuery<FamilyWithStats[]>({
     queryKey: ["/api/families"],
     retry: false,
@@ -25,13 +34,29 @@ export default function FamilyManagement() {
   };
 
   const handleViewFamily = (familyId: string) => {
-    // TODO: Navigate to family detail view
-    console.log("Viewing family:", familyId);
+    setSelectedFamilyId(familyId);
+    setIsDetailModalOpen(true);
   };
 
-  const handleMessageFamily = (familyId: string) => {
-    // TODO: Open message modal
-    console.log("Messaging family:", familyId);
+  const handleMessageFamily = (family: FamilyWithStats) => {
+    setSelectedFamilyForMessage({
+      id: family.id,
+      name: family.name,
+      familyCode: family.familyCode,
+      createdAt: family.createdAt,
+      updatedAt: family.updatedAt,
+    });
+    setIsMessageModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedFamilyId(null);
+  };
+
+  const handleCloseMessageModal = () => {
+    setIsMessageModalOpen(false);
+    setSelectedFamilyForMessage(null);
   };
 
   if (isLoading) {
@@ -156,7 +181,7 @@ export default function FamilyManagement() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleMessageFamily(family.id)}
+                          onClick={() => handleMessageFamily(family)}
                           className="text-accent hover:text-accent/80"
                           data-testid={`button-message-family-${family.id}`}
                         >
@@ -172,6 +197,19 @@ export default function FamilyManagement() {
           </div>
         )}
       </CardContent>
+    
+      {/* Modals */}
+      <FamilyDetailModal
+        familyId={selectedFamilyId}
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+      />
+      
+      <MessageModal
+        family={selectedFamilyForMessage}
+        isOpen={isMessageModalOpen}
+        onClose={handleCloseMessageModal}
+      />
     </Card>
   );
 }

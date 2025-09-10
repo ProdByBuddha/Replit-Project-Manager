@@ -29,7 +29,21 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // Handle array query keys with proper query parameters
+    let url: string;
+    if (queryKey.length === 1) {
+      // Simple query key like ["/api/auth/user"]
+      url = queryKey[0] as string;
+    } else if (queryKey.length === 2) {
+      // Query key with parameter like ["/api/messages", familyId]
+      const [endpoint, param] = queryKey;
+      url = `${endpoint}?familyId=${param}`;
+    } else {
+      // Fallback to original behavior for other cases
+      url = queryKey.join("/") as string;
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 

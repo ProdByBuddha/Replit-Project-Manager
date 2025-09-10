@@ -28,7 +28,7 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats/family", familyId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/stats/family/${familyId}`] });
       toast({
         title: "Success",
         description: "Task status updated successfully",

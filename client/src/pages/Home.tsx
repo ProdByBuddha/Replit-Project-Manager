@@ -21,7 +21,7 @@ export default function Home() {
   const [familyCode, setFamilyCode] = useState("");
 
   const { data: familyStats, isLoading: statsLoading } = useQuery<FamilyStatsType>({
-    queryKey: ["/api/stats/family", user?.familyId],
+    queryKey: [`/api/stats/family/${user?.familyId}`],
     enabled: !!user?.familyId,
     retry: false,
   });

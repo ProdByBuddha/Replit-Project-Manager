@@ -113,6 +113,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get individual family with members (admin only)
+  app.get('/api/families/:familyId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { familyId } = req.params;
+      const user = await storage.getUser(req.user.claims.sub);
+      
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const family = await storage.getFamilyWithMembers(familyId);
+      if (!family) {
+        return res.status(404).json({ message: "Family not found" });
+      }
+
+      res.json(family);
+    } catch (error) {
+      console.error("Error fetching family:", error);
+      res.status(500).json({ message: "Failed to fetch family" });
+    }
+  });
+
   // Join family endpoint
   app.post('/api/families/join', isAuthenticated, async (req: any, res) => {
     try {
@@ -175,17 +197,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Task endpoints
   app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
+      const { familyId } = req.query;
       const user = await storage.getUser(req.user.claims.sub);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      if (user.familyId) {
+      // If familyId is provided, admin can get tasks for any family
+      if (familyId && user.role === 'admin') {
+        const familyTasks = await storage.getFamilyTasks(familyId as string);
+        res.json(familyTasks);
+      } else if (user.familyId) {
         // Family member - get family tasks
         const familyTasks = await storage.getFamilyTasks(user.familyId);
         res.json(familyTasks);
       } else if (user.role === 'admin') {
-        // Admin - get template tasks
+        // Admin - get template tasks (no specific family)
         const tasks = await storage.getAllTasks();
         res.json(tasks);
       } else {
@@ -203,8 +230,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status, notes } = req.body;
       
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user?.familyId) {
-        return res.status(403).json({ message: "Family member access required" });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // SECURITY: Verify task ownership before allowing updates
+      const familyTask = await storage.getFamilyTask(taskId);
+      if (!familyTask) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Allow admins to update any task, family members can only update their family's tasks
+      if (user.role !== 'admin' && user.familyId !== familyTask.familyId) {
+        return res.status(403).json({ message: "Access denied - task does not belong to your family" });
       }
 
       const updatedTask = await storage.updateFamilyTaskStatus(taskId, status, notes);
@@ -366,6 +404,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      // SECURITY: Validate familyId access before allowing message creation
+      const requestedFamilyId = req.body.familyId;
+      
+      // Non-admin users can only create messages for their own family
+      if (user.role !== 'admin') {
+        if (!user.familyId) {
+          return res.status(403).json({ message: "Access denied - user not part of any family" });
+        }
+        if (requestedFamilyId !== user.familyId) {
+          return res.status(403).json({ message: "Access denied - cannot create messages for other families" });
+        }
+      }
+      
+      // Admin users can create messages for any family, but familyId must be provided
+      if (user.role === 'admin' && !requestedFamilyId) {
+        return res.status(400).json({ message: "Family ID required for admin message creation" });
       }
 
       const messageData = insertMessageSchema.parse({
