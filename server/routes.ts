@@ -11,6 +11,7 @@ import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvita
 import { notificationService } from "./email/notificationService";
 import { eventBus } from "./automation/EventBus";
 import { getAutomationHealth, checkFamilyDependencies } from "./automation/index";
+import { validateTaskTransition, getDependencyTaskNames, type TaskStatus } from "./taskValidation";
 import multer from "multer";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -289,8 +290,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied - task does not belong to your family" });
       }
 
-      // Store the old status for notification  
-      const oldStatus = familyTask.status;
+      // Store the old status for validation and notification  
+      const oldStatus = familyTask.status as TaskStatus;
+      const newStatus = status as TaskStatus;
+
+      // SECURITY: Always validate HTTP requests - no client bypass allowed
+      const validation = await validateTaskTransition(
+        taskId,
+        oldStatus,
+        newStatus,
+        familyTask.familyId,
+        false // Never bypass validation for HTTP requests
+      );
+
+      if (!validation.isValid) {
+        // Get user-friendly names for incomplete dependencies
+        let dependencyNames: string[] = [];
+        if (validation.incompleteDependencies && validation.incompleteDependencies.length > 0) {
+          dependencyNames = await getDependencyTaskNames(validation.incompleteDependencies);
+        }
+
+        return res.status(400).json({
+          error: "Invalid task transition",
+          message: validation.errorMessage,
+          details: {
+            ...validation.details,
+            incompleteDependencyNames: dependencyNames
+          }
+        });
+      }
       
       const updatedTask = await storage.updateFamilyTaskStatus(taskId, status, notes);
       
