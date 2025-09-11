@@ -1,4 +1,4 @@
-import type { User, Family, Task, FamilyTask, Document, Message } from "@shared/schema";
+import type { User, Family, Task, FamilyTask, Document, Message, TaskDependency } from "@shared/schema";
 
 export interface UserWithFamily extends User {
   family?: FamilyWithMembers | null;
@@ -10,6 +10,18 @@ export interface FamilyWithMembers extends Family {
 
 export interface FamilyTaskWithTask extends FamilyTask {
   task: Task;
+}
+
+export interface TaskDependencyStatus {
+  canStart: boolean;
+  canComplete: boolean;
+  blockedBy: string[];
+  dependsOn: string[];
+}
+
+export interface FamilyTaskWithTaskAndDependencies extends FamilyTaskWithTask {
+  dependencies: (TaskDependency & { dependsOnTask: Task })[];
+  dependencyStatus: TaskDependencyStatus;
 }
 
 export interface DocumentWithUploader extends Document {

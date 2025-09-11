@@ -217,6 +217,62 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getFamilyTasksWithDependencies(familyId: string): Promise<(FamilyTask & { 
+    task: Task;
+    dependencies: (TaskDependency & { dependsOnTask: Task })[];
+    dependencyStatus: {
+      canStart: boolean;
+      canComplete: boolean;
+      blockedBy: string[];
+      dependsOn: string[];
+    };
+  })[]> {
+    // First get all family tasks
+    const familyTasks = await this.getFamilyTasks(familyId);
+    
+    // Create a lookup map for family task statuses by template task ID
+    const familyTaskStatusMap = new Map<string, string>();
+    familyTasks.forEach(ft => {
+      familyTaskStatusMap.set(ft.taskId, ft.status);
+    });
+    
+    // Get dependencies for all tasks and calculate status
+    const result = await Promise.all(
+      familyTasks.map(async (familyTask) => {
+        // Get dependencies for this task
+        const dependencies = await this.getTaskDependencies(familyTask.taskId);
+        
+        // Calculate dependency status
+        const dependsOn: string[] = dependencies.map(dep => dep.dependsOnTask.title);
+        const blockedBy: string[] = [];
+        
+        // Check which dependencies are not completed
+        for (const dep of dependencies) {
+          const depStatus = familyTaskStatusMap.get(dep.dependsOnTaskId);
+          if (depStatus !== 'completed') {
+            blockedBy.push(dep.dependsOnTask.title);
+          }
+        }
+        
+        const canStart = blockedBy.length === 0;
+        const canComplete = canStart; // For now, same logic
+        
+        return {
+          ...familyTask,
+          dependencies,
+          dependencyStatus: {
+            canStart,
+            canComplete,
+            blockedBy,
+            dependsOn,
+          },
+        };
+      })
+    );
+    
+    return result;
+  }
+
   async getFamilyTask(familyTaskId: string): Promise<FamilyTask | undefined> {
     const [task] = await db
       .select()

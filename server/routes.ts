@@ -250,11 +250,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If familyId is provided, admin can get tasks for any family
       if (familyId && user.role === 'admin') {
-        const familyTasks = await storage.getFamilyTasks(familyId as string);
+        const familyTasks = await storage.getFamilyTasksWithDependencies(familyId as string);
         res.json(familyTasks);
       } else if (user.familyId) {
-        // Family member - get family tasks
-        const familyTasks = await storage.getFamilyTasks(user.familyId);
+        // Family member - get family tasks with dependency information
+        const familyTasks = await storage.getFamilyTasksWithDependencies(user.familyId);
         res.json(familyTasks);
       } else if (user.role === 'admin') {
         // Admin - get template tasks (no specific family)
