@@ -8,6 +8,8 @@ import {
   invitations,
   notificationPreferences,
   notificationLogs,
+  taskDependencies,
+  workflowRules,
   type User,
   type UpsertUser,
   type Family,
@@ -26,9 +28,13 @@ import {
   type InsertNotificationPreferences,
   type NotificationLog,
   type InsertNotificationLog,
+  type TaskDependency,
+  type InsertTaskDependency,
+  type WorkflowRule,
+  type InsertWorkflowRule,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, lt, gt } from "drizzle-orm";
+import { eq, and, desc, lt, gt, inArray, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -92,6 +98,27 @@ export interface IStorage {
   createNotificationLog(log: InsertNotificationLog): Promise<NotificationLog>;
   findRecentNotificationLog(type: string, recipientUserId: string, entityId: string, sinceMinutes: number): Promise<NotificationLog | undefined>;
   findRecentNotificationLogByEmail(type: string, recipientEmail: string, entityId: string, sinceMinutes: number): Promise<NotificationLog | undefined>;
+  
+  // Dependency Query Methods
+  getTaskDependencies(taskId: string): Promise<(TaskDependency & { dependsOnTask: Task })[]>;
+  getTasksBlockedBy(taskId: string): Promise<(TaskDependency & { task: Task })[]>;
+  getDependencyChain(taskId: string): Promise<Task[]>;
+  getTasksReadyForFamily(familyId: string): Promise<(FamilyTask & { task: Task })[]>;
+  
+  // Dependency Management Methods
+  addTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency>;
+  removeTaskDependency(taskId: string, dependsOnTaskId: string, dependencyType?: string): Promise<void>;
+  validateDependencies(taskId: string, familyId: string): Promise<{
+    canStart: boolean;
+    missingDependencies: string[];
+    optionalDependencies: string[];
+  }>;
+  
+  // Workflow Rule Methods
+  getActiveWorkflowRules(): Promise<WorkflowRule[]>;
+  getWorkflowRulesForTask(taskId: string): Promise<WorkflowRule[]>;
+  addWorkflowRule(rule: InsertWorkflowRule): Promise<WorkflowRule>;
+  toggleWorkflowRule(ruleId: string, isActive: boolean): Promise<WorkflowRule>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -461,6 +488,381 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     
     return log;
+  }
+
+  // Dependency Query Methods
+  async getTaskDependencies(taskId: string): Promise<(TaskDependency & { dependsOnTask: Task })[]> {
+    return await db.query.taskDependencies.findMany({
+      where: eq(taskDependencies.taskId, taskId),
+      with: {
+        dependsOnTask: true,
+      },
+    });
+  }
+
+  async getTasksBlockedBy(taskId: string): Promise<(TaskDependency & { task: Task })[]> {
+    return await db.query.taskDependencies.findMany({
+      where: eq(taskDependencies.dependsOnTaskId, taskId),
+      with: {
+        task: true,
+      },
+    });
+  }
+
+  async getDependencyChain(taskId: string): Promise<Task[]> {
+    const visited = new Set<string>();
+    const chain: Task[] = [];
+    
+    const buildChain = async (currentTaskId: string): Promise<void> => {
+      if (visited.has(currentTaskId)) {
+        return; // Avoid infinite loops in chain building
+      }
+      visited.add(currentTaskId);
+      
+      const dependencies = await this.getTaskDependencies(currentTaskId);
+      for (const dep of dependencies) {
+        chain.push(dep.dependsOnTask);
+        await buildChain(dep.dependsOnTaskId);
+      }
+    };
+    
+    await buildChain(taskId);
+    return Array.from(new Map(chain.map(task => [task.id, task])).values());
+  }
+
+  // Enhanced cycle detection with proper reachability algorithm
+  private async detectCircularDependency(startTaskId: string, targetTaskId: string): Promise<{
+    hasCycle: boolean;
+    cyclePath?: string[];
+  }> {
+    // Adding dependency startTaskId → targetTaskId creates a cycle if and only if
+    // there's already a path from targetTaskId to startTaskId
+    
+    // 1. Preload all dependencies for efficient traversal
+    const allDependencies = await this.batchLoadAllDependencies();
+    
+    // 2. Build adjacency map for faster lookups
+    const adjacencyMap = new Map<string, string[]>();
+    allDependencies.forEach((deps, taskId) => {
+      adjacencyMap.set(taskId, deps.map((dep: any) => dep.dependsOnTaskId));
+    });
+    
+    // 3. Check if targetTaskId can reach startTaskId using DFS
+    const visited = new Set<string>();
+    const pathFromTarget: string[] = [];
+    
+    const findPath = (currentTaskId: string, targetId: string): boolean => {
+      if (currentTaskId === targetId) {
+        pathFromTarget.push(currentTaskId);
+        return true; // Found target - we have a path
+      }
+      
+      if (visited.has(currentTaskId)) {
+        return false; // Already visited, no cycle through this path
+      }
+      
+      visited.add(currentTaskId);
+      pathFromTarget.push(currentTaskId);
+      
+      const dependencies = adjacencyMap.get(currentTaskId) || [];
+      for (const depTaskId of dependencies) {
+        if (findPath(depTaskId, targetId)) {
+          return true; // Found path through this dependency
+        }
+      }
+      
+      // Backtrack
+      pathFromTarget.pop();
+      return false;
+    };
+    
+    // Check if targetTaskId can reach startTaskId
+    const hasPathToStart = findPath(targetTaskId, startTaskId);
+    
+    if (hasPathToStart) {
+      // Construct the complete cycle path that would be created
+      // Path found: targetTaskId → ... → startTaskId
+      // Adding startTaskId → targetTaskId would complete the cycle
+      const cyclePath = [...pathFromTarget, targetTaskId];
+      
+      return {
+        hasCycle: true,
+        cyclePath,
+      };
+    }
+    
+    return {
+      hasCycle: false,
+    };
+  }
+
+  async getTasksReadyForFamily(familyId: string): Promise<(FamilyTask & { task: Task })[]> {
+    // Optimized version: batch load all data and evaluate in-memory
+    const [familyTasks, allDependencies] = await Promise.all([
+      this.getFamilyTasks(familyId),
+      this.batchLoadAllDependencies()
+    ]);
+    
+    const familyTaskMap = new Map(
+      familyTasks.map(ft => [ft.task.id, ft])
+    );
+    
+    const readyTasks: (FamilyTask & { task: Task })[] = [];
+    
+    for (const familyTask of familyTasks) {
+      if (familyTask.status === "not_started") {
+        const validation = this.validateDependenciesInMemory(
+          familyTask.task.id, 
+          familyTaskMap, 
+          allDependencies
+        );
+        if (validation.canStart) {
+          readyTasks.push(familyTask);
+        }
+      }
+    }
+    
+    return readyTasks;
+  }
+
+  // Batch load all task dependencies in a single query for performance
+  private async batchLoadAllDependencies(): Promise<Map<string, (TaskDependency & { dependsOnTask: Task })[]>> {
+    const allDependencies = await db.query.taskDependencies.findMany({
+      with: {
+        dependsOnTask: true,
+      },
+    });
+    
+    const dependencyMap = new Map<string, (TaskDependency & { dependsOnTask: Task })[]>();
+    
+    for (const dependency of allDependencies) {
+      const taskId = dependency.taskId;
+      if (!dependencyMap.has(taskId)) {
+        dependencyMap.set(taskId, []);
+      }
+      dependencyMap.get(taskId)!.push(dependency);
+    }
+    
+    return dependencyMap;
+  }
+
+  // In-memory dependency validation to avoid repeated DB queries
+  private validateDependenciesInMemory(
+    taskId: string,
+    familyTaskMap: Map<string, FamilyTask & { task: Task }>,
+    allDependencies: Map<string, (TaskDependency & { dependsOnTask: Task })[]>
+  ): {
+    canStart: boolean;
+    missingDependencies: string[];
+    optionalDependencies: string[];
+  } {
+    const dependencies = allDependencies.get(taskId) || [];
+    const missingDependencies: string[] = [];
+    const optionalDependencies: string[] = [];
+    
+    for (const dep of dependencies) {
+      const dependentFamilyTask = familyTaskMap.get(dep.dependsOnTaskId);
+      
+      if (!dependentFamilyTask || dependentFamilyTask.status !== "completed") {
+        if (dep.dependencyType === "required") {
+          missingDependencies.push(dep.dependsOnTask.title);
+        } else if (dep.dependencyType === "optional") {
+          optionalDependencies.push(dep.dependsOnTask.title);
+        }
+      }
+    }
+    
+    const canStart = missingDependencies.length === 0;
+    
+    return {
+      canStart,
+      missingDependencies,
+      optionalDependencies,
+    };
+  }
+
+  // Dependency Management Methods
+  async addTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency> {
+    // Prevent self-dependencies
+    if (dependency.taskId === dependency.dependsOnTaskId) {
+      throw new Error("A task cannot depend on itself");
+    }
+    
+    // Check for circular dependencies using proper reachability algorithm
+    const cycleCheck = await this.detectCircularDependency(dependency.taskId, dependency.dependsOnTaskId);
+    if (cycleCheck.hasCycle) {
+      const cyclePath = cycleCheck.cyclePath?.join(' → ') || 'Unknown cycle path';
+      throw new Error(`Adding this dependency would create a circular dependency. Cycle path: ${cyclePath}`);
+    }
+    
+    const [result] = await db.insert(taskDependencies).values(dependency).returning();
+    return result;
+  }
+
+  async removeTaskDependency(taskId: string, dependsOnTaskId: string, dependencyType?: string): Promise<void> {
+    // Build single conditional query instead of rebuilding twice
+    const whereConditions = [
+      eq(taskDependencies.taskId, taskId),
+      eq(taskDependencies.dependsOnTaskId, dependsOnTaskId)
+    ];
+    
+    if (dependencyType) {
+      whereConditions.push(eq(taskDependencies.dependencyType, dependencyType));
+    }
+    
+    await db.delete(taskDependencies).where(and(...whereConditions));
+  }
+
+  async validateDependencies(taskId: string, familyId: string): Promise<{
+    canStart: boolean;
+    missingDependencies: string[];
+    optionalDependencies: string[];
+  }> {
+    const dependencies = await this.getTaskDependencies(taskId);
+    const familyTasks = await this.getFamilyTasks(familyId);
+    
+    const familyTaskMap = new Map(
+      familyTasks.map(ft => [ft.task.id, ft])
+    );
+    
+    const missingDependencies: string[] = [];
+    const optionalDependencies: string[] = [];
+    
+    for (const dep of dependencies) {
+      const dependentFamilyTask = familyTaskMap.get(dep.dependsOnTaskId);
+      
+      // Handle case where family task doesn't exist yet
+      if (!dependentFamilyTask) {
+        // Check if this dependency task is a template task that should exist for this family
+        const dependentTask = await db.query.tasks.findFirst({
+          where: and(
+            eq(tasks.id, dep.dependsOnTaskId),
+            eq(tasks.isTemplate, true)
+          )
+        });
+        
+        if (dependentTask) {
+          // This is a template task that should exist but hasn't been initialized
+          // Treat as not completed for dependency purposes
+          if (dep.dependencyType === "required") {
+            missingDependencies.push(dep.dependsOnTask.title);
+          } else if (dep.dependencyType === "optional") {
+            optionalDependencies.push(dep.dependsOnTask.title);
+          }
+        }
+        // If it's not a template task, ignore this dependency as it may be from another context
+        continue;
+      }
+      
+      if (dependentFamilyTask.status !== "completed") {
+        if (dep.dependencyType === "required") {
+          missingDependencies.push(dep.dependsOnTask.title);
+        } else if (dep.dependencyType === "optional") {
+          optionalDependencies.push(dep.dependsOnTask.title);
+        }
+      }
+    }
+    
+    const canStart = missingDependencies.length === 0;
+    
+    return {
+      canStart,
+      missingDependencies,
+      optionalDependencies,
+    };
+  }
+
+  // Workflow Rule Methods
+  async getActiveWorkflowRules(): Promise<WorkflowRule[]> {
+    return await db.select().from(workflowRules).where(eq(workflowRules.isActive, true));
+  }
+
+  async getWorkflowRulesForTask(taskId: string): Promise<WorkflowRule[]> {
+    return await db.select().from(workflowRules).where(
+      and(
+        eq(workflowRules.isActive, true),
+        eq(workflowRules.triggerTaskId, taskId)
+      )
+    );
+  }
+
+  async addWorkflowRule(rule: InsertWorkflowRule): Promise<WorkflowRule> {
+    // Validate referential integrity before inserting
+    await this.validateWorkflowRule(rule);
+    
+    const [result] = await db.insert(workflowRules).values(rule).returning();
+    return result;
+  }
+
+  // Validate workflow rule referential integrity
+  private async validateWorkflowRule(rule: InsertWorkflowRule): Promise<void> {
+    const validationErrors: string[] = [];
+    
+    // Validate trigger task exists if specified
+    if (rule.triggerTaskId) {
+      const triggerTask = await db.query.tasks.findFirst({
+        where: eq(tasks.id, rule.triggerTaskId)
+      });
+      if (!triggerTask) {
+        validationErrors.push(`Trigger task with ID ${rule.triggerTaskId} does not exist`);
+      }
+    }
+    
+    // Validate action target based on targetType
+    if (rule.targetType === 'task' && rule.actionTargetTaskId) {
+      const targetTask = await db.query.tasks.findFirst({
+        where: eq(tasks.id, rule.actionTargetTaskId)
+      });
+      if (!targetTask) {
+        validationErrors.push(`Target task with ID ${rule.actionTargetTaskId} does not exist`);
+      }
+    } else if (rule.targetType === 'user' && rule.actionTargetUserId) {
+      const targetUser = await db.query.users.findFirst({
+        where: eq(users.id, rule.actionTargetUserId)
+      });
+      if (!targetUser) {
+        validationErrors.push(`Target user with ID ${rule.actionTargetUserId} does not exist`);
+      }
+    }
+    
+    // Validate trigger condition matches provided trigger data
+    if (rule.triggerCondition === 'task_completed' && !rule.triggerTaskId) {
+      validationErrors.push('triggerTaskId is required when triggerCondition is "task_completed"');
+    }
+    
+    if (rule.triggerCondition === 'status_change' && !rule.triggerStatus) {
+      validationErrors.push('triggerStatus is required when triggerCondition is "status_change"');
+    }
+    
+    // Validate action matches target type
+    const taskActions = ['auto_enable', 'auto_complete'];
+    const userActions = ['assign_user', 'send_notification'];
+    
+    if (taskActions.includes(rule.action) && rule.targetType !== 'task') {
+      validationErrors.push(`Action "${rule.action}" requires targetType to be "task"`);
+    }
+    
+    if (userActions.includes(rule.action) && rule.targetType !== 'user') {
+      validationErrors.push(`Action "${rule.action}" requires targetType to be "user"`);
+    }
+    
+    // Prevent self-referential rules that could cause infinite loops
+    if (rule.triggerTaskId === rule.actionTargetTaskId) {
+      validationErrors.push('A workflow rule cannot trigger on and target the same task');
+    }
+    
+    if (validationErrors.length > 0) {
+      throw new Error(`Workflow rule validation failed:\n${validationErrors.join('\n')}`);
+    }
+  }
+
+  async toggleWorkflowRule(ruleId: string, isActive: boolean): Promise<WorkflowRule> {
+    const [result] = await db
+      .update(workflowRules)
+      .set({ isActive })
+      .where(eq(workflowRules.id, ruleId))
+      .returning();
+    return result;
   }
 }
 
