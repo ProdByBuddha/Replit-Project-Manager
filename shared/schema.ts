@@ -8,6 +8,7 @@ import {
   text,
   integer,
   boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -132,6 +133,53 @@ export const notificationLogs = pgTable("notification_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Task Dependencies table - defines prerequisite relationships between template tasks
+export const taskDependencies = pgTable(
+  "task_dependencies",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    taskId: varchar("task_id").notNull(), // The task that has dependencies
+    dependsOnTaskId: varchar("depends_on_task_id").notNull(), // The prerequisite task
+    dependencyType: varchar("dependency_type").notNull().default("required"), // 'required', 'optional', 'sequential'
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("IDX_task_dependencies_task_id").on(table.taskId),
+    index("IDX_task_dependencies_depends_on").on(table.dependsOnTaskId),
+    index("IDX_task_dependencies_composite").on(table.taskId, table.dependsOnTaskId),
+    // CRITICAL: Add uniqueness constraint to prevent duplicate dependencies
+    unique("UNQ_task_dependencies_unique").on(table.taskId, table.dependsOnTaskId, table.dependencyType),
+  ]
+);
+
+// Workflow Rules table - automation rules for task management
+export const workflowRules = pgTable(
+  "workflow_rules",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(),
+    description: text("description"),
+    triggerCondition: varchar("trigger_condition").notNull(), // 'task_completed', 'all_dependencies_met', 'status_change'
+    // NORMALIZED TRIGGER COLUMNS (replaces polymorphic triggerValue)
+    triggerTaskId: varchar("trigger_task_id"), // nullable, for task-based triggers
+    triggerStatus: varchar("trigger_status"), // nullable, for status-based triggers
+    action: varchar("action").notNull(), // 'auto_enable', 'auto_complete', 'send_notification', 'assign_user'
+    // NORMALIZED ACTION TARGET COLUMNS (replaces polymorphic actionTarget)
+    targetType: varchar("target_type").notNull(), // 'task' or 'user'
+    actionTargetTaskId: varchar("action_target_task_id"), // nullable
+    actionTargetUserId: varchar("action_target_user_id"), // nullable
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    // Performance-optimized indexes for common query patterns
+    index("IDX_workflow_rules_trigger_composite").on(table.isActive, table.triggerCondition, table.triggerTaskId),
+    index("IDX_workflow_rules_target_task").on(table.isActive, table.actionTargetTaskId),
+    index("IDX_workflow_rules_target_user").on(table.isActive, table.targetType, table.actionTargetUserId),
+    index("IDX_workflow_rules_active").on(table.isActive),
+  ]
+);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   family: one(families, {
@@ -156,6 +204,10 @@ export const familiesRelations = relations(families, ({ many }) => ({
 
 export const tasksRelations = relations(tasks, ({ many }) => ({
   familyTasks: many(familyTasks),
+  dependencies: many(taskDependencies),
+  dependentOn: many(taskDependencies, {
+    relationName: "taskDependentOn",
+  }),
 }));
 
 export const familyTasksRelations = relations(familyTasks, ({ one, many }) => ({
@@ -229,6 +281,34 @@ export const notificationLogsRelations = relations(notificationLogs, ({ one }) =
   }),
 }));
 
+export const taskDependenciesRelations = relations(taskDependencies, ({ one }) => ({
+  task: one(tasks, {
+    fields: [taskDependencies.taskId],
+    references: [tasks.id],
+  }),
+  dependsOnTask: one(tasks, {
+    fields: [taskDependencies.dependsOnTaskId],
+    references: [tasks.id],
+    relationName: "taskDependentOn",
+  }),
+}));
+
+export const workflowRulesRelations = relations(workflowRules, ({ one }) => ({
+  // Fixed normalized relations (no more polymorphic issues)
+  triggerTask: one(tasks, {
+    fields: [workflowRules.triggerTaskId],
+    references: [tasks.id],
+  }),
+  actionTargetTask: one(tasks, {
+    fields: [workflowRules.actionTargetTaskId],
+    references: [tasks.id],
+  }),
+  actionTargetUser: one(users, {
+    fields: [workflowRules.actionTargetUserId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -278,6 +358,16 @@ export const insertNotificationLogSchema = createInsertSchema(notificationLogs).
   createdAt: true,
 });
 
+export const insertTaskDependencySchema = createInsertSchema(taskDependencies).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWorkflowRuleSchema = createInsertSchema(workflowRules).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -297,3 +387,7 @@ export type NotificationPreferences = typeof notificationPreferences.$inferSelec
 export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
 export type NotificationLog = typeof notificationLogs.$inferSelect;
 export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;
+export type TaskDependency = typeof taskDependencies.$inferSelect;
+export type InsertTaskDependency = z.infer<typeof insertTaskDependencySchema>;
+export type WorkflowRule = typeof workflowRules.$inferSelect;
+export type InsertWorkflowRule = z.infer<typeof insertWorkflowRuleSchema>;
