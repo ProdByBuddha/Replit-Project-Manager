@@ -1,4 +1,4 @@
-import type { User, Family, Task, FamilyTask, Document, Message, TaskDependency } from "@shared/schema";
+import type { User, Family, Task, FamilyTask, Document, Message, TaskDependency, WorkflowRule } from "@shared/schema";
 
 export interface UserWithFamily extends User {
   family?: FamilyWithMembers | null;
@@ -53,4 +53,15 @@ export interface FamilyStats {
   pending: number;
   documents: number;
   progress: number;
+}
+
+// Admin interface types
+export interface TaskDependencyWithNames extends TaskDependency {
+  taskName: string;
+  dependsOnTaskName: string;
+}
+
+export interface WorkflowRuleWithNames extends WorkflowRule {
+  triggerTaskName?: string;
+  actionTargetTaskName?: string;
 }

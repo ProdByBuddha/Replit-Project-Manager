@@ -7,7 +7,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, users, invitations } from "@shared/schema";
+import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, users, invitations } from "@shared/schema";
 import { notificationService } from "./email/notificationService";
 import { eventBus } from "./automation/EventBus";
 import { getAutomationHealth, checkFamilyDependencies } from "./automation/index";
@@ -214,6 +214,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin users endpoint for workflow rule assignment
+  app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Get all users, including family members for assignment
+      const allFamilies = await storage.getAllFamilies();
+      const allUsers = [];
+      
+      // Get admin users
+      const adminUsers = await storage.getAdminUsers();
+      allUsers.push(...adminUsers);
+      
+      // Get family members from all families
+      for (const family of allFamilies) {
+        const members = await storage.getFamilyMembers(family.id);
+        allUsers.push(...members);
+      }
+      
+      // Remove duplicates and format for dropdown
+      const uniqueUsers = allUsers.filter((user, index, arr) => 
+        arr.findIndex(u => u.id === user.id) === index
+      );
+      
+      const userData = uniqueUsers.map(u => ({
+        id: u.id,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+        email: u.email,
+        role: u.role
+      }));
+      
+      res.json(userData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   // Admin setup endpoint
   app.post('/api/admin/setup', async (req, res) => {
     try {
@@ -236,6 +277,307 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in admin setup:", error);
       res.status(500).json({ message: "Admin setup failed" });
+    }
+  });
+
+  // ==================== ADMIN DEPENDENCY MANAGEMENT ENDPOINTS ====================
+  
+  // Get all task dependencies
+  app.get('/api/admin/dependencies', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      
+      // Get all dependencies with task information
+      const dependencies = [];
+      for (const task of allTasks) {
+        const taskDeps = await storage.getTaskDependencies(task.id);
+        for (const dep of taskDeps) {
+          dependencies.push({
+            id: dep.id,
+            taskId: dep.taskId,
+            taskName: taskMap.get(dep.taskId)?.title || 'Unknown Task',
+            dependsOnTaskId: dep.dependsOnTaskId,
+            dependsOnTaskName: taskMap.get(dep.dependsOnTaskId)?.title || 'Unknown Task',
+            dependencyType: dep.dependencyType,
+            createdAt: dep.createdAt,
+          });
+        }
+      }
+
+      res.json(dependencies);
+    } catch (error) {
+      console.error("Error fetching dependencies:", error);
+      res.status(500).json({ message: "Failed to fetch dependencies" });
+    }
+  });
+
+  // Create new task dependency
+  app.post('/api/admin/dependencies', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const dependencyData = insertTaskDependencySchema.parse(req.body);
+      const dependency = await storage.addTaskDependency(dependencyData);
+      
+      // Return dependency with task names for UI
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      
+      const dependencyWithNames = {
+        ...dependency,
+        taskName: taskMap.get(dependency.taskId)?.title || 'Unknown Task',
+        dependsOnTaskName: taskMap.get(dependency.dependsOnTaskId)?.title || 'Unknown Task',
+      };
+
+      res.status(201).json(dependencyWithNames);
+    } catch (error) {
+      console.error("Error creating dependency:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create dependency";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Update task dependency
+  app.put('/api/admin/dependencies/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const updateData = insertTaskDependencySchema.parse(req.body);
+      
+      // Transaction-safe update: verify dependency exists, then update atomically
+      // First find the existing dependency to ensure it exists
+      const allTasks = await storage.getAllTasks();
+      const dependencies = [];
+      for (const task of allTasks) {
+        const taskDeps = await storage.getTaskDependencies(task.id);
+        dependencies.push(...taskDeps);
+      }
+      
+      const existingDep = dependencies.find(dep => dep.id === id);
+      if (!existingDep) {
+        return res.status(404).json({ message: "Dependency not found" });
+      }
+
+      // SAFE ORDER: Add new dependency first, then remove old one to prevent data loss
+      let newDependency;
+      try {
+        newDependency = await storage.addTaskDependency(updateData);
+        // Only remove old dependency if new one was successfully added
+        await storage.removeTaskDependency(existingDep.taskId, existingDep.dependsOnTaskId, existingDep.dependencyType);
+      } catch (addError) {
+        // If adding new dependency fails, the original remains intact
+        throw new Error(`Failed to update dependency: ${addError.message}`);
+      }
+
+      // Return dependency with task names for UI
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      
+      const dependencyWithNames = {
+        ...newDependency,
+        taskName: taskMap.get(newDependency.taskId)?.title || 'Unknown Task',
+        dependsOnTaskName: taskMap.get(newDependency.dependsOnTaskId)?.title || 'Unknown Task',
+      };
+
+      res.json(dependencyWithNames);
+    } catch (error) {
+      console.error("Error updating dependency:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update dependency";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Delete task dependency
+  app.delete('/api/admin/dependencies/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      
+      // Find the dependency to get its details for deletion
+      const allTasks = await storage.getAllTasks();
+      let dependencyToDelete = null;
+      
+      for (const task of allTasks) {
+        const taskDeps = await storage.getTaskDependencies(task.id);
+        dependencyToDelete = taskDeps.find(dep => dep.id === id);
+        if (dependencyToDelete) break;
+      }
+
+      if (!dependencyToDelete) {
+        return res.status(404).json({ message: "Dependency not found" });
+      }
+
+      await storage.removeTaskDependency(
+        dependencyToDelete.taskId, 
+        dependencyToDelete.dependsOnTaskId, 
+        dependencyToDelete.dependencyType
+      );
+
+      res.json({ message: "Dependency deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting dependency:", error);
+      res.status(500).json({ message: "Failed to delete dependency" });
+    }
+  });
+
+  // ==================== ADMIN WORKFLOW RULES MANAGEMENT ENDPOINTS ====================
+  
+  // Get all workflow rules
+  app.get('/api/admin/workflow-rules', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const rules = await storage.getActiveWorkflowRules();
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      
+      // Add task names to rules for better UI
+      const rulesWithNames = rules.map(rule => ({
+        ...rule,
+        triggerTaskName: rule.triggerTaskId ? taskMap.get(rule.triggerTaskId)?.title : undefined,
+        actionTargetTaskName: rule.actionTargetTaskId ? taskMap.get(rule.actionTargetTaskId)?.title : undefined,
+      }));
+
+      res.json(rulesWithNames);
+    } catch (error) {
+      console.error("Error fetching workflow rules:", error);
+      res.status(500).json({ message: "Failed to fetch workflow rules" });
+    }
+  });
+
+  // Create new workflow rule
+  app.post('/api/admin/workflow-rules', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const ruleData = insertWorkflowRuleSchema.parse(req.body);
+      const rule = await storage.addWorkflowRule(ruleData);
+      
+      // Return rule with task names for UI
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      
+      const ruleWithNames = {
+        ...rule,
+        triggerTaskName: rule.triggerTaskId ? taskMap.get(rule.triggerTaskId)?.title : undefined,
+        actionTargetTaskName: rule.actionTargetTaskId ? taskMap.get(rule.actionTargetTaskId)?.title : undefined,
+      };
+
+      res.status(201).json(ruleWithNames);
+    } catch (error) {
+      console.error("Error creating workflow rule:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create workflow rule";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Update workflow rule
+  app.put('/api/admin/workflow-rules/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const updateData = insertWorkflowRuleSchema.parse(req.body);
+      
+      // For workflow rules, we'll implement a direct update in storage
+      // For now, let's implement it by recreating (like dependencies)
+      const updatedRule = await storage.addWorkflowRule({ ...updateData, id });
+      
+      // Return rule with task names for UI
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      
+      const ruleWithNames = {
+        ...updatedRule,
+        triggerTaskName: updatedRule.triggerTaskId ? taskMap.get(updatedRule.triggerTaskId)?.title : undefined,
+        actionTargetTaskName: updatedRule.actionTargetTaskId ? taskMap.get(updatedRule.actionTargetTaskId)?.title : undefined,
+      };
+
+      res.json(ruleWithNames);
+    } catch (error) {
+      console.error("Error updating workflow rule:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update workflow rule";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Delete workflow rule
+  app.delete('/api/admin/workflow-rules/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      
+      // Delete workflow rule from database
+      await db.delete(workflowRules).where(eq(workflowRules.id, id));
+
+      res.json({ message: "Workflow rule deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting workflow rule:", error);
+      res.status(500).json({ message: "Failed to delete workflow rule" });
+    }
+  });
+
+  // Toggle workflow rule active status
+  app.patch('/api/admin/workflow-rules/:id/toggle', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { id } = req.params;
+      const { isActive } = req.body;
+      
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ message: "isActive must be a boolean" });
+      }
+
+      const updatedRule = await storage.toggleWorkflowRule(id, isActive);
+      
+      // Return rule with task names for UI
+      const allTasks = await storage.getAllTasks();
+      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      
+      const ruleWithNames = {
+        ...updatedRule,
+        triggerTaskName: updatedRule.triggerTaskId ? taskMap.get(updatedRule.triggerTaskId)?.title : undefined,
+        actionTargetTaskName: updatedRule.actionTargetTaskId ? taskMap.get(updatedRule.actionTargetTaskId)?.title : undefined,
+      };
+
+      res.json(ruleWithNames);
+    } catch (error) {
+      console.error("Error toggling workflow rule:", error);
+      res.status(500).json({ message: "Failed to toggle workflow rule" });
     }
   });
 

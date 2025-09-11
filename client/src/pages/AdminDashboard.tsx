@@ -1,16 +1,20 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Settings, Bell } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Settings, Bell, Users, Network, Zap, BarChart3 } from "lucide-react";
 import { Link } from "wouter";
 import AdminStats from "@/components/AdminStats";
 import FamilyManagement from "@/components/FamilyManagement";
+import DependencyManagement from "@/components/DependencyManagement";
+import WorkflowRulesManagement from "@/components/WorkflowRulesManagement";
 
 export default function AdminDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Redirect to login if not authenticated or not admin
   useEffect(() => {
@@ -96,13 +100,38 @@ export default function AdminDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Admin Stats */}
-        <AdminStats />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3" data-testid="tabs-admin-navigation">
+            <TabsTrigger value="overview" className="flex items-center space-x-2" data-testid="tab-overview">
+              <BarChart3 className="w-4 h-4" />
+              <span>Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="dependencies" className="flex items-center space-x-2" data-testid="tab-dependencies">
+              <Network className="w-4 h-4" />
+              <span>Dependencies</span>
+            </TabsTrigger>
+            <TabsTrigger value="workflow-rules" className="flex items-center space-x-2" data-testid="tab-workflow-rules">
+              <Zap className="w-4 h-4" />
+              <span>Workflow Rules</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Family Management Table */}
-        <div className="mt-8">
-          <FamilyManagement />
-        </div>
+          <TabsContent value="overview" className="space-y-8">
+            {/* Admin Stats */}
+            <AdminStats />
+            
+            {/* Family Management Table */}
+            <FamilyManagement />
+          </TabsContent>
+
+          <TabsContent value="dependencies" className="space-y-6" data-testid="content-dependencies">
+            <DependencyManagement />
+          </TabsContent>
+
+          <TabsContent value="workflow-rules" className="space-y-6" data-testid="content-workflow-rules">
+            <WorkflowRulesManagement />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
