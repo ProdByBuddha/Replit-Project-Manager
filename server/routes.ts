@@ -383,8 +383,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return dependency with task names for UI
-      const allTasks = await storage.getAllTasks();
-      const taskMap = new Map(allTasks.map(task => [task.id, task]));
+      const allTasksForUI = await storage.getAllTasks();
+      const taskMap = new Map(allTasksForUI.map(task => [task.id, task]));
       
       const dependencyWithNames = {
         ...newDependency,
