@@ -43,6 +43,7 @@ export interface IStorage {
   
   // Family operations
   createFamily(family: InsertFamily): Promise<Family>;
+  getFamily(familyId: string): Promise<Family | undefined>;
   getFamilyByCode(familyCode: string): Promise<Family | undefined>;
   getAllFamilies(): Promise<Family[]>;
   getFamilyWithMembers(familyId: string): Promise<(Family & { members: User[] }) | undefined>;
@@ -53,6 +54,8 @@ export interface IStorage {
   initializeFamilyTasks(familyId: string): Promise<void>;
   getFamilyTasks(familyId: string): Promise<(FamilyTask & { task: Task })[]>;
   getFamilyTask(familyTaskId: string): Promise<FamilyTask | undefined>;
+  getFamilyTaskByFamilyAndTask(familyId: string, taskId: string): Promise<FamilyTask | undefined>;
+  getFamilyTaskWithTask(familyTaskId: string): Promise<(FamilyTask & { task: Task }) | undefined>;
   updateFamilyTaskStatus(familyTaskId: string, status: string, notes?: string): Promise<FamilyTask>;
   
   // Document operations
@@ -161,6 +164,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(families).orderBy(desc(families.createdAt));
   }
 
+  async getFamily(familyId: string): Promise<Family | undefined> {
+    const [family] = await db
+      .select()
+      .from(families)
+      .where(eq(families.id, familyId));
+    return family;
+  }
+
   async getFamilyWithMembers(familyId: string): Promise<(Family & { members: User[] }) | undefined> {
     const family = await db.query.families.findFirst({
       where: eq(families.id, familyId),
@@ -212,6 +223,24 @@ export class DatabaseStorage implements IStorage {
       .from(familyTasks)
       .where(eq(familyTasks.id, familyTaskId));
     return task;
+  }
+
+  async getFamilyTaskByFamilyAndTask(familyId: string, taskId: string): Promise<FamilyTask | undefined> {
+    const [familyTask] = await db
+      .select()
+      .from(familyTasks)
+      .where(and(eq(familyTasks.familyId, familyId), eq(familyTasks.taskId, taskId)));
+    return familyTask;
+  }
+
+  async getFamilyTaskWithTask(familyTaskId: string): Promise<(FamilyTask & { task: Task }) | undefined> {
+    const familyTask = await db.query.familyTasks.findFirst({
+      where: eq(familyTasks.id, familyTaskId),
+      with: {
+        task: true,
+      },
+    });
+    return familyTask;
   }
 
   async updateFamilyTaskStatus(familyTaskId: string, status: string, notes?: string): Promise<FamilyTask> {

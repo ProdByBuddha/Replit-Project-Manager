@@ -9,6 +9,8 @@ import {
 import { ObjectPermission } from "./objectAcl";
 import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, users, invitations } from "@shared/schema";
 import { notificationService } from "./email/notificationService";
+import { eventBus } from "./automation/EventBus";
+import { getAutomationHealth, checkFamilyDependencies } from "./automation/index";
 import multer from "multer";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -173,6 +175,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin automation health endpoint
+  app.get('/api/admin/automation/health', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const health = getAutomationHealth();
+      res.json(health);
+    } catch (error) {
+      console.error("Error fetching automation health:", error);
+      res.status(500).json({ message: "Failed to fetch automation health" });
+    }
+  });
+
+  // Admin manual dependency check endpoint
+  app.post('/api/admin/automation/check-dependencies', isAuthenticated, async (req: any, res) => {
+    try {
+      const { familyId } = req.body;
+      const user = await storage.getUser(req.user.claims.sub);
+      
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      if (!familyId) {
+        return res.status(400).json({ message: "Family ID is required" });
+      }
+
+      const result = await checkFamilyDependencies(familyId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error in manual dependency check:", error);
+      res.status(500).json({ message: "Failed to check dependencies" });
+    }
+  });
+
   // Admin setup endpoint
   app.post('/api/admin/setup', async (req, res) => {
     try {
@@ -249,10 +289,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied - task does not belong to your family" });
       }
 
-      // Store the old status for notification
+      // Store the old status for notification  
       const oldStatus = familyTask.status;
       
       const updatedTask = await storage.updateFamilyTaskStatus(taskId, status, notes);
+      
+      // Emit automation event if status changed
+      if (oldStatus !== status) {
+        const correlationId = eventBus.generateCorrelationId();
+        
+        // Emit TaskStatusChanged event for automation processing
+        eventBus.emitTaskStatusChanged({
+          familyId: familyTask.familyId,
+          familyTaskId: taskId,
+          templateTaskId: familyTask.taskId,
+          oldStatus: oldStatus,
+          newStatus: status,
+          actorUserId: user.id,
+          correlationId: correlationId,
+          timestamp: new Date(),
+          notes: notes
+        });
+
+        // If completed, also emit TaskCompleted for specific handling  
+        if (status === "completed") {
+          eventBus.emitTaskCompleted({
+            familyId: familyTask.familyId,
+            familyTaskId: taskId,
+            templateTaskId: familyTask.taskId,
+            actorUserId: user.id,
+            correlationId: correlationId,
+            timestamp: new Date(),
+            completedAt: updatedTask.completedAt || new Date()
+          });
+        }
+      }
       
       // Send notification if status changed and we have all necessary data
       if (oldStatus !== status) {
