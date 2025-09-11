@@ -96,6 +96,18 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Invitations table - for inviting family members
+export const invitations = pgTable("invitations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  familyId: varchar("family_id").notNull(),
+  inviterUserId: varchar("inviter_user_id").notNull(),
+  inviteeEmail: varchar("invitee_email").notNull(),
+  invitationCode: varchar("invitation_code").notNull().unique(),
+  status: varchar("status").notNull().default("pending"), // 'pending', 'accepted', 'declined', 'expired'
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   family: one(families, {
@@ -105,6 +117,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   uploadedDocuments: many(documents),
   sentMessages: many(messages),
   assignedTasks: many(familyTasks),
+  sentInvitations: many(invitations),
 }));
 
 export const familiesRelations = relations(families, ({ many }) => ({
@@ -112,6 +125,7 @@ export const familiesRelations = relations(families, ({ many }) => ({
   tasks: many(familyTasks),
   documents: many(documents),
   messages: many(messages),
+  invitations: many(invitations),
 }));
 
 export const tasksRelations = relations(tasks, ({ many }) => ({
@@ -160,6 +174,17 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+  family: one(families, {
+    fields: [invitations.familyId],
+    references: [families.id],
+  }),
+  inviter: one(users, {
+    fields: [invitations.inviterUserId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -194,6 +219,11 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 
+export const insertInvitationSchema = createInsertSchema(invitations).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -207,3 +237,5 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Invitation = typeof invitations.$inferSelect;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;

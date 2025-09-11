@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import AdminDashboard from "@/pages/AdminDashboard";
+import InvitationAccept from "@/pages/InvitationAccept";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
 
   return (
     <Switch>
+      <Route path="/invite/:code" component={InvitationAccept} />
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (

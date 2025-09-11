@@ -5,6 +5,7 @@ import {
   familyTasks,
   documents,
   messages,
+  invitations,
   type User,
   type UpsertUser,
   type Family,
@@ -17,9 +18,11 @@ import {
   type InsertDocument,
   type Message,
   type InsertMessage,
+  type Invitation,
+  type InsertInvitation,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, lt } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -49,6 +52,15 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   getFamilyMessages(familyId: string): Promise<(Message & { fromUser: User })[]>;
   markMessageAsRead(messageId: string): Promise<void>;
+  
+  // Invitation operations
+  createInvitation(invitation: InsertInvitation): Promise<Invitation>;
+  getFamilyInvitations(familyId: string): Promise<(Invitation & { inviter: User })[]>;
+  getInvitationByCode(invitationCode: string): Promise<Invitation | undefined>;
+  getInvitationsByEmail(email: string): Promise<(Invitation & { family: Family; inviter: User })[]>;
+  updateInvitationStatus(invitationId: string, status: string): Promise<Invitation>;
+  deleteInvitation(invitationId: string): Promise<void>;
+  expireOldInvitations(): Promise<void>;
   
   // Statistics
   getFamilyStats(familyId: string): Promise<{
@@ -290,6 +302,67 @@ export class DatabaseStorage implements IStorage {
       pendingReviews,
       totalDocuments: allDocuments.length,
     };
+  }
+
+  // Invitation operations
+  async createInvitation(invitationData: InsertInvitation): Promise<Invitation> {
+    const [invitation] = await db.insert(invitations).values(invitationData).returning();
+    return invitation;
+  }
+
+  async getFamilyInvitations(familyId: string): Promise<(Invitation & { inviter: User })[]> {
+    return await db.query.invitations.findMany({
+      where: eq(invitations.familyId, familyId),
+      with: {
+        inviter: true,
+      },
+      orderBy: desc(invitations.createdAt),
+    });
+  }
+
+  async getInvitationByCode(invitationCode: string): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.invitationCode, invitationCode));
+    return invitation;
+  }
+
+  async getInvitationsByEmail(email: string): Promise<(Invitation & { family: Family; inviter: User })[]> {
+    return await db.query.invitations.findMany({
+      where: and(
+        eq(invitations.inviteeEmail, email),
+        eq(invitations.status, "pending")
+      ),
+      with: {
+        family: true,
+        inviter: true,
+      },
+      orderBy: desc(invitations.createdAt),
+    });
+  }
+
+  async updateInvitationStatus(invitationId: string, status: string): Promise<Invitation> {
+    const [invitation] = await db
+      .update(invitations)
+      .set({ status })
+      .where(eq(invitations.id, invitationId))
+      .returning();
+    return invitation;
+  }
+
+  async deleteInvitation(invitationId: string): Promise<void> {
+    await db.delete(invitations).where(eq(invitations.id, invitationId));
+  }
+
+  async expireOldInvitations(): Promise<void> {
+    await db
+      .update(invitations)
+      .set({ status: "expired" })
+      .where(and(
+        eq(invitations.status, "pending"),
+        lt(invitations.expiresAt, new Date())
+      ));
   }
 
   // Admin operations

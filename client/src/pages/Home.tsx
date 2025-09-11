@@ -12,6 +12,8 @@ import FamilyStats from "@/components/FamilyStats";
 import TaskChecklist from "@/components/TaskChecklist";
 import DocumentCenter from "@/components/DocumentCenter";
 import MessageCenter from "@/components/MessageCenter";
+import InvitationForm from "@/components/InvitationForm";
+import InvitationManager from "@/components/InvitationManager";
 import type { FamilyStats as FamilyStatsType } from "@/lib/types";
 
 export default function Home() {

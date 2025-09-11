@@ -7,8 +7,11 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertFamilySchema, insertTaskSchema, insertMessageSchema } from "@shared/schema";
+import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, users, invitations } from "@shared/schema";
 import multer from "multer";
+import { nanoid } from "nanoid";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -434,6 +437,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating message:", error);
       res.status(500).json({ message: "Failed to create message" });
+    }
+  });
+
+  // Invitation endpoints
+  app.post('/api/invitations', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (!user.familyId) {
+        return res.status(403).json({ message: "You must be part of a family to send invitations" });
+      }
+
+      const { inviteeEmail } = req.body;
+      
+      if (!inviteeEmail) {
+        return res.status(400).json({ message: "Invitee email is required" });
+      }
+
+      // Check if user is already part of the family
+      const existingUser = await db.query.users.findFirst({
+        where: and(eq(users.email, inviteeEmail), eq(users.familyId, user.familyId))
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({ message: "User is already part of your family" });
+      }
+
+      // Check for existing pending invitation
+      const existingInvitation = await db.query.invitations.findFirst({
+        where: and(
+          eq(invitations.familyId, user.familyId),
+          eq(invitations.inviteeEmail, inviteeEmail),
+          eq(invitations.status, "pending")
+        )
+      });
+      
+      if (existingInvitation) {
+        return res.status(400).json({ message: "Invitation already sent to this email" });
+      }
+
+      // Generate secure invitation code and expiration
+      const invitationCode = nanoid(32);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      const invitationData = insertInvitationSchema.parse({
+        familyId: user.familyId,
+        inviterUserId: user.id,
+        inviteeEmail,
+        invitationCode,
+        expiresAt,
+      });
+
+      const invitation = await storage.createInvitation(invitationData);
+      
+      // Return complete invitation including the invitationCode (needed for sharing)
+      res.status(201).json(invitation);
+    } catch (error) {
+      console.error("Error creating invitation:", error);
+      res.status(500).json({ message: "Failed to create invitation" });
+    }
+  });
+
+  app.get('/api/invitations', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let familyId = user.familyId;
+      
+      // If admin and familyId query param provided, use that
+      if (user.role === 'admin' && req.query.familyId) {
+        familyId = req.query.familyId;
+      }
+
+      if (!familyId) {
+        return res.status(400).json({ message: "Family ID required" });
+      }
+
+      // Auto-expire old invitations
+      await storage.expireOldInvitations();
+
+      const invitations = await storage.getFamilyInvitations(familyId);
+      
+      // Remove invitation codes from response for security
+      const safeInvitations = invitations.map(({ invitationCode, ...inv }) => inv);
+      res.json(safeInvitations);
+    } catch (error) {
+      console.error("Error fetching invitations:", error);
+      res.status(500).json({ message: "Failed to fetch invitations" });
+    }
+  });
+
+  app.get('/api/invitations/received/:email', async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Auto-expire old invitations
+      await storage.expireOldInvitations();
+
+      const invitations = await storage.getInvitationsByEmail(email);
+      
+      // Remove invitation codes from response for security  
+      const safeInvitations = invitations.map(({ invitationCode, ...inv }) => inv);
+      res.json(safeInvitations);
+    } catch (error) {
+      console.error("Error fetching invitations by email:", error);
+      res.status(500).json({ message: "Failed to fetch invitations" });
+    }
+  });
+
+  app.get('/api/invitations/code/:code', async (req, res) => {
+    try {
+      const { code } = req.params;
+      
+      if (!code) {
+        return res.status(400).json({ message: "Invitation code is required" });
+      }
+
+      // Auto-expire old invitations
+      await storage.expireOldInvitations();
+
+      const invitation = await db.query.invitations.findFirst({
+        where: eq(invitations.invitationCode, code),
+        with: {
+          family: true,
+          inviter: true,
+        },
+      });
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+
+      // Remove invitation code from response for security
+      const { invitationCode, ...safeInvitation } = invitation;
+      res.json(safeInvitation);
+    } catch (error) {
+      console.error("Error fetching invitation by code:", error);
+      res.status(500).json({ message: "Failed to fetch invitation" });
+    }
+  });
+
+  app.put('/api/invitations/:code/accept', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.familyId) {
+        return res.status(400).json({ message: "You are already part of a family" });
+      }
+
+      // Auto-expire old invitations
+      await storage.expireOldInvitations();
+
+      const invitation = await storage.getInvitationByCode(code);
+      if (!invitation) {
+        return res.status(404).json({ message: "Invalid invitation code" });
+      }
+
+      if (invitation.status !== "pending") {
+        return res.status(400).json({ message: "Invitation is no longer valid" });
+      }
+
+      if (invitation.inviteeEmail !== user.email) {
+        return res.status(403).json({ message: "This invitation is not for your email address" });
+      }
+
+      // Accept the invitation
+      await storage.updateInvitationStatus(invitation.id, "accepted");
+      
+      // Add user to the family
+      await storage.upsertUser({
+        ...user,
+        familyId: invitation.familyId,
+        role: 'family'
+      });
+
+      res.json({ message: "Invitation accepted successfully" });
+    } catch (error) {
+      console.error("Error accepting invitation:", error);
+      res.status(500).json({ message: "Failed to accept invitation" });
+    }
+  });
+
+  app.delete('/api/invitations/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = await storage.getUser(req.user.claims.sub);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const invitation = await db.query.invitations.findFirst({
+        where: eq(invitations.id, id)
+      });
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+
+      // Only the inviter or admin can cancel the invitation
+      if (user.role !== 'admin' && invitation.inviterUserId !== user.id) {
+        return res.status(403).json({ message: "Access denied - you can only cancel invitations you sent" });
+      }
+
+      await storage.deleteInvitation(id);
+      res.json({ message: "Invitation cancelled successfully" });
+    } catch (error) {
+      console.error("Error cancelling invitation:", error);
+      res.status(500).json({ message: "Failed to cancel invitation" });
     }
   });
 
