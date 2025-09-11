@@ -15,6 +15,8 @@ import DocumentCenter from "@/components/DocumentCenter";
 import MessageCenter from "@/components/MessageCenter";
 import InvitationForm from "@/components/InvitationForm";
 import InvitationManager from "@/components/InvitationManager";
+import OnboardingFlow from "@/components/OnboardingFlow";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import type { FamilyStats as FamilyStatsType } from "@/lib/types";
 
 export default function Home() {
@@ -22,6 +24,7 @@ export default function Home() {
   const { toast } = useToast();
   const [showJoinFamily, setShowJoinFamily] = useState(false);
   const [familyCode, setFamilyCode] = useState("");
+  const { showOnboarding, markOnboardingComplete } = useOnboarding();
 
   const { data: familyStats, isLoading: statsLoading } = useQuery<FamilyStatsType>({
     queryKey: [`/api/stats/family/${user?.familyId}`],
@@ -219,6 +222,14 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Onboarding Flow */}
+      {showOnboarding && (
+        <OnboardingFlow
+          onComplete={markOnboardingComplete}
+          userRole="family"
+        />
+      )}
     </div>
   );
 }

@@ -10,11 +10,14 @@ import AdminStats from "@/components/AdminStats";
 import FamilyManagement from "@/components/FamilyManagement";
 import DependencyManagement from "@/components/DependencyManagement";
 import WorkflowRulesManagement from "@/components/WorkflowRulesManagement";
+import OnboardingFlow from "@/components/OnboardingFlow";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function AdminDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const { showOnboarding, markOnboardingComplete } = useOnboarding();
 
   // Redirect to login if not authenticated or not admin
   useEffect(() => {
@@ -133,6 +136,14 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Onboarding Flow */}
+      {showOnboarding && (
+        <OnboardingFlow
+          onComplete={markOnboardingComplete}
+          userRole="admin"
+        />
+      )}
     </div>
   );
 }

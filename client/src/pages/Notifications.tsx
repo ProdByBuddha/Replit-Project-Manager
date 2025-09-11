@@ -10,6 +10,7 @@ import { Bell, Mail, FileText, MessageSquare, UserPlus, CheckCircle, Settings } 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { insertNotificationPreferencesSchema, type InsertNotificationPreferences } from "@shared/schema";
 
 type NotificationPreferences = InsertNotificationPreferences;
@@ -35,9 +36,11 @@ export default function Notifications() {
   });
 
   // Update form when preferences are loaded
-  if (preferences && !preferencesLoading) {
-    form.reset(preferences);
-  }
+  useEffect(() => {
+    if (preferences && !preferencesLoading) {
+      form.reset(preferences);
+    }
+  }, [preferences, preferencesLoading, form]);
 
   const updatePreferencesMutation = useMutation({
     mutationFn: async (data: NotificationPreferences) => {
