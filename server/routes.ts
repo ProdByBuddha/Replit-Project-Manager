@@ -7,7 +7,8 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, users, invitations } from "@shared/schema";
+import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, users, invitations } from "@shared/schema";
+import { notificationService } from "./email/notificationService";
 import multer from "multer";
 import { nanoid } from "nanoid";
 import { db } from "./db";
@@ -248,7 +249,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied - task does not belong to your family" });
       }
 
+      // Store the old status for notification
+      const oldStatus = familyTask.status;
+      
       const updatedTask = await storage.updateFamilyTaskStatus(taskId, status, notes);
+      
+      // Send notification if status changed and we have all necessary data
+      if (oldStatus !== status) {
+        try {
+          // Get family and complete task data for notification
+          const family = await storage.getFamily(familyTask.familyId);
+          const familyTaskWithTask = await storage.getFamilyTaskWithTask(taskId);
+          
+          if (family && familyTaskWithTask) {
+            await notificationService.queueTaskStatusChange(
+              familyTaskWithTask,
+              family,
+              user,
+              oldStatus
+            );
+          }
+        } catch (notificationError) {
+          console.error("Error sending task status change notification:", notificationError);
+          // Don't fail the request if notification fails
+        }
+      }
+      
       res.json(updatedTask);
     } catch (error) {
       console.error("Error updating task status:", error);
@@ -368,6 +394,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         uploadedBy: user.id,
       });
 
+      // Send notification for document upload
+      try {
+        const family = await storage.getFamily(familyId);
+        let familyTaskWithTask = null;
+        
+        // Get family task data if document is linked to a task
+        if (familyTaskId) {
+          familyTaskWithTask = await storage.getFamilyTaskWithTask(familyTaskId);
+        }
+        
+        if (family) {
+          await notificationService.queueDocumentUpload(
+            document,
+            user,
+            family,
+            familyTaskWithTask || undefined
+          );
+        }
+      } catch (notificationError) {
+        console.error("Error sending document upload notification:", notificationError);
+        // Don't fail the request if notification fails
+      }
+
       res.status(201).json(document);
     } catch (error) {
       console.error("Error creating document:", error);
@@ -433,10 +482,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const message = await storage.createMessage(messageData);
+      
+      // Send notification for admin messages to family members
+      if (user.role === 'admin') {
+        try {
+          const family = await storage.getFamily(messageData.familyId);
+          if (family) {
+            await notificationService.queueAdminMessage(message, user, family);
+          }
+        } catch (notificationError) {
+          console.error("Error sending admin message notification:", notificationError);
+          // Don't fail the request if notification fails
+        }
+      }
+      
       res.status(201).json(message);
     } catch (error) {
       console.error("Error creating message:", error);
       res.status(500).json({ message: "Failed to create message" });
+    }
+  });
+
+  // Notification preferences endpoints
+  app.get('/api/notifications/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const preferences = await storage.getUserNotificationPreferences(userId);
+      
+      // Return default preferences if none exist
+      if (!preferences) {
+        return res.json({
+          emailOnTaskStatus: true,
+          emailOnDocumentUpload: true,
+          emailOnAdminMessage: true,
+          emailOnInvitations: true,
+        });
+      }
+      
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ message: "Failed to fetch notification preferences" });
+    }
+  });
+
+  app.put('/api/notifications/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const preferencesData = insertNotificationPreferencesSchema.parse({
+        userId,
+        ...req.body,
+      });
+      
+      const preferences = await storage.setUserNotificationPreferences(preferencesData);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ message: "Failed to update notification preferences" });
     }
   });
 
@@ -493,6 +595,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const invitation = await storage.createInvitation(invitationData);
+      
+      // Send invitation notification
+      try {
+        const family = await storage.getFamily(user.familyId!);
+        if (family) {
+          await notificationService.queueInvitation(invitation, user, family);
+        }
+      } catch (notificationError) {
+        console.error("Error sending invitation notification:", notificationError);
+        // Don't fail the request if notification fails
+      }
       
       // Return complete invitation including the invitationCode (needed for sharing)
       res.status(201).json(invitation);

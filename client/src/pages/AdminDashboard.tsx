@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Bell } from "lucide-react";
+import { Link } from "wouter";
 import AdminStats from "@/components/AdminStats";
 import FamilyManagement from "@/components/FamilyManagement";
 
@@ -70,6 +71,16 @@ export default function AdminDashboard() {
                 <i className="fas fa-plus mr-2" />
                 Add Family
               </Button>
+              <Link href="/notifications">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-primary"
+                  data-testid="button-admin-notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                </Button>
+              </Link>
               <Button
                 onClick={handleLogout}
                 variant="ghost"

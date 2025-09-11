@@ -6,7 +6,8 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Clock, UserPlus } from "lucide-react";
+import { Shield, Clock, UserPlus, Bell } from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import FamilyStats from "@/components/FamilyStats";
 import TaskChecklist from "@/components/TaskChecklist";
@@ -174,6 +175,16 @@ export default function Home() {
                 <Clock className="w-4 h-4 mr-2" />
                 <span data-testid="text-last-update">Last Updated: {new Date().toLocaleDateString()}</span>
               </div>
+              <Link href="/notifications">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-primary"
+                  data-testid="button-notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                </Button>
+              </Link>
               <Button
                 onClick={handleLogout}
                 variant="ghost"

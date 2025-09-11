@@ -6,6 +6,8 @@ import {
   documents,
   messages,
   invitations,
+  notificationPreferences,
+  notificationLogs,
   type User,
   type UpsertUser,
   type Family,
@@ -20,9 +22,13 @@ import {
   type InsertMessage,
   type Invitation,
   type InsertInvitation,
+  type NotificationPreferences,
+  type InsertNotificationPreferences,
+  type NotificationLog,
+  type InsertNotificationLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { eq, and, desc, lt, gt } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -78,6 +84,14 @@ export interface IStorage {
   
   // Admin operations
   getAdminUsers(): Promise<User[]>;
+  
+  // Notification operations
+  getUserNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined>;
+  setUserNotificationPreferences(preferences: InsertNotificationPreferences): Promise<NotificationPreferences>;
+  getFamilyMembers(familyId: string): Promise<User[]>;
+  createNotificationLog(log: InsertNotificationLog): Promise<NotificationLog>;
+  findRecentNotificationLog(type: string, recipientUserId: string, entityId: string, sinceMinutes: number): Promise<NotificationLog | undefined>;
+  findRecentNotificationLogByEmail(type: string, recipientEmail: string, entityId: string, sinceMinutes: number): Promise<NotificationLog | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -368,6 +382,85 @@ export class DatabaseStorage implements IStorage {
   // Admin operations
   async getAdminUsers(): Promise<User[]> {
     return await db.select().from(users).where(eq(users.role, 'admin'));
+  }
+
+  // Notification operations
+  async getUserNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined> {
+    const [preferences] = await db
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId));
+    return preferences;
+  }
+
+  async setUserNotificationPreferences(preferences: InsertNotificationPreferences): Promise<NotificationPreferences> {
+    const [result] = await db
+      .insert(notificationPreferences)
+      .values(preferences)
+      .onConflictDoUpdate({
+        target: notificationPreferences.userId,
+        set: {
+          ...preferences,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async getFamilyMembers(familyId: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.familyId, familyId));
+  }
+
+  async createNotificationLog(log: InsertNotificationLog): Promise<NotificationLog> {
+    const [result] = await db.insert(notificationLogs).values(log).returning();
+    return result;
+  }
+
+  async findRecentNotificationLog(
+    type: string, 
+    recipientUserId: string, 
+    entityId: string, 
+    sinceMinutes: number
+  ): Promise<NotificationLog | undefined> {
+    const sinceTime = new Date(Date.now() - sinceMinutes * 60 * 1000);
+    
+    const [log] = await db
+      .select()
+      .from(notificationLogs)
+      .where(and(
+        eq(notificationLogs.type, type),
+        eq(notificationLogs.recipientUserId, recipientUserId),
+        eq(notificationLogs.entityId, entityId),
+        gt(notificationLogs.createdAt, sinceTime)
+      ))
+      .orderBy(desc(notificationLogs.createdAt))
+      .limit(1);
+    
+    return log;
+  }
+
+  async findRecentNotificationLogByEmail(
+    type: string, 
+    recipientEmail: string, 
+    entityId: string, 
+    sinceMinutes: number
+  ): Promise<NotificationLog | undefined> {
+    const sinceTime = new Date(Date.now() - sinceMinutes * 60 * 1000);
+    
+    const [log] = await db
+      .select()
+      .from(notificationLogs)
+      .where(and(
+        eq(notificationLogs.type, type),
+        eq(notificationLogs.recipientEmail, recipientEmail),
+        eq(notificationLogs.entityId, entityId),
+        gt(notificationLogs.createdAt, sinceTime)
+      ))
+      .orderBy(desc(notificationLogs.createdAt))
+      .limit(1);
+    
+    return log;
   }
 }
 

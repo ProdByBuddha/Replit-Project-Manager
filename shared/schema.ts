@@ -108,6 +108,30 @@ export const invitations = pgTable("invitations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Notification preferences table - for managing user email preferences
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  emailOnTaskStatus: boolean("email_on_task_status").default(true),
+  emailOnDocumentUpload: boolean("email_on_document_upload").default(true),
+  emailOnAdminMessage: boolean("email_on_admin_message").default(true),
+  emailOnInvitations: boolean("email_on_invitations").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Notification logs table - for tracking sent notifications and deduplication
+export const notificationLogs = pgTable("notification_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: varchar("type").notNull(), // 'task', 'document', 'message', 'invitation'
+  recipientUserId: varchar("recipient_user_id"), // nullable - for registered users
+  recipientEmail: varchar("recipient_email"), // for invitation notifications to emails
+  familyId: varchar("family_id"), // nullable for admin notifications
+  entityId: varchar("entity_id").notNull(), // id of the related entity (task, document, message, invitation)
+  status: varchar("status").notNull(), // 'sent', 'failed'
+  error: text("error"), // nullable error message if sending failed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   family: one(families, {
@@ -118,6 +142,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   sentMessages: many(messages),
   assignedTasks: many(familyTasks),
   sentInvitations: many(invitations),
+  notificationPreferences: one(notificationPreferences),
+  notificationLogs: many(notificationLogs),
 }));
 
 export const familiesRelations = relations(families, ({ many }) => ({
@@ -185,6 +211,24 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   }),
 }));
 
+export const notificationPreferencesRelations = relations(notificationPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [notificationPreferences.userId],
+    references: [users.id],
+  }),
+}));
+
+export const notificationLogsRelations = relations(notificationLogs, ({ one }) => ({
+  recipient: one(users, {
+    fields: [notificationLogs.recipientUserId],
+    references: [users.id],
+  }),
+  family: one(families, {
+    fields: [notificationLogs.familyId],
+    references: [families.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -224,6 +268,16 @@ export const insertInvitationSchema = createInsertSchema(invitations).omit({
   createdAt: true,
 });
 
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export const insertNotificationLogSchema = createInsertSchema(notificationLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -239,3 +293,7 @@ export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Invitation = typeof invitations.$inferSelect;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type NotificationLog = typeof notificationLogs.$inferSelect;
+export type InsertNotificationLog = z.infer<typeof insertNotificationLogSchema>;

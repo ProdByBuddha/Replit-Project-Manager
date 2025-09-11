@@ -8,6 +8,7 @@ import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import AdminDashboard from "@/pages/AdminDashboard";
 import InvitationAccept from "@/pages/InvitationAccept";
+import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
         <Route path="/" component={Landing} />
       ) : (
         <>
+          <Route path="/notifications" component={Notifications} />
           {user?.role === 'admin' ? (
             <Route path="/" component={AdminDashboard} />
           ) : (
