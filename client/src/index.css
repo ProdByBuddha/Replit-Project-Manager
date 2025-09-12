@@ -112,3 +112,8 @@
 .uppy-Dashboard-inner {
   width: 100% !important;
 }
+
+/* Prevent duplicate/overlapping text in Uppy modal */
+.uppy-Dashboard-dropFilesHereHint {
+  display: none !important;
+}
