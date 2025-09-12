@@ -7,7 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { Check, Clock, Upload, Lock, X, AlertCircle } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
 import type { FamilyTaskWithTaskAndDependencies, TaskDependencyStatus } from "@/lib/types";
+import type { UploadResult } from "@uppy/core";
 
 interface TaskChecklistProps {
   familyId?: string;
@@ -57,6 +59,77 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
 
   const handleStatusChange = (taskId: string, newStatus: string) => {
     updateTaskMutation.mutate({ taskId, status: newStatus });
+  };
+
+  const handleGetUploadParameters = async () => {
+    try {
+      const response = await fetch("/api/objects/upload", {
+        method: "POST",
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to get upload URL");
+      }
+      
+      const data = await response.json();
+      return {
+        method: "PUT" as const,
+        url: data.uploadURL,
+      };
+    } catch (error) {
+      console.error("Error getting upload parameters:", error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare file upload",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    try {
+      if (result.successful && result.successful.length > 0) {
+        const file = result.successful[0];
+        
+        // Create document record
+        const response = await fetch("/api/documents", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            fileName: file.name,
+            originalFileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || "application/octet-stream",
+            uploadURL: file.uploadURL,
+            familyId,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save document record");
+        }
+
+        toast({
+          title: "Success",
+          description: "Document uploaded successfully",
+        });
+        
+        // Refresh document list
+        queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      }
+    } catch (error) {
+      console.error("Error completing upload:", error);
+      toast({
+        title: "Error",
+        description: "Failed to complete document upload",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -268,15 +341,16 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
                     
                         {familyTask.status === "in_progress" && (
                           <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-primary hover:text-primary/80"
-                              data-testid={`button-upload-documents-${familyTask.id}`}
+                            <ObjectUploader
+                              maxNumberOfFiles={5}
+                              maxFileSize={10485760} // 10MB
+                              onGetUploadParameters={handleGetUploadParameters}
+                              onComplete={handleUploadComplete}
+                              buttonClassName="text-primary hover:text-primary/80 h-8 px-3 text-sm"
                             >
                               <Upload className="w-4 h-4 mr-1" />
                               Upload Documents
-                            </Button>
+                            </ObjectUploader>
                             {!familyTask.dependencyStatus?.canComplete ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
