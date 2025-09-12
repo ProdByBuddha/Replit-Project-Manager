@@ -201,7 +201,7 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
               return (
                 <div
                   key={familyTask.id}
-                  className={`flex items-start space-x-4 p-4 rounded-lg border transition-all ${
+                  className={`flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 p-4 rounded-lg border transition-all ${
                     isBlocked ? 'bg-muted/15 border-muted/50 opacity-75' : 'bg-muted/30 border-border'
                   }`}
                   data-testid={`task-item-${familyTask.id}`}
@@ -214,25 +214,25 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
                     </div>
                   </div>
               
-                  <div className="flex-1">
-                    <h3 className={`font-medium mb-1 ${
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-medium mb-1 break-words ${
                       isBlocked ? 'text-muted-foreground' : 'text-card-foreground'
                     }`} data-testid={`text-task-title-${familyTask.id}`}>
                       {familyTask.task.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-3" data-testid={`text-task-description-${familyTask.id}`}>
+                    <p className="text-sm text-muted-foreground mb-3 break-words sm:line-clamp-none line-clamp-3" data-testid={`text-task-description-${familyTask.id}`}>
                       {familyTask.task.description}
                     </p>
                     
                     {/* Dependency Status Indicator */}
                     {getDependencyStatusIndicator(familyTask)}
                 
-                    <div className="flex items-center justify-between">
+                    <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div data-testid={`badge-task-status-${familyTask.id}`}>
                         {getStatusBadge(familyTask.status)}
                       </div>
                   
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap gap-2">
                         {familyTask.status === "not_started" && (
                           isBlocked ? (
                             <Tooltip>
@@ -242,9 +242,11 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
                                   variant="outline"
                                   disabled={true}
                                   data-testid={`button-start-task-${familyTask.id}`}
+                                  aria-label="Prerequisites Required"
                                 >
                                   <Lock className="w-3 h-3 mr-1" />
-                                  Prerequisites Required
+                                  <span className="hidden sm:inline">Prerequisites Required</span>
+                                  <span className="sm:hidden">Blocked</span>
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -282,9 +284,11 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
                                     size="sm"
                                     disabled={true}
                                     data-testid={`button-complete-task-${familyTask.id}`}
+                                    aria-label="Complete Prerequisites First"
                                   >
                                     <Lock className="w-3 h-3 mr-1" />
-                                    Complete Prerequisites First
+                                    <span className="hidden sm:inline">Complete Prerequisites First</span>
+                                    <span className="sm:hidden">Complete</span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>

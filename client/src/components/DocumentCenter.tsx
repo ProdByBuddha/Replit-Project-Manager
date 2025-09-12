@@ -166,12 +166,12 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
             onComplete={handleUploadComplete}
             buttonClassName="w-full"
           >
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-              <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+            <div className="relative flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary/50 transition-colors cursor-pointer min-h-28 sm:min-h-40 overflow-hidden">
+              <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-3 pointer-events-none">
                 <Upload className="text-primary text-xl" />
               </div>
-              <p className="text-card-foreground font-medium mb-1">Drop files here or click to browse</p>
-              <p className="text-sm text-muted-foreground">PDF, DOC, DOCX up to 10MB</p>
+              <p className="text-card-foreground font-medium mb-1 pointer-events-none">Drop files here or click to browse</p>
+              <p className="text-sm text-muted-foreground pointer-events-none">PDF, DOC, DOCX up to 10MB</p>
             </div>
           </ObjectUploader>
         </div>
@@ -193,34 +193,32 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
               {documents.map((document: any) => (
                 <div
                   key={document.id}
-                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/40 transition-colors"
+                  className="grid grid-cols-[auto,1fr,auto] items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/40 transition-colors"
                   data-testid={`document-item-${document.id}`}
                 >
-                  <div className="flex items-center flex-1">
-                    {getFileIcon(document.mimeType)}
-                    <div className="ml-3 flex-1 min-w-0">
-                      <p className="text-sm font-medium text-card-foreground truncate" data-testid={`text-document-name-${document.id}`}>
-                        {document.originalFileName}
-                      </p>
-                      <div className="flex items-center text-xs text-muted-foreground space-x-3">
-                        <span data-testid={`text-document-size-${document.id}`}>
-                          {formatFileSize(document.fileSize)}
-                        </span>
-                        <span className="flex items-center" data-testid={`text-document-date-${document.id}`}>
-                          <Calendar className="w-3 h-3 mr-1" />
-                          {new Date(document.createdAt).toLocaleDateString()}
-                        </span>
-                        <span data-testid={`text-document-uploader-${document.id}`}>
-                          by {document.uploader.firstName || document.uploader.email}
-                        </span>
-                      </div>
+                  {getFileIcon(document.mimeType)}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-card-foreground truncate break-all" data-testid={`text-document-name-${document.id}`}>
+                      {document.originalFileName}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span data-testid={`text-document-size-${document.id}`}>
+                        {formatFileSize(document.fileSize)}
+                      </span>
+                      <span className="flex items-center" data-testid={`text-document-date-${document.id}`}>
+                        <Calendar className="w-3 h-3 mr-1" />
+                        {new Date(document.createdAt).toLocaleDateString()}
+                      </span>
+                      <span data-testid={`text-document-uploader-${document.id}`}>
+                        by {document.uploader.firstName || document.uploader.email}
+                      </span>
                     </div>
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => handleDownload(document)}
-                    className="text-primary hover:text-primary/80 hover:bg-primary/10"
+                    className="text-primary hover:text-primary/80 hover:bg-primary/10 flex-shrink-0"
                     data-testid={`button-download-${document.id}`}
                   >
                     <Download className="w-4 h-4" />
