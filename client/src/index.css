@@ -114,6 +114,24 @@
 }
 
 /* Prevent duplicate/overlapping text in Uppy modal */
-.uppy-Dashboard-dropFilesHereHint {
+.uppy-Dashboard-dropFilesHereHint,
+.uppy-DashboardContent-bar,
+.uppy-DashboardAddFiles-info {
   display: none !important;
+}
+
+/* Mobile-specific fixes for upload area text overlap */
+@media (max-width: 640px) {
+  .uppy-Dashboard-inner .uppy-Dashboard-AddFiles,
+  .uppy-Dashboard-AddFiles-info,
+  .uppy-Dashboard-note,
+  .uppy-DashboardTab-name {
+    display: none !important;
+  }
+  
+  /* Ensure upload area text doesn't wrap or overlap on mobile */
+  .uppy-Dashboard-AddFiles {
+    min-height: auto !important;
+    padding: 1rem !important;
+  }
 }
