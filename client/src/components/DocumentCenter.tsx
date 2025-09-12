@@ -1,146 +1,79 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { Upload, FileText, Download, FileIcon } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Upload, FileText, Download, Calendar } from "lucide-react";
-import type { UploadResult } from "@uppy/core";
-import type { DocumentWithUploader } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
-interface DocumentCenterProps {
-  familyId?: string;
+interface Document {
+  id: string;
+  originalFileName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+  uploadedBy: string;
 }
 
-export default function DocumentCenter({ familyId }: DocumentCenterProps) {
+export function DocumentCenter() {
   const { toast } = useToast();
 
-  const { data: documents = [], isLoading, refetch } = useQuery<DocumentWithUploader[]>({
-    queryKey: ["/api/documents"],
-    enabled: !!familyId,
-    retry: false,
+  // Fetch documents
+  const { data: documents = [], isLoading, refetch } = useQuery({
+    queryKey: ['/api/documents'],
   });
 
-  const handleGetUploadParameters = async () => {
-    try {
-      const response = await fetch("/api/objects/upload", {
-        method: "POST",
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to get upload URL");
-      }
-      
-      const data = await response.json();
-      return {
-        method: "PUT" as const,
-        url: data.uploadURL,
-      };
-    } catch (error) {
-      console.error("Error getting upload parameters:", error);
-      toast({
-        title: "Error",
-        description: "Failed to prepare file upload",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    try {
-      if (result.successful && result.successful.length > 0) {
-        const file = result.successful[0];
-        
-        // Create document record
-        const response = await fetch("/api/documents", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            fileName: file.name,
-            originalFileName: file.name,
-            fileSize: file.size,
-            mimeType: file.type || "application/octet-stream",
-            uploadURL: file.uploadURL,
-            familyId,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to save document record");
-        }
-
-        toast({
-          title: "Success",
-          description: "Document uploaded successfully",
-        });
-        
-        // Refresh document list
-        refetch();
-      }
-    } catch (error) {
-      console.error("Error completing upload:", error);
-      
-      if (error instanceof Error && /^401: .*Unauthorized/.test(error.message)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      
-      toast({
-        title: "Error",
-        description: "Failed to complete document upload",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDownload = (document: any) => {
-    // Open document in new tab for download
-    window.open(document.objectPath, "_blank");
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.includes("pdf")) {
-      return <FileText className="w-5 h-5 text-red-500" />;
-    } else if (mimeType.includes("word") || mimeType.includes("document")) {
-      return <FileText className="w-5 h-5 text-blue-500" />;
+    if (mimeType.includes('pdf')) {
+      return <FileIcon className="w-5 h-5 text-red-500" />;
+    }
+    if (mimeType.includes('word') || mimeType.includes('document')) {
+      return <FileIcon className="w-5 h-5 text-blue-500" />;
+    }
+    if (mimeType.includes('image')) {
+      return <FileIcon className="w-5 h-5 text-green-500" />;
     }
     return <FileText className="w-5 h-5 text-gray-500" />;
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  const handleGetUploadParameters = async () => {
+    const response = await fetch('/api/documents/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get upload URL');
+    }
+
+    return await response.json();
+  };
+
+  const handleUploadComplete = (result: any) => {
+    console.log('Upload complete:', result);
+    refetch();
+    toast({
+      title: "Success",
+      description: "Document uploaded successfully!",
+    });
   };
 
   if (isLoading) {
     return (
       <Card className="bg-card border-border">
-        <CardHeader className="border-b border-border">
-          <CardTitle className="text-card-foreground">Document Center</CardTitle>
-        </CardHeader>
         <CardContent className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <div className="w-12 h-12 bg-muted rounded-lg mx-auto mb-3" />
-              <div className="h-4 bg-muted rounded w-3/4 mx-auto mb-1" />
-              <div className="h-3 bg-muted rounded w-1/2 mx-auto" />
-            </div>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -216,20 +149,18 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
                       <span data-testid={`text-document-size-${document.id}`}>
                         {formatFileSize(document.fileSize)}
                       </span>
-                      <span className="flex items-center" data-testid={`text-document-date-${document.id}`}>
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {new Date(document.createdAt).toLocaleDateString()}
+                      <span data-testid={`text-document-date-${document.id}`}>
+                        {new Date(document.uploadedAt).toLocaleDateString()}
                       </span>
                       <span data-testid={`text-document-uploader-${document.id}`}>
-                        by {document.uploader.firstName || document.uploader.email}
+                        by {document.uploadedBy}
                       </span>
                     </div>
                   </div>
                   <Button
-                    size="sm"
                     variant="ghost"
-                    onClick={() => handleDownload(document)}
-                    className="text-primary hover:text-primary/80 hover:bg-primary/10 flex-shrink-0"
+                    size="sm"
+                    className="text-primary hover:text-primary/80"
                     data-testid={`button-download-${document.id}`}
                   >
                     <Download className="w-4 h-4" />

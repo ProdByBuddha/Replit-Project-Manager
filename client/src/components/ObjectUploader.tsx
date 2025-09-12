@@ -2,9 +2,10 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import Uppy from "@uppy/core";
 import { DashboardModal } from "@uppy/react";
-// CSS is handled by build process
 import AwsS3 from "@uppy/aws-s3";
 import type { UploadResult } from "@uppy/core";
+
+// CSS imported in index.css to avoid Vite import issues
 import { Button } from "@/components/ui/button";
 
 interface ObjectUploaderProps {
