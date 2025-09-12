@@ -120,35 +120,30 @@
   display: none !important;
 }
 
-/* Mobile-specific fixes for upload area text overlap */
+/* Mobile-specific fixes for upload area */
 @media (max-width: 640px) {
-  /* Hide duplicate Uppy elements that cause vertical overlap */
-  .uppy-Dashboard-inner .uppy-Dashboard-AddFiles,
-  .uppy-Dashboard-AddFiles-info,
-  .uppy-Dashboard-note,
-  .uppy-DashboardTab-name,
-  .uppy-Dashboard-AddFiles-title,
-  .uppy-Dashboard-AddFiles-text {
-    display: none !important;
-  }
-  
-  /* Fix vertical spacing in upload modal */
-  .uppy-Dashboard-AddFiles {
-    min-height: auto !important;
-    padding: 1rem !important;
+  /* Clean up Uppy modal on mobile */
+  .uppy-Dashboard-AddFiles-title {
+    font-size: 1rem !important;
     line-height: 1.2 !important;
   }
   
-  /* Ensure proper spacing between text elements */
-  .uppy-Dashboard-AddFiles-list {
-    margin-top: 0.5rem !important;
-    gap: 0.25rem !important;
+  .uppy-Dashboard-AddFiles-info,
+  .uppy-Dashboard-note {
+    display: none !important;
   }
   
-  /* Hide the main upload area text to prevent vertical stacking */
-  .uppy-DashBoard-AddFiles,
-  .uppy-Dashboard-dropFilesHereHint,
+  .uppy-Dashboard-AddFiles {
+    min-height: 150px !important;
+    padding: 1rem !important;
+  }
+  
+  .uppy-Dashboard-inner {
+    padding: 0.5rem !important;
+  }
+  
+  /* Prevent any text wrapping issues */
   .uppy-Dashboard-browse {
-    display: none !important;
+    white-space: nowrap !important;
   }
 }
