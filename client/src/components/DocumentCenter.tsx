@@ -166,14 +166,23 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
             onComplete={handleUploadComplete}
             buttonClassName="w-full"
           >
-            <div className="relative flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-4 sm:p-6 text-center hover:border-primary/50 transition-colors cursor-pointer min-h-24 sm:min-h-40 overflow-hidden">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto pointer-events-none">
-                <Upload className="text-primary text-lg sm:text-xl" />
+            {/* Mobile optimized layout */}
+            <div className="block sm:hidden">
+              <div className="flex items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border p-4 text-center hover:border-primary/50 transition-colors cursor-pointer min-h-16">
+                <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center pointer-events-none">
+                  <Upload className="text-primary text-base" />
+                </div>
+                <span className="text-card-foreground font-medium text-sm pointer-events-none">Upload Files</span>
               </div>
-              <div className="mt-2 sm:mt-3 pointer-events-none">
-                <p className="text-card-foreground font-medium text-sm sm:text-base">Upload Documents</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">PDF, DOC, DOCX up to 10MB</p>
+            </div>
+            
+            {/* Desktop layout */}
+            <div className="hidden sm:flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6 text-center hover:border-primary/50 transition-colors cursor-pointer min-h-40 overflow-hidden">
+              <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-3 pointer-events-none">
+                <Upload className="text-primary text-xl" />
               </div>
+              <p className="text-card-foreground font-medium mb-1 pointer-events-none">Drop files here or click to browse</p>
+              <p className="text-sm text-muted-foreground pointer-events-none">PDF, DOC, DOCX up to 10MB</p>
             </div>
           </ObjectUploader>
         </div>

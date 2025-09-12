@@ -130,7 +130,7 @@ export default function Landing() {
             
             <form onSubmit={handleFamilyLogin} className="space-y-6">
               <div>
-                <Label htmlFor="familyCode" className="text-card-foreground">Family Access Code</Label>
+                <Label htmlFor="familyCode" className="text-card-foreground text-sm sm:text-base break-words">Family Access Code</Label>
                 <Input
                   id="familyCode"
                   type="text"
@@ -143,7 +143,7 @@ export default function Landing() {
               </div>
               
               <div>
-                <Label htmlFor="password" className="text-card-foreground">Password</Label>
+                <Label htmlFor="password" className="text-card-foreground text-sm sm:text-base">Password</Label>
                 <Input
                   id="password"
                   type="password"
