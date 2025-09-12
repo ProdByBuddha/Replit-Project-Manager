@@ -101,3 +101,14 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Uppy Component Safety Net - Prevent overflow on mobile */
+.uppy-Root, 
+.uppy-StatusBar, 
+.uppy-Dashboard-inner {
+  max-width: 100%;
+}
+
+.uppy-Dashboard-inner {
+  width: 100% !important;
+}
