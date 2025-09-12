@@ -62,23 +62,29 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
   };
 
   const handleGetUploadParameters = async () => {
+    console.log("TaskChecklist: handleGetUploadParameters called");
     try {
       const response = await fetch("/api/objects/upload", {
         method: "POST",
         credentials: "include",
       });
       
+      console.log("TaskChecklist: Upload parameters response status:", response.status);
+      
       if (!response.ok) {
-        throw new Error("Failed to get upload URL");
+        const errorText = await response.text();
+        console.error("TaskChecklist: Upload parameters error:", errorText);
+        throw new Error(`Failed to get upload URL: ${response.status} ${errorText}`);
       }
       
       const data = await response.json();
+      console.log("TaskChecklist: Upload parameters success:", data);
       return {
         method: "PUT" as const,
         url: data.uploadURL,
       };
     } catch (error) {
-      console.error("Error getting upload parameters:", error);
+      console.error("TaskChecklist: Error getting upload parameters:", error);
       toast({
         title: "Error",
         description: "Failed to prepare file upload",
@@ -89,9 +95,11 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
   };
 
   const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    console.log("TaskChecklist: handleUploadComplete called with result:", result);
     try {
       if (result.successful && result.successful.length > 0) {
         const file = result.successful[0];
+        console.log("TaskChecklist: Processing successful file upload:", file);
         
         // Create document record
         const response = await fetch("/api/documents", {
@@ -110,7 +118,11 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
           }),
         });
 
+        console.log("TaskChecklist: Document creation response status:", response.status);
+
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error("TaskChecklist: Document creation error:", errorText);
           throw new Error("Failed to save document record");
         }
 
@@ -119,11 +131,14 @@ export default function TaskChecklist({ familyId }: TaskChecklistProps) {
           description: "Document uploaded successfully",
         });
         
-        // Refresh document list
+        // Refresh document list and family stats
         queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/stats/family/${familyId}`] });
+      } else {
+        console.log("TaskChecklist: No successful uploads in result");
       }
     } catch (error) {
-      console.error("Error completing upload:", error);
+      console.error("TaskChecklist: Error completing upload:", error);
       toast({
         title: "Error",
         description: "Failed to complete document upload",
