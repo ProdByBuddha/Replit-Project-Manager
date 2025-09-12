@@ -93,6 +93,9 @@ export function ObjectUploader({
             dropPasteImportFiles: "Drop files here or click to browse",
             dropPasteImportFolders: "Drop files here or click to browse",
             dropPasteBoth: "Drop files here or click to browse",
+            addMoreFiles: "Add more files",
+            addingMoreFiles: "Adding more files",
+            dropHint: "Drop files here or click to browse"
           }
         }}
       />
