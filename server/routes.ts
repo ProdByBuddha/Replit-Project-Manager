@@ -2,12 +2,22 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { 
+  authenticateWithRole, 
+  authenticateAdmin, 
+  authenticateFamily,
+  requirePermission,
+  requireAdmin,
+  loadUserRole,
+  type AuthenticatedRequest 
+} from "./rbacMiddleware";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, users, invitations, workflowRules } from "@shared/schema";
+import { Permission, hasPermission, getEnabledFeatures, getRolePermissions, isAdmin } from "@shared/permissions";
 import { notificationService } from "./email/notificationService";
 import { eventBus } from "./automation/EventBus";
 import { getAutomationHealth, checkFamilyDependencies } from "./automation/index";
@@ -18,6 +28,7 @@ import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 import axios from "axios";
 import { spawn } from "child_process";
+import { migrateAdminUsers, verifyMigration } from "./migration";
 
 // TypeScript interfaces for AI chat service
 interface ChatRequest {
@@ -49,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await initializeParlantService();
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -65,9 +76,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         familyInfo = family;
       }
 
+      // Include role-based permissions and features
+      const userRole = req.userRole!;
+      const permissions = getRolePermissions(userRole);
+      const enabledFeatures = getEnabledFeatures(userRole);
+
       res.json({
         ...user,
         family: familyInfo,
+        permissions,
+        enabledFeatures,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -97,13 +115,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Family endpoints
-  app.get('/api/families', isAuthenticated, async (req: any, res) => {
+  app.get('/api/families', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ALL_FAMILIES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-
       const families = await storage.getAllFamilies();
       
       // Get stats for each family
@@ -124,12 +137,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/families', isAuthenticated, async (req: any, res) => {
+  app.post('/api/families', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_ALL_FAMILIES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const familyData = insertFamilySchema.parse(req.body);
       const family = await storage.createFamily(familyData);
@@ -145,14 +154,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get individual family with members (admin only)
-  app.get('/api/families/:familyId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/families/:familyId', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ALL_FAMILIES), async (req: AuthenticatedRequest, res) => {
     try {
       const { familyId } = req.params;
-      const user = await storage.getUser(req.user.claims.sub);
-      
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const family = await storage.getFamilyWithMembers(familyId);
       if (!family) {
@@ -201,12 +205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin automation health endpoint
-  app.get('/api/admin/automation/health', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/automation/health', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const health = getAutomationHealth();
       res.json(health);
@@ -217,14 +217,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin manual dependency check endpoint
-  app.post('/api/admin/automation/check-dependencies', isAuthenticated, async (req: any, res) => {
+  app.post('/api/admin/automation/check-dependencies', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_DEPENDENCIES), async (req: AuthenticatedRequest, res) => {
     try {
       const { familyId } = req.body;
-      const user = await storage.getUser(req.user.claims.sub);
-      
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       if (!familyId) {
         return res.status(400).json({ message: "Family ID is required" });
@@ -239,12 +234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin users endpoint for workflow rule assignment
-  app.get('/api/admin/users', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/users', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_USERS), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       // Get all users, including family members for assignment
       const allFamilies = await storage.getAllFamilies();
@@ -307,12 +298,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== ADMIN DEPENDENCY MANAGEMENT ENDPOINTS ====================
   
   // Get all task dependencies
-  app.get('/api/admin/dependencies', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/dependencies', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_DEPENDENCIES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const allTasks = await storage.getAllTasks();
       const taskMap = new Map(allTasks.map(task => [task.id, task]));
@@ -342,12 +329,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new task dependency
-  app.post('/api/admin/dependencies', isAuthenticated, async (req: any, res) => {
+  app.post('/api/admin/dependencies', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_DEPENDENCIES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const dependencyData = insertTaskDependencySchema.parse(req.body);
       const dependency = await storage.addTaskDependency(dependencyData);
@@ -371,12 +354,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update task dependency
-  app.put('/api/admin/dependencies/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/admin/dependencies/:id', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_DEPENDENCIES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const { id } = req.params;
       const updateData = insertTaskDependencySchema.parse(req.body);
@@ -426,12 +405,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete task dependency
-  app.delete('/api/admin/dependencies/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/admin/dependencies/:id', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_DEPENDENCIES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const { id } = req.params;
       
@@ -465,12 +440,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== ADMIN WORKFLOW RULES MANAGEMENT ENDPOINTS ====================
   
   // Get all workflow rules
-  app.get('/api/admin/workflow-rules', isAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/workflow-rules', isAuthenticated, loadUserRole, requirePermission(Permission.MODIFY_WORKFLOW_RULES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const rules = await storage.getActiveWorkflowRules();
       const allTasks = await storage.getAllTasks();
@@ -491,12 +462,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new workflow rule
-  app.post('/api/admin/workflow-rules', isAuthenticated, async (req: any, res) => {
+  app.post('/api/admin/workflow-rules', isAuthenticated, loadUserRole, requirePermission(Permission.MODIFY_WORKFLOW_RULES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const ruleData = insertWorkflowRuleSchema.parse(req.body);
       const rule = await storage.addWorkflowRule(ruleData);
@@ -520,12 +487,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update workflow rule
-  app.put('/api/admin/workflow-rules/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/admin/workflow-rules/:id', isAuthenticated, loadUserRole, requirePermission(Permission.MODIFY_WORKFLOW_RULES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const { id } = req.params;
       const updateData = insertWorkflowRuleSchema.parse(req.body);
@@ -553,12 +516,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete workflow rule
-  app.delete('/api/admin/workflow-rules/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/admin/workflow-rules/:id', isAuthenticated, loadUserRole, requirePermission(Permission.MODIFY_WORKFLOW_RULES), async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const { id } = req.params;
       
@@ -668,12 +627,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Chat health check endpoint
-  app.get('/api/ai/health', isAuthenticated, async (req: any, res) => {
+  app.get('/api/ai/health', isAuthenticated, loadUserRole, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const parlantPort = process.env.PARLANT_PORT || '8800';
       const parlantHost = '127.0.0.1';
@@ -696,12 +651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Toggle workflow rule active status
-  app.patch('/api/admin/workflow-rules/:id/toggle', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/admin/workflow-rules/:id/toggle', isAuthenticated, loadUserRole, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const { id } = req.params;
       const { isActive } = req.body;
@@ -730,7 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task endpoints
-  app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
+  app.get('/api/tasks', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const { familyId } = req.query;
       const user = await storage.getUser(req.user.claims.sub);
@@ -739,14 +690,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // If familyId is provided, admin can get tasks for any family
-      if (familyId && user.role === 'admin') {
+      if (familyId && isAdmin(req.userRole!)) {
         const familyTasks = await storage.getFamilyTasksWithDependencies(familyId as string);
         res.json(familyTasks);
       } else if (user.familyId) {
         // Family member - get family tasks with dependency information
         const familyTasks = await storage.getFamilyTasksWithDependencies(user.familyId);
         res.json(familyTasks);
-      } else if (user.role === 'admin') {
+      } else if (isAdmin(req.userRole!)) {
         // Admin - get template tasks (no specific family)
         const tasks = await storage.getAllTasks();
         res.json(tasks);
@@ -759,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/tasks/:taskId/status', isAuthenticated, async (req: any, res) => {
+  app.put('/api/tasks/:taskId/status', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const { taskId } = req.params;
       const { status, notes } = req.body;
@@ -776,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Allow admins to update any task, family members can only update their family's tasks
-      if (user.role !== 'admin' && user.familyId !== familyTask.familyId) {
+      if (!isAdmin(req.userRole!) && user.familyId !== familyTask.familyId) {
         return res.status(403).json({ message: "Access denied - task does not belong to your family" });
       }
 
@@ -872,7 +823,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document endpoints
-  app.get('/api/documents', isAuthenticated, async (req: any, res) => {
+  app.get('/api/documents', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user) {
@@ -882,7 +833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let familyId = user.familyId;
       
       // If admin and familyId query param provided, use that
-      if (user.role === 'admin' && req.query.familyId) {
+      if (isAdmin(req.userRole!) && req.query.familyId) {
         familyId = req.query.familyId;
       }
 
@@ -937,7 +888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Document upload completion endpoint
-  app.post("/api/documents", isAuthenticated, async (req: any, res) => {
+  app.post("/api/documents", isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const { fileName, originalFileName, fileSize, mimeType, uploadURL, familyTaskId } = req.body;
       
@@ -953,7 +904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let familyId = user.familyId;
       
       // If admin and familyId provided, use that
-      if (user.role === 'admin' && req.body.familyId) {
+      if (isAdmin(req.userRole!) && req.body.familyId) {
         familyId = req.body.familyId;
       }
 
@@ -1014,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Message endpoints
-  app.get('/api/messages', isAuthenticated, async (req: any, res) => {
+  app.get('/api/messages', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user) {
@@ -1024,7 +975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let familyId = user.familyId;
       
       // If admin and familyId query param provided, use that
-      if (user.role === 'admin' && req.query.familyId) {
+      if (isAdmin(req.userRole!) && req.query.familyId) {
         familyId = req.query.familyId;
       }
 
@@ -1040,7 +991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/messages', isAuthenticated, async (req: any, res) => {
+  app.post('/api/messages', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user) {
@@ -1051,7 +1002,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestedFamilyId = req.body.familyId;
       
       // Non-admin users can only create messages for their own family
-      if (user.role !== 'admin') {
+      if (!isAdmin(req.userRole!)) {
         if (!user.familyId) {
           return res.status(403).json({ message: "Access denied - user not part of any family" });
         }
@@ -1061,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Admin users can create messages for any family, but familyId must be provided
-      if (user.role === 'admin' && !requestedFamilyId) {
+      if (isAdmin(req.userRole!) && !requestedFamilyId) {
         return res.status(400).json({ message: "Family ID required for admin message creation" });
       }
 
@@ -1073,7 +1024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage(messageData);
       
       // Send notification for admin messages to family members
-      if (user.role === 'admin') {
+      if (isAdmin(req.userRole!)) {
         try {
           const family = await storage.getFamily(messageData.familyId);
           if (family) {
@@ -1204,7 +1155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/invitations', isAuthenticated, async (req: any, res) => {
+  app.get('/api/invitations', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user) {
@@ -1214,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let familyId = user.familyId;
       
       // If admin and familyId query param provided, use that
-      if (user.role === 'admin' && req.query.familyId) {
+      if (isAdmin(req.userRole!) && req.query.familyId) {
         familyId = req.query.familyId;
       }
 
@@ -1337,7 +1288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/invitations/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/invitations/:id', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const { id } = req.params;
       const user = await storage.getUser(req.user.claims.sub);
@@ -1355,7 +1306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Only the inviter or admin can cancel the invitation
-      if (user.role !== 'admin' && invitation.inviterUserId !== user.id) {
+      if (!isAdmin(req.userRole!) && invitation.inviterUserId !== user.id) {
         return res.status(403).json({ message: "Access denied - you can only cancel invitations you sent" });
       }
 
@@ -1368,7 +1319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Statistics endpoints
-  app.get('/api/stats/family/:familyId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/stats/family/:familyId', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
       const { familyId } = req.params;
       const user = await storage.getUser(req.user.claims.sub);
@@ -1378,7 +1329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check access - user must be family member or admin
-      if (user.familyId !== familyId && user.role !== 'admin') {
+      if (user.familyId !== familyId && !isAdmin(req.userRole!)) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -1390,12 +1341,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/stats/admin', isAuthenticated, async (req: any, res) => {
+  app.get('/api/stats/admin', isAuthenticated, loadUserRole, requireAdmin, async (req: AuthenticatedRequest, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
 
       const stats = await storage.getAdminStats();
       res.json(stats);
@@ -1411,7 +1358,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await initializeSampleData();
   await initializeDefaultTasks();
   
+  // Run RBAC migration for legacy admin users
+  await runRbacMigration();
+  
   return httpServer;
+}
+
+// Run RBAC migration for legacy admin users
+async function runRbacMigration(): Promise<void> {
+  try {
+    console.log("🚀 Starting RBAC data migration...");
+    await migrateAdminUsers();
+    const isSuccess = await verifyMigration();
+    
+    if (isSuccess) {
+      console.log("✅ RBAC migration completed successfully!");
+    } else {
+      console.log("⚠️ RBAC migration verification failed - please check logs");
+    }
+  } catch (error) {
+    console.error("❌ RBAC migration failed:", error);
+    // Don't crash the application, just log the error
+  }
 }
 
 // Initialize Parlant service integration

@@ -2,7 +2,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Shield, Clock, Bell, Home as HomeIcon, FileCheck, Building } from "lucide-react";
+import { Shield, Clock, Bell, Home as HomeIcon, FileCheck, Building, Settings, Users, BarChart3 } from "lucide-react";
+import { Permission } from "@shared/permissions";
 import { Button } from "@/components/ui/button";
 import { 
   Sidebar, 
@@ -24,6 +25,9 @@ interface NavigationItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   testId: string;
+  permission?: Permission;
+  adminOnly?: boolean;
+  roles?: string[];
 }
 
 interface PortalLayoutProps {
@@ -31,31 +35,78 @@ interface PortalLayoutProps {
   pageTitle?: string;
 }
 
-const navigationItems: NavigationItem[] = [
+const allNavigationItems: NavigationItem[] = [
   {
     href: "/",
     icon: HomeIcon,
     label: "Home",
-    testId: "nav-home"
+    testId: "nav-home",
+    permission: Permission.VIEW_FAMILY_TASKS
   },
   {
     href: "/status-correction",
     icon: FileCheck,
     label: "Status Correction",
-    testId: "nav-status-correction"
+    testId: "nav-status-correction",
+    permission: Permission.VIEW_STATUS_CORRECTION
   },
   {
     href: "/ministry-legitimation",
     icon: Building,
     label: "Ministry Legitimation",
-    testId: "nav-ministry-legitimation"
+    testId: "nav-ministry-legitimation",
+    permission: Permission.VIEW_MINISTRY_LEGITIMATION
+  },
+  {
+    href: "/admin",
+    icon: BarChart3,
+    label: "Admin Dashboard",
+    testId: "nav-admin",
+    permission: Permission.VIEW_ADMIN_DASHBOARD,
+    adminOnly: true
+  },
+  {
+    href: "/admin/users",
+    icon: Users,
+    label: "User Management",
+    testId: "nav-admin-users",
+    permission: Permission.MANAGE_USERS,
+    adminOnly: true
+  },
+  {
+    href: "/admin/settings",
+    icon: Settings,
+    label: "System Settings",
+    testId: "nav-admin-settings",
+    permission: Permission.MANAGE_SYSTEM_SETTINGS,
+    adminOnly: true
   }
 ];
 
 export default function PortalLayout({ children, pageTitle }: PortalLayoutProps) {
-  const { user } = useAuth();
+  const { 
+    user, 
+    isLoading, 
+    hasPermission, 
+    canAccessAdmin, 
+    isAdmin,
+    userRole,
+    roleDisplayName 
+  } = useAuth();
   const { toast } = useToast();
   const [location] = useLocation();
+
+  // Filter navigation items based on user permissions
+  const visibleNavigationItems = allNavigationItems.filter(item => {
+    // If no permission is specified, show the item
+    if (!item.permission) return true;
+    
+    // If it's admin-only and user is not admin, hide it
+    if (item.adminOnly && !isAdmin()) return false;
+    
+    // Check if user has the required permission
+    return hasPermission(item.permission);
+  });
 
   const handleLogout = () => {
     window.location.href = "/api/logout";
@@ -64,11 +115,23 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
   const getPageTitle = () => {
     if (pageTitle) return pageTitle;
     
-    const currentNav = navigationItems.find(item => item.href === location);
+    const currentNav = visibleNavigationItems.find(item => item.href === location);
     if (currentNav) return currentNav.label;
     
     return "Family Portal";
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-8 h-8 mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -78,7 +141,7 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
             <SidebarGroupLabel>Family Portal</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navigationItems.map((item) => {
+                {visibleNavigationItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location === item.href;
                   

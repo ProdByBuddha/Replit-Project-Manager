@@ -14,7 +14,7 @@ import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, canAccessAdmin } = useAuth();
 
   return (
     <Switch>
@@ -26,11 +26,10 @@ function Router() {
           <Route path="/notifications" component={Notifications} />
           <Route path="/status-correction" component={StatusCorrection} />
           <Route path="/ministry-legitimation" component={MinistryLegitimation} />
-          {user?.role === 'admin' ? (
-            <Route path="/" component={AdminDashboard} />
-          ) : (
-            <Route path="/" component={Home} />
-          )}
+          {canAccessAdmin() ? (
+            <Route path="/admin" component={AdminDashboard} />
+          ) : null}
+          <Route path="/" component={Home} />
         </>
       )}
       <Route component={NotFound} />

@@ -1,7 +1,10 @@
 import type { User, Family, Task, FamilyTask, Document, Message, TaskDependency, WorkflowRule } from "@shared/schema";
+import type { UserRole, Permission } from "@shared/permissions";
 
 export interface UserWithFamily extends User {
   family?: FamilyWithMembers | null;
+  permissions?: Permission[];
+  enabledFeatures?: ReturnType<typeof import("@shared/permissions").getEnabledFeatures>;
 }
 
 export interface FamilyWithMembers extends Family {

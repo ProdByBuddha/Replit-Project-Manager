@@ -11,9 +11,20 @@ import {
   unique,
   foreignKey,
   check,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// User roles enum
+export const userRoleEnum = pgEnum('user_role', [
+  'family',
+  'executor', 
+  'elder',
+  'legislator',
+  'ministry_admin',
+  'platform_admin'
+]);
 
 // Session storage table (required for Replit Auth)
 export const sessions = pgTable(
@@ -35,7 +46,7 @@ export const users = pgTable(
     firstName: varchar("first_name"),
     lastName: varchar("last_name"),
     profileImageUrl: varchar("profile_image_url"),
-    role: varchar("role").notNull().default("family"), // 'family' or 'admin'
+    role: userRoleEnum("role").notNull().default("family"),
     familyId: varchar("family_id"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
