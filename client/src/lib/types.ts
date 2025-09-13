@@ -108,6 +108,46 @@ export interface MinistryProgress {
   };
 }
 
+// Status Correction types
+export interface StatusCorrectionSection {
+  id: string;
+  title: string;
+  description: string;
+  items: StatusCorrectionItem[];
+}
+
+export interface StatusCorrectionItem {
+  id: string;
+  title: string;
+  description: string;
+  purpose: string;
+  whatItDoes: string[];
+  howToUse: string[];
+  whoSigns: string[];
+  whereToFile: string[];
+  stepByStepInstructions: string[];
+  draftingChecklist: string[];
+  practicalCautions?: string[];
+  outputs: string[];
+  category: 'foundational' | 'citizenship-status' | 'identification-corrections' | 'financial' | 'travel-documents' | 'optional';
+  priority: 'high' | 'medium' | 'low';
+  estimatedTime: string;
+  requiredDocuments: string[];
+  isOptional: boolean;
+  dependsOn?: string[]; // IDs of other items this depends on
+  status: 'not_started' | 'in_progress' | 'completed' | 'not_applicable';
+  completedAt?: Date;
+  assignedTo?: string;
+  notes?: string;
+  uploadedDocuments?: Document[];
+}
+
+export interface StatusProgress {
+  completed: number;
+  total: number;
+  percentage: number;
+}
+
 // Admin interface types
 export interface TaskDependencyWithNames extends TaskDependency {
   taskName: string;
