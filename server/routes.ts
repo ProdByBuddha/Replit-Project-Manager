@@ -7,7 +7,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, users, invitations } from "@shared/schema";
+import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, users, invitations, workflowRules } from "@shared/schema";
 import { notificationService } from "./email/notificationService";
 import { eventBus } from "./automation/EventBus";
 import { getAutomationHealth, checkFamilyDependencies } from "./automation/index";
@@ -16,6 +16,27 @@ import multer from "multer";
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
+import axios from "axios";
+import { spawn } from "child_process";
+
+// TypeScript interfaces for AI chat service
+interface ChatRequest {
+  message: string;
+  session_id?: string;
+  context?: {
+    user_role?: string;
+    family_id?: string;
+    current_page?: string;
+    [key: string]: any;
+  };
+}
+
+interface ChatResponse {
+  response: string;
+  session_id: string;
+  success: boolean;
+  error?: string;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -23,6 +44,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Initialize default tasks if they don't exist
   await initializeDefaultTasks();
+
+  // Start Parlant service integration
+  await initializeParlantService();
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -379,7 +403,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.removeTaskDependency(existingDep.taskId, existingDep.dependsOnTaskId, existingDep.dependencyType);
       } catch (addError) {
         // If adding new dependency fails, the original remains intact
-        throw new Error(`Failed to update dependency: ${addError.message}`);
+        const errorMessage = addError instanceof Error ? addError.message : 'Unknown error';
+        throw new Error(`Failed to update dependency: ${errorMessage}`);
       }
 
       // Return dependency with task names for UI
@@ -507,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // For workflow rules, we'll implement a direct update in storage
       // For now, let's implement it by recreating (like dependencies)
-      const updatedRule = await storage.addWorkflowRule({ ...updateData, id });
+      const updatedRule = await storage.addWorkflowRule(updateData);
       
       // Return rule with task names for UI
       const allTasks = await storage.getAllTasks();
@@ -544,6 +569,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting workflow rule:", error);
       res.status(500).json({ message: "Failed to delete workflow rule" });
+    }
+  });
+
+  // ==================== AI CHAT SERVICE PROXY ====================
+  
+  // AI Chat proxy endpoint - forwards requests to Parlant service
+  app.post('/api/ai/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const chatRequest: ChatRequest = {
+        message: req.body.message,
+        session_id: req.body.session_id,
+        context: {
+          user_role: user.role,
+          family_id: user.familyId,
+          current_page: req.body.context?.current_page,
+          user_id: user.id,
+          user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+          ...req.body.context
+        }
+      };
+
+      // Validate required fields
+      if (!chatRequest.message || typeof chatRequest.message !== 'string') {
+        return res.status(400).json({ 
+          success: false,
+          error: "Message is required and must be a string" 
+        });
+      }
+
+      // Get Parlant service configuration
+      const parlantPort = process.env.PARLANT_PORT || '8800';
+      const parlantHost = '127.0.0.1'; // Localhost only for security
+      const parlantSecret = process.env.PARLANT_SHARED_SECRET || 'default-secret-key';
+      const parlantUrl = `http://${parlantHost}:${parlantPort}/api/chat`;
+
+      console.log(`Forwarding chat request to Parlant service at ${parlantUrl}`);
+
+      // Forward request to Parlant service with authentication
+      const response = await axios.post<ChatResponse>(parlantUrl, chatRequest, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${parlantSecret}`
+        },
+        timeout: 30000, // 30 second timeout
+        validateStatus: (status) => status < 500 // Don't throw on 4xx errors
+      });
+
+      // Check if Parlant service returned an error
+      if (response.status >= 400) {
+        console.error(`Parlant service error: ${response.status}`, response.data);
+        return res.status(response.status).json({
+          success: false,
+          error: "AI service temporarily unavailable",
+          response: "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment, or contact an administrator if the issue persists.",
+          session_id: chatRequest.session_id || 'error'
+        });
+      }
+
+      // Return successful response
+      res.json(response.data);
+
+    } catch (error: any) {
+      console.error('AI Chat proxy error:', error.message);
+      
+      // Handle different types of errors
+      if (error.code === 'ECONNREFUSED') {
+        return res.status(503).json({
+          success: false,
+          error: "AI service unavailable",
+          response: "I'm sorry, the AI assistant is currently unavailable. Please try again later or contact an administrator for help.",
+          session_id: req.body.session_id || 'error'
+        });
+      }
+      
+      if (error.code === 'ETIMEDOUT') {
+        return res.status(504).json({
+          success: false,
+          error: "AI service timeout",
+          response: "I'm sorry, your request is taking too long to process. Please try asking a simpler question or contact an administrator.",
+          session_id: req.body.session_id || 'error'
+        });
+      }
+
+      // Generic error response
+      res.status(500).json({
+        success: false,
+        error: "Internal server error",
+        response: "I'm sorry, something went wrong while processing your request. Please try again or contact an administrator if the issue persists.",
+        session_id: req.body.session_id || 'error'
+      });
+    }
+  });
+
+  // AI Chat health check endpoint
+  app.get('/api/ai/health', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const parlantPort = process.env.PARLANT_PORT || '8800';
+      const parlantHost = '127.0.0.1';
+      const parlantUrl = `http://${parlantHost}:${parlantPort}/health`;
+
+      const response = await axios.get(parlantUrl, { timeout: 5000 });
+      res.json({
+        status: 'healthy',
+        parlant_service: response.data,
+        proxy_status: 'operational'
+      });
+    } catch (error: any) {
+      res.status(503).json({
+        status: 'unhealthy',
+        error: error.message,
+        proxy_status: 'operational',
+        parlant_service: 'unavailable'
+      });
     }
   });
 
@@ -1264,6 +1412,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await initializeDefaultTasks();
   
   return httpServer;
+}
+
+// Initialize Parlant service integration
+async function initializeParlantService(): Promise<void> {
+  try {
+    console.log("Initializing Parlant service integration...");
+    
+    // Set default environment variables if not already set
+    if (!process.env.PARLANT_PORT) {
+      process.env.PARLANT_PORT = "8800";
+    }
+    
+    if (!process.env.PARLANT_SHARED_SECRET) {
+      process.env.PARLANT_SHARED_SECRET = "family-portal-ai-secret-2024";
+      console.log("⚠️  Using default Parlant shared secret. Set PARLANT_SHARED_SECRET environment variable in production.");
+    }
+    
+    if (!process.env.PARLANT_BASE_URL) {
+      process.env.PARLANT_BASE_URL = "https://api.parlant.ai";
+    }
+    
+    console.log("Parlant service configuration:");
+    console.log(`- Port: ${process.env.PARLANT_PORT}`);
+    console.log(`- Host: 127.0.0.1 (localhost only for security)`);
+    console.log(`- Base URL: ${process.env.PARLANT_BASE_URL}`);
+    console.log(`- Shared secret: ${process.env.PARLANT_SHARED_SECRET ? '[SET]' : '[NOT SET]'}`);
+    
+    // Start the Parlant service as a background process
+    await startParlantService();
+    
+    console.log("Parlant service integration initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize Parlant service:", error);
+    console.log("Application will continue without AI chat functionality");
+  }
+}
+
+// Start the Parlant service as a background process
+async function startParlantService(): Promise<void> {
+  try {
+    const { spawn } = await import('child_process');
+    
+    console.log("Starting Parlant service...");
+    
+    // Set environment variables for the Python service
+    const env = {
+      ...process.env,
+      PARLANT_PORT: process.env.PARLANT_PORT || "8800",
+      PARLANT_SHARED_SECRET: process.env.PARLANT_SHARED_SECRET || "family-portal-ai-secret-2024",
+      PARLANT_BASE_URL: process.env.PARLANT_BASE_URL || "https://api.parlant.ai"
+    };
+    
+    // Start the Python service
+    const parlantProcess = spawn('python3', ['parlant_service.py'], {
+      env,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    
+    // Handle stdout
+    parlantProcess.stdout?.on('data', (data) => {
+      console.log(`[Parlant] ${data.toString().trim()}`);
+    });
+    
+    // Handle stderr
+    parlantProcess.stderr?.on('data', (data) => {
+      console.error(`[Parlant Error] ${data.toString().trim()}`);
+    });
+    
+    // Handle process exit
+    parlantProcess.on('exit', (code, signal) => {
+      if (code === 0) {
+        console.log('Parlant service exited successfully');
+      } else {
+        console.error(`Parlant service exited with code ${code}, signal ${signal}`);
+      }
+    });
+    
+    // Handle process errors
+    parlantProcess.on('error', (error) => {
+      console.error('Failed to start Parlant service:', error.message);
+    });
+    
+    // Store reference for cleanup
+    (global as any).parlantProcess = parlantProcess;
+    
+    // Wait a moment for the service to start
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Test the service is running
+    try {
+      const response = await axios.get(`http://127.0.0.1:${process.env.PARLANT_PORT}/health`, {
+        timeout: 5000
+      });
+      console.log("✅ Parlant service is running and healthy:", response.data);
+    } catch (error) {
+      console.log("⚠️  Parlant service may not be fully ready yet, will retry connections automatically");
+    }
+    
+  } catch (error) {
+    console.error('Error starting Parlant service:', error);
+    throw error;
+  }
 }
 
 // Initialize sample data for testing
