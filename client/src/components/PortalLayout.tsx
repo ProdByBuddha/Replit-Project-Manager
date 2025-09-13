@@ -17,6 +17,7 @@ import {
   SidebarInset,
   SidebarTrigger
 } from "@/components/ui/sidebar";
+import ChatWidget from "@/components/ChatWidget";
 
 interface NavigationItem {
   href: string;
@@ -147,6 +148,9 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
           </div>
         </div>
       </SidebarInset>
+      
+      {/* Chat Widget - Available on all portal pages */}
+      <ChatWidget />
     </SidebarProvider>
   );
 }
