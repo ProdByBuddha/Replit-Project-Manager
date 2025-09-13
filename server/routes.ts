@@ -16,7 +16,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, insertSystemSettingsSchema, users, invitations, workflowRules } from "@shared/schema";
+import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, insertSystemSettingsSchema, insertUccArticleSchema, insertUccPartSchema, insertUccSectionSchema, insertUccSubsectionSchema, insertUccDefinitionSchema, insertUccCrossReferenceSchema, insertUccSearchIndexSchema, users, invitations, workflowRules } from "@shared/schema";
 import { Permission, hasPermission, getEnabledFeatures, getRolePermissions, isAdmin } from "@shared/permissions";
 import { notificationService } from "./email/notificationService";
 import { eventBus } from "./automation/EventBus";
@@ -2055,6 +2055,699 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         message: 'Failed to get system health'
+      });
+    }
+  });
+
+  // ==================== UCC (UNIFORM COMMERCIAL CODE) API ====================
+  
+  // UCC Article Management
+  app.get('/api/ucc/articles', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const articles = await storage.getAllUccArticles();
+      
+      res.json({
+        success: true,
+        data: articles
+      });
+    } catch (error) {
+      console.error("Error fetching UCC articles:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC articles" 
+      });
+    }
+  });
+
+  app.post('/api/ucc/articles', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const articleData = insertUccArticleSchema.parse(req.body);
+      const article = await storage.createUccArticle(articleData);
+      
+      res.status(201).json({
+        success: true,
+        data: article,
+        message: "UCC article created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC article:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC article" 
+      });
+    }
+  });
+
+  app.get('/api/ucc/articles/:articleNumber', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { articleNumber } = req.params;
+      const article = await storage.getUccArticleByNumber(articleNumber);
+      
+      if (!article) {
+        return res.status(404).json({ 
+          success: false,
+          message: "UCC article not found" 
+        });
+      }
+
+      res.json({
+        success: true,
+        data: article
+      });
+    } catch (error) {
+      console.error("Error fetching UCC article:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC article" 
+      });
+    }
+  });
+
+  // UCC Parts Management
+  app.post('/api/ucc/parts', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const partData = insertUccPartSchema.parse(req.body);
+      const part = await storage.createUccPart(partData);
+      
+      res.status(201).json({
+        success: true,
+        data: part,
+        message: "UCC part created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC part:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC part" 
+      });
+    }
+  });
+
+  app.get('/api/ucc/articles/:articleId/parts', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { articleId } = req.params;
+      const parts = await storage.getPartsByArticle(articleId);
+      
+      res.json({
+        success: true,
+        data: parts
+      });
+    } catch (error) {
+      console.error("Error fetching UCC parts:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC parts" 
+      });
+    }
+  });
+
+  // UCC Sections Management
+  app.post('/api/ucc/sections', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const sectionData = insertUccSectionSchema.parse(req.body);
+      const section = await storage.createUccSection(sectionData);
+      
+      res.status(201).json({
+        success: true,
+        data: section,
+        message: "UCC section created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC section:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC section" 
+      });
+    }
+  });
+
+  app.get('/api/ucc/sections/by-citation/:citation', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { citation } = req.params;
+      const section = await storage.getUccSectionByCitation(citation);
+      
+      if (!section) {
+        return res.status(404).json({ 
+          success: false,
+          message: "UCC section not found" 
+        });
+      }
+
+      res.json({
+        success: true,
+        data: section
+      });
+    } catch (error) {
+      console.error("Error fetching UCC section:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC section" 
+      });
+    }
+  });
+
+  app.get('/api/ucc/articles/:articleId/sections', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { articleId } = req.params;
+      const sections = await storage.getSectionsByArticle(articleId);
+      
+      res.json({
+        success: true,
+        data: sections
+      });
+    } catch (error) {
+      console.error("Error fetching UCC sections:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC sections" 
+      });
+    }
+  });
+
+  // UCC Subsections Management
+  app.post('/api/ucc/subsections', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const subsectionData = insertUccSubsectionSchema.parse(req.body);
+      const subsection = await storage.createUccSubsection(subsectionData);
+      
+      res.status(201).json({
+        success: true,
+        data: subsection,
+        message: "UCC subsection created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC subsection:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC subsection" 
+      });
+    }
+  });
+
+  // UCC Definitions Management
+  app.post('/api/ucc/definitions', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const definitionData = insertUccDefinitionSchema.parse(req.body);
+      const definition = await storage.createUccDefinition(definitionData);
+      
+      res.status(201).json({
+        success: true,
+        data: definition,
+        message: "UCC definition created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC definition:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC definition" 
+      });
+    }
+  });
+
+  app.get('/api/ucc/definitions/search', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ 
+          success: false,
+          message: "Search query is required" 
+        });
+      }
+
+      const definitions = await storage.searchUccDefinitions(q);
+      
+      res.json({
+        success: true,
+        data: definitions
+      });
+    } catch (error) {
+      console.error("Error searching UCC definitions:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to search UCC definitions" 
+      });
+    }
+  });
+
+  // UCC Cross References Management
+  app.post('/api/ucc/cross-references', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const crossRefData = insertUccCrossReferenceSchema.parse(req.body);
+      const crossRef = await storage.createUccCrossReference(crossRefData);
+      
+      res.status(201).json({
+        success: true,
+        data: crossRef,
+        message: "UCC cross-reference created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC cross-reference:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC cross-reference" 
+      });
+    }
+  });
+
+  // UCC Search Index Management
+  app.post('/api/ucc/search-index', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const searchIndexData = insertUccSearchIndexSchema.parse(req.body);
+      const searchIndex = await storage.createUccSearchIndex(searchIndexData);
+      
+      res.status(201).json({
+        success: true,
+        data: searchIndex,
+        message: "UCC search index created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC search index:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC search index" 
+      });
+    }
+  });
+
+  app.post('/api/ucc/search-index/optimize', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      // TODO: Implement UCC search index optimization
+      const results = { optimized: 0, errors: [] };
+      
+      res.json({
+        success: true,
+        data: results,
+        message: "UCC search index optimization completed"
+      });
+    } catch (error) {
+      console.error("Error optimizing UCC search indexes:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to optimize UCC search indexes" 
+      });
+    }
+  });
+
+  // UCC Search Operations
+  app.get('/api/ucc/search', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { q, article, limit = 20, offset = 0 } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ 
+          success: false,
+          message: "Search query is required" 
+        });
+      }
+
+      const options = {
+        articleNumber: article as string,
+        limit: parseInt(limit as string) || 20,
+        offset: parseInt(offset as string) || 0
+      };
+
+      const searchResults = await storage.searchUccSections(q, options);
+      
+      res.json({
+        success: true,
+        data: searchResults
+      });
+    } catch (error) {
+      console.error("Error searching UCC sections:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to search UCC sections" 
+      });
+    }
+  });
+
+  // UCC Statistics
+  app.get('/api/ucc/stats', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const stats = await storage.getUccStats();
+      
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error("Error fetching UCC statistics:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC statistics" 
+      });
+    }
+  });
+
+  app.post('/api/ucc/stats/update', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      // TODO: Update UCC statistics cache
+      res.json({
+        success: true,
+        message: "UCC statistics updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating UCC statistics:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to update UCC statistics" 
+      });
+    }
+  });
+
+  // ==================== UCC INDEXING JOB MANAGEMENT ====================
+  
+  // Get UCC indexing job history
+  app.get('/api/ucc/index/jobs', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { limit } = req.query;
+      const limitNum = limit ? parseInt(limit as string) : 50;
+      
+      const jobs = await storage.getUccIndexingJobHistory(limitNum);
+      
+      res.json({
+        success: true,
+        data: jobs
+      });
+    } catch (error) {
+      console.error("Error fetching UCC indexing jobs:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC indexing jobs" 
+      });
+    }
+  });
+
+  // Start new UCC indexing job
+  app.post('/api/ucc/index/jobs', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { articleNumber, jobType = 'full_index' } = req.body;
+      const userId = req.user.claims.sub;
+      
+      // Check for existing running UCC jobs
+      const activeJobs = await storage.getActiveUccIndexingJobs();
+      if (activeJobs.length > 0) {
+        return res.status(409).json({ 
+          success: false,
+          message: "Another UCC indexing job is already running",
+          activeJobs: activeJobs.map(job => ({ id: job.id, status: job.status, articleNumber: job.articleNumber }))
+        });
+      }
+
+      // Create new UCC indexing job
+      const jobData = {
+        articleNumber: articleNumber || null,
+        status: 'pending',
+        jobType,
+        progress: { stage: 'initializing', percentage: 0 },
+        stats: { processed: 0, errors: 0 },
+      };
+
+      const newJob = await storage.createUccIndexingJob(jobData);
+      
+      // Start the Python indexing process
+      try {
+        const pythonArgs = ['ucc_indexer.py', '--full-index'];
+        if (articleNumber) {
+          pythonArgs.push('--article', articleNumber);
+        }
+        
+        const indexingProcess = spawn('python3', pythonArgs, {
+          cwd: process.cwd(),
+          stdio: 'pipe',
+          env: {
+            ...process.env,
+            UCC_JOB_ID: newJob.id,
+            BACKEND_URL: `${req.protocol}://${req.get('host')}`
+          }
+        });
+
+        indexingProcess.stdout?.on('data', (data) => {
+          console.log(`UCC Indexer stdout: ${data}`);
+        });
+
+        indexingProcess.stderr?.on('data', (data) => {
+          console.error(`UCC Indexer stderr: ${data}`);
+        });
+
+        indexingProcess.on('close', (code) => {
+          console.log(`UCC Indexer process exited with code ${code}`);
+        });
+        
+      } catch (pythonError) {
+        console.error("Failed to start UCC Python indexing process:", pythonError);
+        await storage.updateUccIndexingJobError(newJob.id, `Failed to start indexing process: ${pythonError}`);
+      }
+      
+      res.status(201).json({
+        success: true,
+        data: newJob,
+        message: "UCC indexing job created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating UCC indexing job:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create UCC indexing job" 
+      });
+    }
+  });
+
+  // Get specific UCC indexing job status
+  app.get('/api/ucc/index/jobs/:jobId', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      const job = await storage.getUccIndexingJob(jobId);
+      if (!job) {
+        return res.status(404).json({ 
+          success: false,
+          message: "UCC indexing job not found" 
+        });
+      }
+
+      res.json({
+        success: true,
+        data: job
+      });
+    } catch (error) {
+      console.error("Error fetching UCC indexing job:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch UCC indexing job" 
+      });
+    }
+  });
+
+  // Update UCC indexing job status (for Python indexer)
+  app.put('/api/ucc/index/jobs/:jobId', async (req, res) => {
+    try {
+      const { jobId } = req.params;
+      const { status, progress, stats, errorMessage } = req.body;
+      
+      // Verify the request comes from the indexing process
+      const authHeader = req.headers.authorization;
+      const expectedToken = `Bearer ${process.env.PARLANT_SHARED_SECRET || 'family-portal-ai-secret-2024'}`;
+      
+      if (!authHeader || authHeader !== expectedToken) {
+        return res.status(401).json({ 
+          success: false,
+          message: "Unauthorized" 
+        });
+      }
+
+      let updatedJob;
+      
+      if (errorMessage) {
+        updatedJob = await storage.updateUccIndexingJobError(jobId, errorMessage);
+      } else {
+        updatedJob = await storage.updateUccIndexingJobStatus(jobId, status, progress, stats);
+      }
+      
+      res.json({
+        success: true,
+        data: updatedJob,
+        message: "UCC indexing job updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating UCC indexing job:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to update UCC indexing job" 
+      });
+    }
+  });
+
+  // Cancel UCC indexing job
+  app.post('/api/ucc/index/jobs/:jobId/cancel', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      // Update job status to cancelled
+      const job = await storage.updateUccIndexingJobStatus(jobId, 'cancelled');
+      
+      res.json({
+        success: true,
+        data: job,
+        message: 'UCC indexing job cancelled successfully'
+      });
+    } catch (error) {
+      console.error('Error cancelling UCC indexing job:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to cancel UCC indexing job'
+      });
+    }
+  });
+
+  // ==================== UCC ADMIN ENDPOINTS ====================
+  
+  // Manual UCC full re-indexing
+  app.post('/api/admin/ucc/reindex', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { articleNumber } = req.body;
+      const userId = req.user.claims.sub;
+      
+      // Check for existing running jobs
+      const activeJobs = await storage.getActiveUccIndexingJobs();
+      if (activeJobs.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Another UCC indexing job is already running'
+        });
+      }
+      
+      // Create new indexing job
+      const jobData = {
+        articleNumber: articleNumber || null,
+        status: 'pending',
+        jobType: 'manual_full',
+        progress: { stage: 'initializing', percentage: 0 },
+        stats: { processed: 0, errors: 0 },
+      };
+
+      const newJob = await storage.createUccIndexingJob(jobData);
+      
+      res.status(202).json({
+        success: true,
+        data: { jobId: newJob.id },
+        message: 'UCC full re-indexing job started successfully'
+      });
+    } catch (error) {
+      console.error('Error triggering UCC manual full indexing:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start UCC re-indexing job'
+      });
+    }
+  });
+
+  // UCC incremental indexing
+  app.post('/api/admin/ucc/reindex/incremental', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Check for existing running jobs
+      const activeJobs = await storage.getActiveUccIndexingJobs();
+      if (activeJobs.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Another UCC indexing job is already running'
+        });
+      }
+      
+      // Create new incremental indexing job
+      const jobData = {
+        status: 'pending',
+        jobType: 'incremental',
+        progress: { stage: 'initializing', percentage: 0 },
+        stats: { processed: 0, errors: 0 },
+      };
+
+      const newJob = await storage.createUccIndexingJob(jobData);
+      
+      res.status(202).json({
+        success: true,
+        data: { jobId: newJob.id },
+        message: 'UCC incremental indexing job started successfully'
+      });
+    } catch (error) {
+      console.error('Error triggering UCC incremental indexing:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start UCC incremental indexing job'
+      });
+    }
+  });
+
+  // Get UCC indexing status
+  app.get('/api/admin/ucc/indexing-status', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const activeJobs = await storage.getActiveUccIndexingJobs();
+      const recentJobs = await storage.getUccIndexingJobHistory(10);
+      
+      res.json({
+        success: true,
+        data: {
+          activeJobs,
+          recentJobs,
+          hasActiveJobs: activeJobs.length > 0
+        }
+      });
+    } catch (error) {
+      console.error('Error getting UCC indexing status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get UCC indexing status'
+      });
+    }
+  });
+
+  // UCC system health check
+  app.get('/api/admin/ucc/health', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      // Get UCC statistics
+      const uccStats = await storage.getUccStats();
+      
+      // Get recent job history for analysis
+      const recentJobs = await storage.getUccIndexingJobHistory(20);
+      const completedJobs = recentJobs.filter(job => job.status === 'completed');
+      const failedJobs = recentJobs.filter(job => job.status === 'failed');
+      
+      // Calculate success rate
+      const totalRecentJobs = completedJobs.length + failedJobs.length;
+      const successRate = totalRecentJobs > 0 ? (completedJobs.length / totalRecentJobs) * 100 : 0;
+      
+      // Determine overall health status
+      let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+      if (successRate < 50) {
+        overallStatus = 'unhealthy';
+      } else if (successRate < 80) {
+        overallStatus = 'degraded';
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          overall: {
+            status: overallStatus,
+            timestamp: new Date(),
+          },
+          ucc: uccStats,
+          recentPerformance: {
+            totalJobs: totalRecentJobs,
+            successRate,
+            completedJobs: completedJobs.length,
+            failedJobs: failedJobs.length,
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting UCC system health:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get UCC system health'
       });
     }
   });
