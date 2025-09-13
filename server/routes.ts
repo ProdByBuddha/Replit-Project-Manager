@@ -2607,35 +2607,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/ucc/reindex', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
     try {
       const { articleNumber } = req.body;
+      const { triggerManualUccIndexing } = await import('./scheduling/USCodeScheduler');
       const userId = req.user.claims.sub;
       
-      // Check for existing running jobs
-      const activeJobs = await storage.getActiveUccIndexingJobs();
-      if (activeJobs.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: 'Another UCC indexing job is already running'
-        });
-      }
-      
-      // Create new indexing job
-      const jobData = {
-        articleNumber: articleNumber || null,
-        status: 'pending',
-        jobType: 'manual_full',
-        progress: { stage: 'initializing', percentage: 0 },
-        stats: { processed: 0, errors: 0 },
-      };
-
-      const newJob = await storage.createUccIndexingJob(jobData);
+      // Use article-specific indexing if articleNumber provided, otherwise full indexing
+      const jobType = articleNumber ? 'article' : 'full';
+      const jobId = await triggerManualUccIndexing(jobType, userId, articleNumber);
       
       res.status(202).json({
         success: true,
-        data: { jobId: newJob.id },
-        message: 'UCC full re-indexing job started successfully'
+        data: { jobId },
+        message: `UCC ${jobType} re-indexing job started successfully`
       });
     } catch (error) {
       console.error('Error triggering UCC manual full indexing:', error);
+      
+      if (error instanceof Error && error.message.includes('already running')) {
+        return res.status(409).json({
+          success: false,
+          message: error.message
+        });
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Failed to start UCC re-indexing job'
@@ -2646,37 +2639,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // UCC incremental indexing
   app.post('/api/admin/ucc/reindex/incremental', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
     try {
+      const { triggerManualUccIndexing } = await import('./scheduling/USCodeScheduler');
       const userId = req.user.claims.sub;
       
-      // Check for existing running jobs
-      const activeJobs = await storage.getActiveUccIndexingJobs();
-      if (activeJobs.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: 'Another UCC indexing job is already running'
-        });
-      }
-      
-      // Create new incremental indexing job
-      const jobData = {
-        status: 'pending',
-        jobType: 'incremental',
-        progress: { stage: 'initializing', percentage: 0 },
-        stats: { processed: 0, errors: 0 },
-      };
-
-      const newJob = await storage.createUccIndexingJob(jobData);
+      const jobId = await triggerManualUccIndexing('incremental', userId);
       
       res.status(202).json({
         success: true,
-        data: { jobId: newJob.id },
+        data: { jobId },
         message: 'UCC incremental indexing job started successfully'
       });
     } catch (error) {
       console.error('Error triggering UCC incremental indexing:', error);
+      
+      if (error instanceof Error && error.message.includes('already running')) {
+        return res.status(409).json({
+          success: false,
+          message: error.message
+        });
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Failed to start UCC incremental indexing job'
+      });
+    }
+  });
+
+  // ==================== UNIFIED LEGAL ADMIN ENDPOINTS ====================
+  
+  // Get unified legal content scheduler status
+  app.get('/api/admin/legal/status', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { getUnifiedLegalSchedulerHealth } = await import('./scheduling/USCodeScheduler');
+      const health = getUnifiedLegalSchedulerHealth();
+      
+      // Get active jobs for both US Code and UCC
+      const activeUsCodeJobs = await storage.getActiveIndexingJobs();
+      const activeUccJobs = await storage.getActiveUccIndexingJobs();
+      
+      // Get recent job history
+      const recentUsCodeJobs = await storage.getIndexingJobHistory(5);
+      const recentUccJobs = await storage.getUccIndexingJobHistory(5);
+      
+      res.json({
+        success: true,
+        data: {
+          schedulerHealth: health,
+          usCode: {
+            activeJobs: activeUsCodeJobs,
+            recentJobs: recentUsCodeJobs,
+            health: health.usCode
+          },
+          ucc: {
+            activeJobs: activeUccJobs,
+            recentJobs: recentUccJobs,
+            health: health.ucc
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting unified legal status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get unified legal status'
+      });
+    }
+  });
+
+  // Update unified legal scheduler configuration
+  app.put('/api/admin/legal/scheduler/config', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { updateSchedulerConfiguration } = await import('./scheduling/USCodeScheduler');
+      const config = req.body;
+      
+      await updateSchedulerConfiguration(config);
+      
+      res.json({
+        success: true,
+        message: 'Unified legal scheduler configuration updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating unified legal scheduler configuration:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update unified legal scheduler configuration'
+      });
+    }
+  });
+
+  // Get unified legal scheduler configuration
+  app.get('/api/admin/legal/scheduler/config', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { unifiedLegalScheduler } = await import('./scheduling/USCodeScheduler');
+      const config = unifiedLegalScheduler.getConfiguration();
+      
+      res.json({
+        success: true,
+        data: config
+      });
+    } catch (error) {
+      console.error('Error getting unified legal scheduler configuration:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get unified legal scheduler configuration'
+      });
+    }
+  });
+
+  // UCC scheduler health status
+  app.get('/api/admin/ucc/scheduler/status', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { getUnifiedLegalSchedulerHealth } = await import('./scheduling/USCodeScheduler');
+      const health = getUnifiedLegalSchedulerHealth();
+      
+      res.json({
+        success: true,
+        data: {
+          uccHealth: health.ucc,
+          overallHealth: health.overallHealth
+        }
+      });
+    } catch (error) {
+      console.error('Error getting UCC scheduler status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get UCC scheduler status'
       });
     }
   });

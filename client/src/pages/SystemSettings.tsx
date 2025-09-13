@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Settings, Bell, Shield, Zap, Link, Save, AlertTriangle, Info } from "lucide-react";
+import { Loader2, Settings, Bell, Shield, Zap, Link, Save, AlertTriangle, Info, Clock } from "lucide-react";
 import PortalLayout from "@/components/PortalLayout";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -37,6 +37,7 @@ interface GroupedSettings {
   security?: SystemSetting[];
   features?: SystemSetting[];
   integrations?: SystemSetting[];
+  scheduler?: SystemSetting[];
 }
 
 // Form schemas for different setting categories
@@ -78,6 +79,26 @@ const integrationSettingsSchema = z.object({
   objectStorageEnabled: z.boolean(),
   analyticsEnabled: z.boolean(),
   backupEnabled: z.boolean(),
+});
+
+const schedulerSettingsSchema = z.object({
+  // US Code settings
+  uscode_scheduler_enabled: z.boolean(),
+  uscode_scheduler_schedule: z.string().min(1, "Cron schedule is required"),
+  uscode_scheduler_incremental_enabled: z.boolean(),
+  uscode_scheduler_max_retries: z.number().min(1).max(10),
+  uscode_scheduler_timeout_minutes: z.number().min(5).max(300),
+  uscode_scheduler_notify_on_failure: z.boolean(),
+  // UCC settings
+  ucc_scheduler_enabled: z.boolean(),
+  ucc_scheduler_schedule: z.string().min(1, "Cron schedule is required"),
+  ucc_scheduler_incremental_enabled: z.boolean(),
+  ucc_scheduler_max_retries: z.number().min(1).max(10),
+  ucc_scheduler_timeout_minutes: z.number().min(5).max(300),
+  ucc_scheduler_notify_on_failure: z.boolean(),
+  // Unified settings
+  legal_scheduler_concurrent_execution: z.boolean(),
+  legal_scheduler_resource_throttling: z.boolean(),
 });
 
 export default function SystemSettings() {
@@ -162,6 +183,29 @@ export default function SystemSettings() {
     },
   });
 
+  const schedulerForm = useForm({
+    resolver: zodResolver(schedulerSettingsSchema),
+    defaultValues: {
+      // US Code settings
+      uscode_scheduler_enabled: getSettingValue("scheduler", "uscode_scheduler_enabled", true),
+      uscode_scheduler_schedule: getSettingValue("scheduler", "uscode_scheduler_schedule", "0 2 * * *"),
+      uscode_scheduler_incremental_enabled: getSettingValue("scheduler", "uscode_scheduler_incremental_enabled", true),
+      uscode_scheduler_max_retries: getSettingValue("scheduler", "uscode_scheduler_max_retries", 3),
+      uscode_scheduler_timeout_minutes: getSettingValue("scheduler", "uscode_scheduler_timeout_minutes", 60),
+      uscode_scheduler_notify_on_failure: getSettingValue("scheduler", "uscode_scheduler_notify_on_failure", true),
+      // UCC settings
+      ucc_scheduler_enabled: getSettingValue("scheduler", "ucc_scheduler_enabled", true),
+      ucc_scheduler_schedule: getSettingValue("scheduler", "ucc_scheduler_schedule", "30 2 * * *"),
+      ucc_scheduler_incremental_enabled: getSettingValue("scheduler", "ucc_scheduler_incremental_enabled", true),
+      ucc_scheduler_max_retries: getSettingValue("scheduler", "ucc_scheduler_max_retries", 3),
+      ucc_scheduler_timeout_minutes: getSettingValue("scheduler", "ucc_scheduler_timeout_minutes", 120),
+      ucc_scheduler_notify_on_failure: getSettingValue("scheduler", "ucc_scheduler_notify_on_failure", true),
+      // Unified settings
+      legal_scheduler_concurrent_execution: getSettingValue("scheduler", "legal_scheduler_concurrent_execution", false),
+      legal_scheduler_resource_throttling: getSettingValue("scheduler", "legal_scheduler_resource_throttling", true),
+    },
+  });
+
   // Update mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: any[]) => {
@@ -236,6 +280,21 @@ export default function SystemSettings() {
       objectStorageEnabled: "Enable cloud object storage",
       analyticsEnabled: "Enable usage analytics collection",
       backupEnabled: "Enable automatic data backups",
+      // Scheduler settings descriptions
+      uscode_scheduler_enabled: "Enable US Code automatic re-indexing",
+      uscode_scheduler_schedule: "Cron schedule for US Code indexing (default: 2:00 AM daily)",
+      uscode_scheduler_incremental_enabled: "Enable incremental US Code updates",
+      uscode_scheduler_max_retries: "Maximum retry attempts for failed US Code indexing jobs",
+      uscode_scheduler_timeout_minutes: "Timeout in minutes for US Code indexing operations",
+      uscode_scheduler_notify_on_failure: "Send notifications when US Code indexing fails",
+      ucc_scheduler_enabled: "Enable UCC automatic re-indexing",
+      ucc_scheduler_schedule: "Cron schedule for UCC indexing (default: 2:30 AM daily)",
+      ucc_scheduler_incremental_enabled: "Enable incremental UCC updates",
+      ucc_scheduler_max_retries: "Maximum retry attempts for failed UCC indexing jobs",
+      ucc_scheduler_timeout_minutes: "Timeout in minutes for UCC indexing operations",
+      ucc_scheduler_notify_on_failure: "Send notifications when UCC indexing fails",
+      legal_scheduler_concurrent_execution: "Allow US Code and UCC indexing to run concurrently",
+      legal_scheduler_resource_throttling: "Enable resource throttling between legal content indexing jobs",
     };
     return descriptions[key] || "";
   };
@@ -263,6 +322,11 @@ export default function SystemSettings() {
 
   const saveIntegrationSettings = (data: z.infer<typeof integrationSettingsSchema>) => {
     const settings = formDataToSettings(data, "integrations");
+    updateSettingsMutation.mutate(settings);
+  };
+
+  const saveSchedulerSettings = (data: z.infer<typeof schedulerSettingsSchema>) => {
+    const settings = formDataToSettings(data, "scheduler");
     updateSettingsMutation.mutate(settings);
   };
 
@@ -325,7 +389,7 @@ export default function SystemSettings() {
 
         {/* Settings Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5" data-testid="tabs-settings-navigation">
+          <TabsList className="grid w-full grid-cols-6" data-testid="tabs-settings-navigation">
             <TabsTrigger value="general" className="flex items-center space-x-2" data-testid="tab-general">
               <Settings className="w-4 h-4" />
               <span>General</span>
@@ -345,6 +409,10 @@ export default function SystemSettings() {
             <TabsTrigger value="integrations" className="flex items-center space-x-2" data-testid="tab-integrations">
               <Link className="w-4 h-4" />
               <span>Integrations</span>
+            </TabsTrigger>
+            <TabsTrigger value="scheduler" className="flex items-center space-x-2" data-testid="tab-scheduler">
+              <Clock className="w-4 h-4" />
+              <span>Scheduler</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1054,6 +1122,384 @@ export default function SystemSettings() {
                         <>
                           <Save className="w-4 h-4 mr-2" />
                           Save Integration Settings
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Scheduler Settings */}
+          <TabsContent value="scheduler" className="space-y-6" data-testid="content-scheduler">
+            <Card>
+              <CardHeader>
+                <CardTitle>Legal Content Scheduler</CardTitle>
+                <CardDescription>
+                  Configure automatic indexing schedules for US Code and UCC content
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...schedulerForm}>
+                  <form onSubmit={schedulerForm.handleSubmit(saveSchedulerSettings)} className="space-y-6">
+                    
+                    {/* US Code Settings Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-semibold">US Code Indexing</h3>
+                        <Badge variant="outline">Legacy System</Badge>
+                      </div>
+                      
+                      <FormField
+                        control={schedulerForm.control}
+                        name="uscode_scheduler_enabled"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Enable US Code Indexing</FormLabel>
+                              <FormDescription>
+                                Enable automatic US Code re-indexing on schedule
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-uscode-enabled"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={schedulerForm.control}
+                          name="uscode_scheduler_schedule"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>US Code Schedule</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="0 2 * * *" data-testid="input-uscode-schedule" />
+                              </FormControl>
+                              <FormDescription>
+                                Cron expression for US Code indexing (2:00 AM daily)
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={schedulerForm.control}
+                          name="uscode_scheduler_timeout_minutes"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>US Code Timeout (minutes)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  min="5" 
+                                  max="300"
+                                  onChange={e => field.onChange(parseInt(e.target.value))}
+                                  data-testid="input-uscode-timeout"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Timeout for US Code indexing operations
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={schedulerForm.control}
+                          name="uscode_scheduler_max_retries"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>US Code Max Retries</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  min="1" 
+                                  max="10"
+                                  onChange={e => field.onChange(parseInt(e.target.value))}
+                                  data-testid="input-uscode-retries"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Maximum retry attempts for failed US Code jobs
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={schedulerForm.control}
+                          name="uscode_scheduler_incremental_enabled"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">Incremental Updates</FormLabel>
+                                <FormDescription>
+                                  Enable incremental US Code updates
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="switch-uscode-incremental"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={schedulerForm.control}
+                        name="uscode_scheduler_notify_on_failure"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">US Code Failure Notifications</FormLabel>
+                              <FormDescription>
+                                Send notifications when US Code indexing fails
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-uscode-notifications"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    {/* UCC Settings Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-semibold">UCC Indexing</h3>
+                        <Badge variant="secondary">Commercial Law</Badge>
+                      </div>
+                      
+                      <FormField
+                        control={schedulerForm.control}
+                        name="ucc_scheduler_enabled"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Enable UCC Indexing</FormLabel>
+                              <FormDescription>
+                                Enable automatic UCC re-indexing on schedule
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-ucc-enabled"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={schedulerForm.control}
+                          name="ucc_scheduler_schedule"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>UCC Schedule</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="30 2 * * *" data-testid="input-ucc-schedule" />
+                              </FormControl>
+                              <FormDescription>
+                                Cron expression for UCC indexing (2:30 AM daily)
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={schedulerForm.control}
+                          name="ucc_scheduler_timeout_minutes"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>UCC Timeout (minutes)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  min="5" 
+                                  max="300"
+                                  onChange={e => field.onChange(parseInt(e.target.value))}
+                                  data-testid="input-ucc-timeout"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Timeout for UCC indexing operations
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={schedulerForm.control}
+                          name="ucc_scheduler_max_retries"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>UCC Max Retries</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  min="1" 
+                                  max="10"
+                                  onChange={e => field.onChange(parseInt(e.target.value))}
+                                  data-testid="input-ucc-retries"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Maximum retry attempts for failed UCC jobs
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={schedulerForm.control}
+                          name="ucc_scheduler_incremental_enabled"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base">Incremental Updates</FormLabel>
+                                <FormDescription>
+                                  Enable incremental UCC updates
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="switch-ucc-incremental"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={schedulerForm.control}
+                        name="ucc_scheduler_notify_on_failure"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">UCC Failure Notifications</FormLabel>
+                              <FormDescription>
+                                Send notifications when UCC indexing fails
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-ucc-notifications"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Separator />
+
+                    {/* Unified Settings Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-semibold">Unified Scheduler Settings</h3>
+                        <Badge variant="default">Advanced</Badge>
+                      </div>
+                      
+                      <FormField
+                        control={schedulerForm.control}
+                        name="legal_scheduler_concurrent_execution"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Concurrent Execution</FormLabel>
+                              <FormDescription>
+                                Allow US Code and UCC indexing to run simultaneously
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-concurrent-execution"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={schedulerForm.control}
+                        name="legal_scheduler_resource_throttling"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Resource Throttling</FormLabel>
+                              <FormDescription>
+                                Enable resource throttling between indexing jobs
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                data-testid="switch-resource-throttling"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      disabled={updateSettingsMutation.isPending}
+                      data-testid="button-save-scheduler"
+                    >
+                      {updateSettingsMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Scheduler Settings
                         </>
                       )}
                     </Button>
