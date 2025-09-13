@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { insertNotificationPreferencesSchema, type InsertNotificationPreferences } from "@shared/schema";
+import ChatWidget from "@/components/ChatWidget";
 
 type NotificationPreferences = InsertNotificationPreferences;
 
@@ -266,6 +267,9 @@ export default function Notifications() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Chat Widget - Available on notifications page */}
+      <ChatWidget />
     </div>
   );
 }
