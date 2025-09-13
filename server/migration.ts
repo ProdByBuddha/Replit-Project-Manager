@@ -21,10 +21,11 @@ export async function migrateAdminUsers(): Promise<void> {
     for (const user of legacyAdmins) {
       console.log(`🔄 Migrating user: ${user.email} (${user.id})`);
       
-      // Update user role from 'admin' to 'ministry_admin'
+      // Update user role from 'admin' to 'ministry_admin' and clear isAdmin flag
       const updatedUser = {
         ...user,
-        role: 'ministry_admin' as const
+        role: 'ministry_admin' as const,
+        isAdmin: false  // Clear the legacy admin flag
       };
 
       await storage.upsertUser(updatedUser);

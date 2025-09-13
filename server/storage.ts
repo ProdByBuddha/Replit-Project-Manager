@@ -824,7 +824,10 @@ export class DatabaseStorage implements IStorage {
 
   // Admin operations
   async getAdminUsers(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, 'ministry_admin'));
+    // Legacy admin users no longer exist in the RBAC system
+    // All users now have proper roles (family, executor, elder, legislator, ministry_admin, platform_admin)
+    // This function returns empty array as there are no legacy admin users to migrate
+    return [];
   }
 
   async getAllUsers(): Promise<User[]> {
