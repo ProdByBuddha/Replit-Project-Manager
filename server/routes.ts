@@ -2349,35 +2349,488 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // UCC Search Operations
+  // ==================== UCC SEARCH OPERATIONS ====================
+  
+  // Enhanced UCC Search with comprehensive query parameters
   app.get('/api/ucc/search', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
     try {
-      const { q, article, limit = 20, offset = 0 } = req.query;
+      const { 
+        q, 
+        article, 
+        limit = 20, 
+        offset = 0, 
+        searchType = 'fulltext',
+        includeHeadings = true,
+        includeComments = true
+      } = req.query;
       
-      if (!q || typeof q !== 'string') {
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
         return res.status(400).json({ 
           success: false,
-          message: "Search query is required" 
+          message: "Search query is required and cannot be empty" 
         });
       }
 
-      const options = {
+      const searchOptions = {
         articleNumber: article as string,
-        limit: parseInt(limit as string) || 20,
-        offset: parseInt(offset as string) || 0
+        limit: Math.min(parseInt(limit as string) || 20, 100), // Cap at 100
+        offset: Math.max(parseInt(offset as string) || 0, 0),
+        searchType: (searchType as 'fulltext' | 'citation' | 'keyword' | 'definition') || 'fulltext',
+        includeHeadings: includeHeadings === 'true' || includeHeadings === true,
+        includeComments: includeComments === 'true' || includeComments === true
       };
 
-      const searchResults = await storage.searchUccSections(q, options);
+      const startTime = Date.now();
+      const searchResults = await storage.searchUccSections(q.trim(), searchOptions);
+      const executionTime = Date.now() - startTime;
       
-      res.json({
+      // Format results for Parlant AI compatibility
+      const formattedResults = {
         success: true,
-        data: searchResults
-      });
+        data: {
+          sections: searchResults.sections.map(section => ({
+            id: section.id,
+            citation: section.citation || `UCC § ${section.sectionNumber}`,
+            heading: section.heading || section.title || 'Untitled Section',
+            content: section.content || section.text || '',
+            article: {
+              name: section.article?.name || `Article ${section.article?.articleNumber}`,
+              number: section.article?.articleNumber || 'Unknown'
+            },
+            part: section.part ? {
+              name: section.part.name || section.part.title,
+              number: section.part.partNumber
+            } : undefined,
+            commercialTerms: section.commercialTerms || [],
+            relevanceScore: section.relevanceScore || 0
+          })),
+          pagination: {
+            total: searchResults.totalCount,
+            limit: searchOptions.limit,
+            offset: searchOptions.offset,
+            hasMore: (searchOptions.offset + searchOptions.limit) < searchResults.totalCount
+          },
+          searchMetadata: {
+            query: q.trim(),
+            searchType: searchOptions.searchType,
+            executionTime,
+            articleFilter: searchOptions.articleNumber || null,
+            timestamp: new Date().toISOString()
+          }
+        }
+      };
+      
+      res.json(formattedResults);
     } catch (error) {
       console.error("Error searching UCC sections:", error);
       res.status(500).json({ 
         success: false,
-        message: "Failed to search UCC sections" 
+        message: "Failed to search UCC sections",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
+  // Get sections for specific UCC article
+  app.get('/api/ucc/articles/:articleNumber/sections', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { articleNumber } = req.params;
+      const { limit = 50, offset = 0 } = req.query;
+
+      if (!articleNumber || !articleNumber.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Article number is required"
+        });
+      }
+
+      // First get the article
+      const article = await storage.getUccArticleByNumber(articleNumber.trim());
+      if (!article) {
+        return res.status(404).json({
+          success: false,
+          message: `UCC Article ${articleNumber} not found`
+        });
+      }
+
+      // Get sections for this article
+      const sections = await storage.getSectionsByArticle(article.id);
+      const limitNum = Math.min(parseInt(limit as string) || 50, 100);
+      const offsetNum = Math.max(parseInt(offset as string) || 0, 0);
+      
+      const paginatedSections = sections.slice(offsetNum, offsetNum + limitNum);
+
+      res.json({
+        success: true,
+        data: {
+          article: {
+            id: article.id,
+            name: article.name,
+            number: article.articleNumber,
+            description: article.description
+          },
+          sections: paginatedSections.map(section => ({
+            id: section.id,
+            citation: section.citation || `UCC § ${section.sectionNumber}`,
+            heading: section.heading || section.title || 'Untitled Section',
+            content: section.content || section.text || '',
+            sectionNumber: section.sectionNumber,
+            effectiveDate: section.effectiveDate,
+            commercialTerms: section.commercialTerms || []
+          })),
+          pagination: {
+            total: sections.length,
+            limit: limitNum,
+            offset: offsetNum,
+            hasMore: (offsetNum + limitNum) < sections.length
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching UCC article sections:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch article sections",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
+  // Search UCC definitions and terms
+  app.get('/api/ucc/definitions/search', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { q, article, limit = 20, offset = 0 } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Search term is required for definition search"
+        });
+      }
+
+      const startTime = Date.now();
+      let definitions = await storage.searchUccDefinitions(q.trim());
+      
+      // Filter by article if specified
+      if (article && typeof article === 'string') {
+        definitions = definitions.filter(def => 
+          def.article.articleNumber === article.trim()
+        );
+      }
+
+      const limitNum = Math.min(parseInt(limit as string) || 20, 50);
+      const offsetNum = Math.max(parseInt(offset as string) || 0, 0);
+      const paginatedDefinitions = definitions.slice(offsetNum, offsetNum + limitNum);
+
+      const executionTime = Date.now() - startTime;
+
+      res.json({
+        success: true,
+        data: {
+          definitions: paginatedDefinitions.map(def => ({
+            id: def.id,
+            term: def.term,
+            definition: def.definition,
+            citation: `UCC § ${def.section.sectionNumber}`,
+            section: {
+              id: def.section.id,
+              heading: def.section.heading || def.section.title,
+              sectionNumber: def.section.sectionNumber
+            },
+            article: {
+              id: def.article.id,
+              name: def.article.name,
+              number: def.article.articleNumber
+            },
+            context: def.context || 'General definition',
+            examples: def.examples || []
+          })),
+          pagination: {
+            total: definitions.length,
+            limit: limitNum,
+            offset: offsetNum,
+            hasMore: (offsetNum + limitNum) < definitions.length
+          },
+          searchMetadata: {
+            query: q.trim(),
+            executionTime,
+            articleFilter: article || null,
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error searching UCC definitions:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to search UCC definitions",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
+  // Get cross-references for a UCC section
+  app.get('/api/ucc/cross-references/:sectionId', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { sectionId } = req.params;
+
+      if (!sectionId || !sectionId.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Section ID is required"
+        });
+      }
+
+      // Verify section exists
+      const section = await storage.getUccSection(sectionId.trim());
+      if (!section) {
+        return res.status(404).json({
+          success: false,
+          message: "UCC section not found"
+        });
+      }
+
+      // Get cross-references from this section to other sections
+      const outgoingRefs = await storage.getCrossReferencesForUccSection(sectionId);
+      
+      // Get cross-references to this section from other sections
+      const incomingRefs = await storage.getUccSectionsReferencingSection(sectionId);
+
+      res.json({
+        success: true,
+        data: {
+          section: {
+            id: section.id,
+            citation: section.citation || `UCC § ${section.sectionNumber}`,
+            heading: section.heading || section.title,
+            sectionNumber: section.sectionNumber
+          },
+          crossReferences: {
+            outgoing: outgoingRefs.map(ref => ({
+              id: ref.id,
+              referenceType: ref.referenceType || 'See',
+              toSection: ref.toSection ? {
+                id: ref.toSection.id,
+                citation: ref.toSection.citation || `UCC § ${ref.toSection.sectionNumber}`,
+                heading: ref.toSection.heading || ref.toSection.title,
+                sectionNumber: ref.toSection.sectionNumber
+              } : null,
+              externalReference: ref.externalReference,
+              context: ref.context || '',
+              description: ref.description || ''
+            })),
+            incoming: incomingRefs.map(ref => ({
+              id: ref.id,
+              referenceType: ref.referenceType || 'Referenced by',
+              fromSection: {
+                id: ref.fromSection.id,
+                citation: ref.fromSection.citation || `UCC § ${ref.fromSection.sectionNumber}`,
+                heading: ref.fromSection.heading || ref.fromSection.title,
+                sectionNumber: ref.fromSection.sectionNumber
+              },
+              context: ref.context || '',
+              description: ref.description || ''
+            }))
+          },
+          metadata: {
+            totalOutgoing: outgoingRefs.length,
+            totalIncoming: incomingRefs.length,
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching UCC cross-references:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch cross-references",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
+  // ==================== UNIFIED LEGAL SEARCH ====================
+  
+  // Unified search across US Code and UCC with intelligent ranking
+  app.get('/api/legal/search', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { 
+        q, 
+        includeUSCode = true, 
+        includeUCC = true,
+        limit = 20, 
+        offset = 0,
+        searchType = 'fulltext',
+        domain = 'all' // 'federal', 'commercial', 'all'
+      } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Search query is required for legal search"
+        });
+      }
+
+      // Determine which systems to search based on domain
+      let searchUSCode = includeUSCode === 'true' || includeUSCode === true;
+      let searchUCC = includeUCC === 'true' || includeUCC === true;
+      
+      if (domain === 'federal') {
+        searchUSCode = true;
+        searchUCC = false;
+      } else if (domain === 'commercial') {
+        searchUSCode = false;
+        searchUCC = true;
+      }
+
+      const searchOptions = {
+        includeUSCode: searchUSCode,
+        includeUCC: searchUCC,
+        limit: Math.min(parseInt(limit as string) || 20, 50),
+        offset: Math.max(parseInt(offset as string) || 0, 0),
+        searchType: (searchType as 'fulltext' | 'citation' | 'keyword') || 'fulltext'
+      };
+
+      const startTime = Date.now();
+      const searchResults = await storage.searchLegalSections(q.trim(), searchOptions);
+      const executionTime = Date.now() - startTime;
+
+      // Format unified results for Parlant AI
+      const formattedResults = {
+        success: true,
+        data: {
+          results: searchResults.results.map(result => {
+            const baseResult = {
+              type: result.type,
+              id: result.section.id,
+              relevanceScore: result.relevanceScore || 0
+            };
+
+            if (result.type === 'uscode') {
+              return {
+                ...baseResult,
+                citation: `${result.title?.titleNumber} U.S.C. § ${result.section.sectionNumber}`,
+                heading: result.section.heading || result.section.title || 'Untitled Section',
+                content: result.section.content || result.section.text || '',
+                source: {
+                  system: 'US Code',
+                  title: {
+                    number: result.title?.titleNumber || 'Unknown',
+                    name: result.title?.name || 'Unknown Title'
+                  },
+                  chapter: result.chapter ? {
+                    number: result.chapter.chapterNumber,
+                    name: result.chapter.name || result.chapter.title
+                  } : undefined
+                },
+                jurisdiction: 'Federal',
+                category: 'statutory'
+              };
+            } else if (result.type === 'ucc') {
+              return {
+                ...baseResult,
+                citation: `UCC § ${result.section.sectionNumber}`,
+                heading: result.section.heading || result.section.title || 'Untitled Section',
+                content: result.section.content || result.section.text || '',
+                source: {
+                  system: 'Uniform Commercial Code',
+                  article: {
+                    number: result.article?.articleNumber || 'Unknown',
+                    name: result.article?.name || 'Unknown Article'
+                  },
+                  part: result.part ? {
+                    number: result.part.partNumber,
+                    name: result.part.name || result.part.title
+                  } : undefined
+                },
+                jurisdiction: 'Commercial Law',
+                category: 'uniform_law',
+                commercialTerms: (result.section as any).commercialTerms || []
+              };
+            }
+            return baseResult;
+          }),
+          pagination: {
+            total: searchResults.totalCount,
+            limit: searchOptions.limit,
+            offset: searchOptions.offset,
+            hasMore: (searchOptions.offset + searchOptions.limit) < searchResults.totalCount
+          },
+          searchMetadata: {
+            query: q.trim(),
+            searchType: searchOptions.searchType,
+            executionTime,
+            searchedSystems: {
+              usCode: searchUSCode,
+              ucc: searchUCC
+            },
+            domain: domain || 'all',
+            timestamp: new Date().toISOString()
+          },
+          sourceBreakdown: {
+            usCode: searchResults.results.filter(r => r.type === 'uscode').length,
+            ucc: searchResults.results.filter(r => r.type === 'ucc').length
+          }
+        }
+      };
+
+      res.json(formattedResults);
+    } catch (error) {
+      console.error("Error performing unified legal search:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to perform legal search",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  });
+
+  // Legal search suggestions and autocomplete
+  app.get('/api/legal/suggestions', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { q, limit = 10 } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim().length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Query must be at least 2 characters for suggestions"
+        });
+      }
+
+      // Simple implementation - could be enhanced with dedicated suggestion logic
+      const suggestions = await Promise.all([
+        // Get UCC definitions that match the query
+        storage.searchUccDefinitions(q.trim()).then(defs => 
+          defs.slice(0, 5).map(def => ({
+            text: def.term,
+            type: 'definition',
+            system: 'UCC',
+            context: `Defined in UCC § ${def.section.sectionNumber}`
+          }))
+        ).catch(() => []),
+        
+        // Could add US Code suggestions here if available in storage
+      ]);
+
+      const allSuggestions = suggestions.flat().slice(0, parseInt(limit as string) || 10);
+
+      res.json({
+        success: true,
+        data: {
+          suggestions: allSuggestions,
+          metadata: {
+            query: q.trim(),
+            count: allSuggestions.length,
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching legal suggestions:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch suggestions",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   });
