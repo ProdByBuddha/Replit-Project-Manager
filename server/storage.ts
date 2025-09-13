@@ -17,6 +17,14 @@ import {
   usCodeCrossReferences,
   usCodeSearchIndex,
   usCodeIndexingJobs,
+  uccArticles,
+  uccParts,
+  uccSections,
+  uccSubsections,
+  uccCrossReferences,
+  uccDefinitions,
+  uccSearchIndex,
+  uccIndexingJobs,
   type User,
   type UpsertUser,
   type Family,
@@ -53,6 +61,22 @@ import {
   type InsertUsCodeSearchIndex,
   type UsCodeIndexingJob,
   type InsertUsCodeIndexingJob,
+  type UccArticle,
+  type InsertUccArticle,
+  type UccPart,
+  type InsertUccPart,
+  type UccSection,
+  type InsertUccSection,
+  type UccSubsection,
+  type InsertUccSubsection,
+  type UccCrossReference,
+  type InsertUccCrossReference,
+  type UccDefinition,
+  type InsertUccDefinition,
+  type UccSearchIndex,
+  type InsertUccSearchIndex,
+  type UccIndexingJob,
+  type InsertUccIndexingJob,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, lt, gt, inArray, sql } from "drizzle-orm";
@@ -244,6 +268,142 @@ export interface IStorage {
   findOrphanedSections(): Promise<UsCodeSection[]>;
   validateCrossReferences(): Promise<{ valid: number; invalid: number; issues: string[] }>;
   optimizeSearchIndexes(): Promise<{ optimized: number; errors: string[] }>;
+  
+  // ===== UCC (UNIFORM COMMERCIAL CODE) OPERATIONS =====
+  
+  // UCC Article Operations
+  createUccArticle(article: InsertUccArticle): Promise<UccArticle>;
+  getUccArticle(articleId: string): Promise<UccArticle | undefined>;
+  getUccArticleByNumber(articleNumber: string): Promise<UccArticle | undefined>;
+  getAllUccArticles(): Promise<UccArticle[]>;
+  updateUccArticle(articleId: string, updates: Partial<InsertUccArticle>): Promise<UccArticle>;
+  deleteUccArticle(articleId: string): Promise<void>;
+  
+  // UCC Part Operations
+  createUccPart(part: InsertUccPart): Promise<UccPart>;
+  getUccPart(partId: string): Promise<UccPart | undefined>;
+  getPartsByArticle(articleId: string): Promise<UccPart[]>;
+  updateUccPart(partId: string, updates: Partial<InsertUccPart>): Promise<UccPart>;
+  deleteUccPart(partId: string): Promise<void>;
+  
+  // UCC Section Operations
+  createUccSection(section: InsertUccSection): Promise<UccSection>;
+  getUccSection(sectionId: string): Promise<UccSection | undefined>;
+  getUccSectionByCitation(citation: string): Promise<UccSection | undefined>;
+  getSectionsByArticle(articleId: string): Promise<UccSection[]>;
+  getSectionsByPart(partId: string): Promise<UccSection[]>;
+  updateUccSection(sectionId: string, updates: Partial<InsertUccSection>): Promise<UccSection>;
+  deleteUccSection(sectionId: string): Promise<void>;
+  
+  // UCC Subsection Operations
+  createUccSubsection(subsection: InsertUccSubsection): Promise<UccSubsection>;
+  getUccSubsection(subsectionId: string): Promise<UccSubsection | undefined>;
+  getSubsectionsBySection(sectionId: string): Promise<UccSubsection[]>;
+  getSubsectionsByParent(parentSubsectionId: string): Promise<UccSubsection[]>;
+  updateUccSubsection(subsectionId: string, updates: Partial<InsertUccSubsection>): Promise<UccSubsection>;
+  deleteUccSubsection(subsectionId: string): Promise<void>;
+  
+  // UCC Cross Reference Operations
+  createUccCrossReference(reference: InsertUccCrossReference): Promise<UccCrossReference>;
+  getCrossReferencesForUccSection(sectionId: string): Promise<(UccCrossReference & { toSection?: UccSection })[]>;
+  getUccSectionsReferencingSection(sectionId: string): Promise<(UccCrossReference & { fromSection: UccSection })[]>;
+  getExternalReferencesFromUcc(sectionId: string): Promise<UccCrossReference[]>;
+  deleteUccCrossReference(referenceId: string): Promise<void>;
+  
+  // UCC Definition Operations
+  createUccDefinition(definition: InsertUccDefinition): Promise<UccDefinition>;
+  getUccDefinition(definitionId: string): Promise<UccDefinition | undefined>;
+  getDefinitionsByTerm(term: string): Promise<(UccDefinition & { section: UccSection; article: UccArticle })[]>;
+  getDefinitionsBySection(sectionId: string): Promise<UccDefinition[]>;
+  getDefinitionsByArticle(articleId: string): Promise<UccDefinition[]>;
+  searchUccDefinitions(query: string): Promise<(UccDefinition & { section: UccSection; article: UccArticle })[]>;
+  updateUccDefinition(definitionId: string, updates: Partial<InsertUccDefinition>): Promise<UccDefinition>;
+  deleteUccDefinition(definitionId: string): Promise<void>;
+  
+  // UCC Search Operations
+  searchUccSections(query: string, options?: {
+    articleNumber?: string;
+    limit?: number;
+    offset?: number;
+    includeHeadings?: boolean;
+    includeComments?: boolean;
+    searchType?: 'fulltext' | 'citation' | 'keyword' | 'definition';
+  }): Promise<{
+    sections: (UccSection & { 
+      article: UccArticle;
+      part?: UccPart;
+      relevanceScore?: number;
+    })[];
+    totalCount: number;
+    searchMetadata: {
+      query: string;
+      searchType: string;
+      executionTime: number;
+    };
+  }>;
+  
+  // UCC Search Index Operations
+  createUccSearchIndex(searchIndex: InsertUccSearchIndex): Promise<UccSearchIndex>;
+  getUccSearchIndexForSection(sectionId: string): Promise<UccSearchIndex | undefined>;
+  updateUccSearchIndex(sectionId: string, updates: Partial<InsertUccSearchIndex>): Promise<UccSearchIndex>;
+  rebuildUccSearchIndexes(articleNumber?: string): Promise<{ processed: number; errors: number }>;
+  
+  // UCC Indexing Job Operations
+  createUccIndexingJob(job: InsertUccIndexingJob): Promise<UccIndexingJob>;
+  getUccIndexingJob(jobId: string): Promise<UccIndexingJob | undefined>;
+  getActiveUccIndexingJobs(): Promise<UccIndexingJob[]>;
+  getUccIndexingJobHistory(limit?: number): Promise<UccIndexingJob[]>;
+  getLastUccIndexingJobByType(jobType: string): Promise<UccIndexingJob | undefined>;
+  updateUccIndexingJobStatus(jobId: string, status: string, progress?: any, stats?: any): Promise<UccIndexingJob>;
+  updateUccIndexingJobError(jobId: string, errorMessage: string): Promise<UccIndexingJob>;
+  
+  // UCC Statistics and Analytics
+  getUccStats(): Promise<{
+    totalArticles: number;
+    totalParts: number;
+    totalSections: number;
+    totalDefinitions: number;
+    lastIndexed: Date | null;
+    indexingJobs: {
+      completed: number;
+      failed: number;
+      running: number;
+    };
+    searchStats: {
+      totalSearches: number;
+      popularSections: string[];
+    };
+  }>;
+  
+  // UCC Maintenance Operations
+  findOrphanedUccSections(): Promise<UccSection[]>;
+  validateUccCrossReferences(): Promise<{ valid: number; invalid: number; issues: string[] }>;
+  optimizeUccSearchIndexes(): Promise<{ optimized: number; errors: string[] }>;
+  
+  // Combined US Code + UCC Search Operations
+  searchLegalSections(query: string, options?: {
+    includeUSCode?: boolean;
+    includeUCC?: boolean;
+    limit?: number;
+    offset?: number;
+    searchType?: 'fulltext' | 'citation' | 'keyword';
+  }): Promise<{
+    results: Array<{
+      type: 'uscode' | 'ucc';
+      section: UsCodeSection | UccSection;
+      title?: UsCodeTitle;
+      article?: UccArticle;
+      chapter?: UsCodeChapter;
+      part?: UccPart;
+      relevanceScore?: number;
+    }>;
+    totalCount: number;
+    searchMetadata: {
+      query: string;
+      searchType: string;
+      executionTime: number;
+    };
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1772,6 +1932,706 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { optimized, errors };
+  }
+
+  // ===== UCC (UNIFORM COMMERCIAL CODE) IMPLEMENTATIONS =====
+
+  // UCC Article Operations
+  async createUccArticle(articleData: InsertUccArticle): Promise<UccArticle> {
+    const [article] = await db.insert(uccArticles).values(articleData).returning();
+    return article;
+  }
+
+  async getUccArticle(articleId: string): Promise<UccArticle | undefined> {
+    const [article] = await db.select().from(uccArticles).where(eq(uccArticles.id, articleId));
+    return article;
+  }
+
+  async getUccArticleByNumber(articleNumber: string): Promise<UccArticle | undefined> {
+    const [article] = await db.select().from(uccArticles).where(eq(uccArticles.number, articleNumber));
+    return article;
+  }
+
+  async getAllUccArticles(): Promise<UccArticle[]> {
+    return await db.select().from(uccArticles).orderBy(uccArticles.number);
+  }
+
+  async updateUccArticle(articleId: string, updates: Partial<InsertUccArticle>): Promise<UccArticle> {
+    const [article] = await db
+      .update(uccArticles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(uccArticles.id, articleId))
+      .returning();
+    return article;
+  }
+
+  async deleteUccArticle(articleId: string): Promise<void> {
+    await db.delete(uccArticles).where(eq(uccArticles.id, articleId));
+  }
+
+  // UCC Part Operations
+  async createUccPart(partData: InsertUccPart): Promise<UccPart> {
+    const [part] = await db.insert(uccParts).values(partData).returning();
+    return part;
+  }
+
+  async getUccPart(partId: string): Promise<UccPart | undefined> {
+    const [part] = await db.select().from(uccParts).where(eq(uccParts.id, partId));
+    return part;
+  }
+
+  async getPartsByArticle(articleId: string): Promise<UccPart[]> {
+    return await db.select().from(uccParts).where(eq(uccParts.articleId, articleId)).orderBy(uccParts.number);
+  }
+
+  async updateUccPart(partId: string, updates: Partial<InsertUccPart>): Promise<UccPart> {
+    const [part] = await db
+      .update(uccParts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(uccParts.id, partId))
+      .returning();
+    return part;
+  }
+
+  async deleteUccPart(partId: string): Promise<void> {
+    await db.delete(uccParts).where(eq(uccParts.id, partId));
+  }
+
+  // UCC Section Operations
+  async createUccSection(sectionData: InsertUccSection): Promise<UccSection> {
+    const [section] = await db.insert(uccSections).values(sectionData).returning();
+    return section;
+  }
+
+  async getUccSection(sectionId: string): Promise<UccSection | undefined> {
+    const [section] = await db.select().from(uccSections).where(eq(uccSections.id, sectionId));
+    return section;
+  }
+
+  async getUccSectionByCitation(citation: string): Promise<UccSection | undefined> {
+    const [section] = await db.select().from(uccSections).where(eq(uccSections.citation, citation));
+    return section;
+  }
+
+  async getSectionsByArticle(articleId: string): Promise<UccSection[]> {
+    return await db.select().from(uccSections).where(eq(uccSections.articleId, articleId)).orderBy(uccSections.number);
+  }
+
+  async getSectionsByPart(partId: string): Promise<UccSection[]> {
+    return await db.select().from(uccSections).where(eq(uccSections.partId, partId)).orderBy(uccSections.number);
+  }
+
+  async updateUccSection(sectionId: string, updates: Partial<InsertUccSection>): Promise<UccSection> {
+    const [section] = await db
+      .update(uccSections)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(uccSections.id, sectionId))
+      .returning();
+    return section;
+  }
+
+  async deleteUccSection(sectionId: string): Promise<void> {
+    await db.delete(uccSections).where(eq(uccSections.id, sectionId));
+  }
+
+  // UCC Subsection Operations
+  async createUccSubsection(subsectionData: InsertUccSubsection): Promise<UccSubsection> {
+    const [subsection] = await db.insert(uccSubsections).values(subsectionData).returning();
+    return subsection;
+  }
+
+  async getUccSubsection(subsectionId: string): Promise<UccSubsection | undefined> {
+    const [subsection] = await db.select().from(uccSubsections).where(eq(uccSubsections.id, subsectionId));
+    return subsection;
+  }
+
+  async getSubsectionsBySection(sectionId: string): Promise<UccSubsection[]> {
+    return await db
+      .select()
+      .from(uccSubsections)
+      .where(eq(uccSubsections.sectionId, sectionId))
+      .orderBy(uccSubsections.level, uccSubsections.order);
+  }
+
+  async getSubsectionsByParent(parentSubsectionId: string): Promise<UccSubsection[]> {
+    return await db
+      .select()
+      .from(uccSubsections)
+      .where(eq(uccSubsections.parentSubsectionId, parentSubsectionId))
+      .orderBy(uccSubsections.order);
+  }
+
+  async updateUccSubsection(subsectionId: string, updates: Partial<InsertUccSubsection>): Promise<UccSubsection> {
+    const [subsection] = await db
+      .update(uccSubsections)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(uccSubsections.id, subsectionId))
+      .returning();
+    return subsection;
+  }
+
+  async deleteUccSubsection(subsectionId: string): Promise<void> {
+    await db.delete(uccSubsections).where(eq(uccSubsections.id, subsectionId));
+  }
+
+  // UCC Cross Reference Operations
+  async createUccCrossReference(referenceData: InsertUccCrossReference): Promise<UccCrossReference> {
+    const [reference] = await db.insert(uccCrossReferences).values(referenceData).returning();
+    return reference;
+  }
+
+  async getCrossReferencesForUccSection(sectionId: string): Promise<(UccCrossReference & { toSection?: UccSection })[]> {
+    const references = await db.select().from(uccCrossReferences).where(eq(uccCrossReferences.fromSectionId, sectionId));
+    
+    const referencesWithSections = await Promise.all(
+      references.map(async (ref) => {
+        if (ref.toSectionId) {
+          const toSection = await this.getUccSection(ref.toSectionId);
+          return { ...ref, toSection };
+        }
+        return { ...ref, toSection: undefined };
+      })
+    );
+
+    return referencesWithSections;
+  }
+
+  async getUccSectionsReferencingSection(sectionId: string): Promise<(UccCrossReference & { fromSection: UccSection })[]> {
+    const references = await db.select().from(uccCrossReferences).where(eq(uccCrossReferences.toSectionId, sectionId));
+    
+    const referencesWithSections = await Promise.all(
+      references.map(async (ref) => {
+        const fromSection = await this.getUccSection(ref.fromSectionId);
+        return { ...ref, fromSection: fromSection! };
+      })
+    );
+
+    return referencesWithSections.filter(ref => ref.fromSection);
+  }
+
+  async getExternalReferencesFromUcc(sectionId: string): Promise<UccCrossReference[]> {
+    return await db
+      .select()
+      .from(uccCrossReferences)
+      .where(
+        and(
+          eq(uccCrossReferences.fromSectionId, sectionId),
+          eq(uccCrossReferences.referenceType, "external")
+        )
+      );
+  }
+
+  async deleteUccCrossReference(referenceId: string): Promise<void> {
+    await db.delete(uccCrossReferences).where(eq(uccCrossReferences.id, referenceId));
+  }
+
+  // UCC Definition Operations
+  async createUccDefinition(definitionData: InsertUccDefinition): Promise<UccDefinition> {
+    const [definition] = await db.insert(uccDefinitions).values(definitionData).returning();
+    return definition;
+  }
+
+  async getUccDefinition(definitionId: string): Promise<UccDefinition | undefined> {
+    const [definition] = await db.select().from(uccDefinitions).where(eq(uccDefinitions.id, definitionId));
+    return definition;
+  }
+
+  async getDefinitionsByTerm(term: string): Promise<(UccDefinition & { section: UccSection; article: UccArticle })[]> {
+    const definitions = await db.select().from(uccDefinitions).where(eq(uccDefinitions.term, term));
+    
+    const definitionsWithRelations = await Promise.all(
+      definitions.map(async (def) => {
+        const [section, article] = await Promise.all([
+          this.getUccSection(def.sectionId),
+          this.getUccArticle(def.articleId),
+        ]);
+        return { ...def, section: section!, article: article! };
+      })
+    );
+
+    return definitionsWithRelations.filter(def => def.section && def.article);
+  }
+
+  async getDefinitionsBySection(sectionId: string): Promise<UccDefinition[]> {
+    return await db.select().from(uccDefinitions).where(eq(uccDefinitions.sectionId, sectionId));
+  }
+
+  async getDefinitionsByArticle(articleId: string): Promise<UccDefinition[]> {
+    return await db.select().from(uccDefinitions).where(eq(uccDefinitions.articleId, articleId));
+  }
+
+  async searchUccDefinitions(query: string): Promise<(UccDefinition & { section: UccSection; article: UccArticle })[]> {
+    const definitions = await db
+      .select()
+      .from(uccDefinitions)
+      .where(
+        sql`${uccDefinitions.term} ILIKE ${'%' + query + '%'} OR ${uccDefinitions.definition} ILIKE ${'%' + query + '%'}`
+      )
+      .limit(50);
+
+    const definitionsWithRelations = await Promise.all(
+      definitions.map(async (def) => {
+        const [section, article] = await Promise.all([
+          this.getUccSection(def.sectionId),
+          this.getUccArticle(def.articleId),
+        ]);
+        return { ...def, section: section!, article: article! };
+      })
+    );
+
+    return definitionsWithRelations.filter(def => def.section && def.article);
+  }
+
+  async updateUccDefinition(definitionId: string, updates: Partial<InsertUccDefinition>): Promise<UccDefinition> {
+    const [definition] = await db
+      .update(uccDefinitions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(uccDefinitions.id, definitionId))
+      .returning();
+    return definition;
+  }
+
+  async deleteUccDefinition(definitionId: string): Promise<void> {
+    await db.delete(uccDefinitions).where(eq(uccDefinitions.id, definitionId));
+  }
+
+  // UCC Search Operations
+  async searchUccSections(query: string, options: {
+    articleNumber?: string;
+    limit?: number;
+    offset?: number;
+    includeHeadings?: boolean;
+    includeComments?: boolean;
+    searchType?: 'fulltext' | 'citation' | 'keyword' | 'definition';
+  } = {}): Promise<{
+    sections: (UccSection & { 
+      article: UccArticle;
+      part?: UccPart;
+      relevanceScore?: number;
+    })[];
+    totalCount: number;
+    searchMetadata: {
+      query: string;
+      searchType: string;
+      executionTime: number;
+    };
+  }> {
+    const startTime = Date.now();
+    const limit = options.limit || 20;
+    const offset = options.offset || 0;
+    const searchType = options.searchType || 'fulltext';
+
+    let whereConditions = [];
+    
+    if (options.articleNumber) {
+      whereConditions.push(sql`${uccArticles.number} = ${options.articleNumber}`);
+    }
+
+    if (searchType === 'citation') {
+      whereConditions.push(sql`${uccSections.citation} ILIKE ${'%' + query + '%'}`);
+    } else if (searchType === 'keyword') {
+      whereConditions.push(sql`(${uccSections.heading} ILIKE ${'%' + query + '%'} OR ${uccSections.content} ILIKE ${'%' + query + '%'})`);
+    } else {
+      whereConditions.push(sql`(${uccSections.heading} ILIKE ${'%' + query + '%'} OR ${uccSections.content} ILIKE ${'%' + query + '%'} OR ${uccSections.officialComment} ILIKE ${'%' + query + '%'})`);
+    }
+
+    const sections = await db
+      .select()
+      .from(uccSections)
+      .leftJoin(uccArticles, eq(uccSections.articleId, uccArticles.id))
+      .leftJoin(uccParts, eq(uccSections.partId, uccParts.id))
+      .where(and(...whereConditions))
+      .limit(limit)
+      .offset(offset);
+
+    const results = sections.map(row => ({
+      ...row.ucc_sections,
+      article: row.ucc_articles!,
+      part: row.ucc_parts || undefined,
+      relevanceScore: 1.0, // Simplified relevance scoring
+    }));
+
+    return {
+      sections: results,
+      totalCount: results.length, // Simplified count for now
+      searchMetadata: {
+        query,
+        searchType,
+        executionTime: Date.now() - startTime,
+      },
+    };
+  }
+
+  // UCC Search Index Operations
+  async createUccSearchIndex(searchIndexData: InsertUccSearchIndex): Promise<UccSearchIndex> {
+    const [searchIndex] = await db.insert(uccSearchIndex).values(searchIndexData).returning();
+    return searchIndex;
+  }
+
+  async getUccSearchIndexForSection(sectionId: string): Promise<UccSearchIndex | undefined> {
+    const [searchIndex] = await db.select().from(uccSearchIndex).where(eq(uccSearchIndex.sectionId, sectionId));
+    return searchIndex;
+  }
+
+  async updateUccSearchIndex(sectionId: string, updates: Partial<InsertUccSearchIndex>): Promise<UccSearchIndex> {
+    const [searchIndex] = await db
+      .update(uccSearchIndex)
+      .set({ ...updates, lastUpdated: new Date() })
+      .where(eq(uccSearchIndex.sectionId, sectionId))
+      .returning();
+    return searchIndex;
+  }
+
+  async rebuildUccSearchIndexes(articleNumber?: string): Promise<{ processed: number; errors: number }> {
+    let processed = 0;
+    let errors = 0;
+
+    try {
+      let sectionsQuery;
+      if (articleNumber) {
+        sectionsQuery = db
+          .select()
+          .from(uccSections)
+          .leftJoin(uccArticles, eq(uccSections.articleId, uccArticles.id))
+          .where(eq(uccArticles.number, articleNumber));
+      } else {
+        sectionsQuery = db.select().from(uccSections);
+      }
+
+      const sections = await sectionsQuery;
+
+      for (const section of sections) {
+        try {
+          const sectionData = 'ucc_sections' in section ? section.ucc_sections : section;
+          const searchContent = `${sectionData.heading} ${sectionData.content} ${sectionData.officialComment || ''}`;
+          
+          await db
+            .insert(uccSearchIndex)
+            .values({
+              sectionId: sectionData.id,
+              searchContent,
+              keywords: this.extractKeywordsFromContent(searchContent),
+              topics: this.classifyLegalContent(searchContent),
+              commercialTerms: [],
+              transactionTypes: [],
+            })
+            .onConflictDoUpdate({
+              target: uccSearchIndex.sectionId,
+              set: {
+                searchContent,
+                lastUpdated: new Date(),
+              },
+            });
+
+          processed++;
+        } catch (error) {
+          errors++;
+        }
+      }
+    } catch (error) {
+      errors++;
+    }
+
+    return { processed, errors };
+  }
+
+  // UCC Indexing Job Operations
+  async createUccIndexingJob(jobData: InsertUccIndexingJob): Promise<UccIndexingJob> {
+    const [job] = await db.insert(uccIndexingJobs).values(jobData).returning();
+    return job;
+  }
+
+  async getUccIndexingJob(jobId: string): Promise<UccIndexingJob | undefined> {
+    const [job] = await db.select().from(uccIndexingJobs).where(eq(uccIndexingJobs.id, jobId));
+    return job;
+  }
+
+  async getActiveUccIndexingJobs(): Promise<UccIndexingJob[]> {
+    return await db
+      .select()
+      .from(uccIndexingJobs)
+      .where(inArray(uccIndexingJobs.status, ["pending", "running"]));
+  }
+
+  async getUccIndexingJobHistory(limit: number = 50): Promise<UccIndexingJob[]> {
+    return await db
+      .select()
+      .from(uccIndexingJobs)
+      .orderBy(desc(uccIndexingJobs.createdAt))
+      .limit(limit);
+  }
+
+  async getLastUccIndexingJobByType(jobType: string): Promise<UccIndexingJob | undefined> {
+    const [job] = await db
+      .select()
+      .from(uccIndexingJobs)
+      .where(eq(uccIndexingJobs.jobType, jobType))
+      .orderBy(desc(uccIndexingJobs.createdAt))
+      .limit(1);
+    return job;
+  }
+
+  async updateUccIndexingJobStatus(jobId: string, status: string, progress?: any, stats?: any): Promise<UccIndexingJob> {
+    const updateData: any = { status };
+    
+    if (status === "running" && !progress) {
+      updateData.startedAt = new Date();
+    } else if (status === "completed" || status === "failed") {
+      updateData.completedAt = new Date();
+    }
+
+    if (progress) updateData.progress = progress;
+    if (stats) updateData.stats = stats;
+
+    const [job] = await db
+      .update(uccIndexingJobs)
+      .set(updateData)
+      .where(eq(uccIndexingJobs.id, jobId))
+      .returning();
+    return job;
+  }
+
+  async updateUccIndexingJobError(jobId: string, errorMessage: string): Promise<UccIndexingJob> {
+    const [job] = await db
+      .update(uccIndexingJobs)
+      .set({
+        status: "failed",
+        errorMessage,
+        completedAt: new Date(),
+      })
+      .where(eq(uccIndexingJobs.id, jobId))
+      .returning();
+    return job;
+  }
+
+  // UCC Statistics and Analytics
+  async getUccStats(): Promise<{
+    totalArticles: number;
+    totalParts: number;
+    totalSections: number;
+    totalDefinitions: number;
+    lastIndexed: Date | null;
+    indexingJobs: {
+      completed: number;
+      failed: number;
+      running: number;
+    };
+    searchStats: {
+      totalSearches: number;
+      popularSections: string[];
+    };
+  }> {
+    const [
+      articlesCount,
+      partsCount,
+      sectionsCount,
+      definitionsCount,
+      completedJobs,
+      failedJobs,
+      runningJobs,
+      lastJob,
+    ] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(uccArticles),
+      db.select({ count: sql<number>`count(*)` }).from(uccParts),
+      db.select({ count: sql<number>`count(*)` }).from(uccSections),
+      db.select({ count: sql<number>`count(*)` }).from(uccDefinitions),
+      db.select({ count: sql<number>`count(*)` }).from(uccIndexingJobs).where(eq(uccIndexingJobs.status, "completed")),
+      db.select({ count: sql<number>`count(*)` }).from(uccIndexingJobs).where(eq(uccIndexingJobs.status, "failed")),
+      db.select({ count: sql<number>`count(*)` }).from(uccIndexingJobs).where(eq(uccIndexingJobs.status, "running")),
+      db.select().from(uccIndexingJobs).orderBy(desc(uccIndexingJobs.completedAt)).limit(1),
+    ]);
+
+    return {
+      totalArticles: articlesCount[0]?.count || 0,
+      totalParts: partsCount[0]?.count || 0,
+      totalSections: sectionsCount[0]?.count || 0,
+      totalDefinitions: definitionsCount[0]?.count || 0,
+      lastIndexed: lastJob[0]?.completedAt || null,
+      indexingJobs: {
+        completed: completedJobs[0]?.count || 0,
+        failed: failedJobs[0]?.count || 0,
+        running: runningJobs[0]?.count || 0,
+      },
+      searchStats: {
+        totalSearches: 0, // Would be tracked in application analytics
+        popularSections: [], // Would be derived from search frequency
+      },
+    };
+  }
+
+  // UCC Maintenance Operations
+  async findOrphanedUccSections(): Promise<UccSection[]> {
+    return await db
+      .select()
+      .from(uccSections)
+      .leftJoin(uccArticles, eq(uccSections.articleId, uccArticles.id))
+      .where(sql`${uccArticles.id} IS NULL`)
+      .then(rows => rows.map(row => row.ucc_sections));
+  }
+
+  async validateUccCrossReferences(): Promise<{ valid: number; invalid: number; issues: string[] }> {
+    let valid = 0;
+    let invalid = 0;
+    const issues: string[] = [];
+
+    try {
+      const references = await db.select().from(uccCrossReferences);
+
+      for (const ref of references) {
+        if (ref.toSectionId) {
+          const [fromSection, toSection] = await Promise.all([
+            this.getUccSection(ref.fromSectionId),
+            this.getUccSection(ref.toSectionId),
+          ]);
+
+          if (!fromSection) {
+            invalid++;
+            issues.push(`UCC Reference ${ref.id}: From section ${ref.fromSectionId} not found`);
+          } else if (!toSection) {
+            invalid++;
+            issues.push(`UCC Reference ${ref.id}: To section ${ref.toSectionId} not found`);
+          } else {
+            valid++;
+          }
+        } else if (ref.externalReference) {
+          // External reference - just check if from section exists
+          const fromSection = await this.getUccSection(ref.fromSectionId);
+          if (!fromSection) {
+            invalid++;
+            issues.push(`UCC Reference ${ref.id}: From section ${ref.fromSectionId} not found`);
+          } else {
+            valid++;
+          }
+        }
+      }
+    } catch (error) {
+      issues.push(`Error validating UCC cross references: ${error}`);
+    }
+
+    return { valid, invalid, issues };
+  }
+
+  async optimizeUccSearchIndexes(): Promise<{ optimized: number; errors: string[] }> {
+    const errors: string[] = [];
+    let optimized = 0;
+
+    try {
+      // Run PostgreSQL optimization commands for UCC tables
+      await db.execute(sql`VACUUM ANALYZE ucc_sections`);
+      await db.execute(sql`VACUUM ANALYZE ucc_search_index`);
+      optimized += 2;
+
+      // Reindex text search indexes
+      await db.execute(sql`REINDEX INDEX CONCURRENTLY IF EXISTS IDX_ucc_sections_content_text`);
+      await db.execute(sql`REINDEX INDEX CONCURRENTLY IF EXISTS IDX_ucc_sections_heading_text`);
+      optimized += 2;
+
+    } catch (error) {
+      errors.push(`Error optimizing UCC indexes: ${error}`);
+    }
+
+    return { optimized, errors };
+  }
+
+  // Combined US Code + UCC Search Operations
+  async searchLegalSections(query: string, options: {
+    includeUSCode?: boolean;
+    includeUCC?: boolean;
+    limit?: number;
+    offset?: number;
+    searchType?: 'fulltext' | 'citation' | 'keyword';
+  } = {}): Promise<{
+    results: Array<{
+      type: 'uscode' | 'ucc';
+      section: UsCodeSection | UccSection;
+      title?: UsCodeTitle;
+      article?: UccArticle;
+      chapter?: UsCodeChapter;
+      part?: UccPart;
+      relevanceScore?: number;
+    }>;
+    totalCount: number;
+    searchMetadata: {
+      query: string;
+      searchType: string;
+      executionTime: number;
+    };
+  }> {
+    const startTime = Date.now();
+    const includeUSCode = options.includeUSCode !== false;
+    const includeUCC = options.includeUCC !== false;
+    const limit = options.limit || 20;
+    const offset = options.offset || 0;
+    const searchType = options.searchType || 'fulltext';
+
+    const results: Array<{
+      type: 'uscode' | 'ucc';
+      section: UsCodeSection | UccSection;
+      title?: UsCodeTitle;
+      article?: UccArticle;
+      chapter?: UsCodeChapter;
+      part?: UccPart;
+      relevanceScore?: number;
+    }> = [];
+
+    try {
+      // Search US Code if requested
+      if (includeUSCode) {
+        const usCodeResults = await this.searchUsCodeSections(query, {
+          limit: Math.floor(limit / 2),
+          offset,
+          searchType,
+        });
+
+        results.push(...usCodeResults.sections.map(section => ({
+          type: 'uscode' as const,
+          section,
+          title: section.title,
+          chapter: section.chapter,
+          relevanceScore: section.relevanceScore,
+        })));
+      }
+
+      // Search UCC if requested
+      if (includeUCC) {
+        const uccResults = await this.searchUccSections(query, {
+          limit: Math.floor(limit / 2),
+          offset,
+          searchType,
+        });
+
+        results.push(...uccResults.sections.map(section => ({
+          type: 'ucc' as const,
+          section,
+          article: section.article,
+          part: section.part,
+          relevanceScore: section.relevanceScore,
+        })));
+      }
+
+      // Sort by relevance score if available
+      results.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+
+      return {
+        results: results.slice(0, limit),
+        totalCount: results.length,
+        searchMetadata: {
+          query,
+          searchType,
+          executionTime: Date.now() - startTime,
+        },
+      };
+    } catch (error) {
+      return {
+        results: [],
+        totalCount: 0,
+        searchMetadata: {
+          query,
+          searchType,
+          executionTime: Date.now() - startTime,
+        },
+      };
+    }
   }
 
   // Helper methods for content processing

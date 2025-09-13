@@ -520,6 +520,179 @@ export const usCodeIndexingJobs = pgTable("us_code_indexing_jobs", {
   index("IDX_us_code_jobs_created").on(table.createdAt),
 ]);
 
+// ===== UCC (UNIFORM COMMERCIAL CODE) INDEXING SYSTEM =====
+
+// UCC Articles table - represents the 12 articles of the UCC (1, 2, 2A, 3, 4, 4A, 5, 6, 7, 8, 9, 12)
+export const uccArticles = pgTable("ucc_articles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  number: varchar("number").notNull().unique(), // Article number (1, 2, 2A, 3, 4, 4A, 5, 6, 7, 8, 9, 12)
+  name: varchar("name").notNull(),
+  description: text("description"),
+  officialTitle: varchar("official_title"), // Full official title from ALI/NCCUSL
+  lastModified: timestamp("last_modified"),
+  lastIndexed: timestamp("last_indexed").defaultNow(),
+  sourceUrl: varchar("source_url"),
+  packageId: varchar("package_id"), // Source package ID
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("IDX_ucc_articles_number").on(table.number),
+  index("IDX_ucc_articles_last_modified").on(table.lastModified),
+]);
+
+// UCC Parts table - represents parts within articles where applicable
+export const uccParts = pgTable("ucc_parts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  articleId: varchar("article_id").notNull(),
+  number: varchar("number").notNull(), // Part number (can be numeric or alphanumeric)
+  name: varchar("name").notNull(),
+  description: text("description"),
+  startSection: varchar("start_section"), // First section in part
+  endSection: varchar("end_section"), // Last section in part
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.articleId], foreignColumns: [uccArticles.id] }),
+  index("IDX_ucc_parts_article").on(table.articleId),
+  index("IDX_ucc_parts_number").on(table.number),
+  unique("UNQ_ucc_parts_article_number").on(table.articleId, table.number),
+]);
+
+// UCC Sections table - individual code sections with full content
+export const uccSections = pgTable("ucc_sections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  articleId: varchar("article_id").notNull(),
+  partId: varchar("part_id"), // Optional - some sections may not have parts
+  number: varchar("number").notNull(), // Section number (e.g., "1-101", "2-103", "9-203")
+  citation: varchar("citation").notNull().unique(), // Full citation (e.g., "UCC 1-101")
+  officialComment: text("official_comment"), // Official ALI/NCCUSL comments
+  heading: varchar("heading").notNull(),
+  content: text("content").notNull(),
+  xmlContent: text("xml_content"), // Original XML source
+  contentVector: text("content_vector"), // Full-text search vector for PostgreSQL
+  lastModified: timestamp("last_modified"),
+  sourceUrl: varchar("source_url"),
+  packageId: varchar("package_id"), // Source package ID
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.articleId], foreignColumns: [uccArticles.id] }),
+  foreignKey({ columns: [table.partId], foreignColumns: [uccParts.id] }),
+  index("IDX_ucc_sections_article").on(table.articleId),
+  index("IDX_ucc_sections_part").on(table.partId),
+  index("IDX_ucc_sections_number").on(table.number),
+  index("IDX_ucc_sections_citation").on(table.citation),
+  // Full-text search indexes using PostgreSQL's GIN (Generalized Inverted Index)
+  index("IDX_ucc_sections_content_text").on(table.content),
+  index("IDX_ucc_sections_heading_text").on(table.heading),
+  index("IDX_ucc_sections_last_modified").on(table.lastModified),
+]);
+
+// UCC Subsections table - detailed subsections and paragraphs
+export const uccSubsections = pgTable("ucc_subsections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sectionId: varchar("section_id").notNull(),
+  number: varchar("number").notNull(), // Subsection number (e.g., "(a)", "(1)", "(i)")
+  content: text("content").notNull(),
+  level: integer("level").notNull().default(1), // Nesting level (1 for (a), 2 for (1), 3 for (i))
+  parentSubsectionId: varchar("parent_subsection_id"), // For nested subsections
+  order: integer("order").notNull(), // Order within parent section/subsection
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.sectionId], foreignColumns: [uccSections.id] }),
+  foreignKey({ columns: [table.parentSubsectionId], foreignColumns: [uccSubsections.id] }),
+  index("IDX_ucc_subsections_section").on(table.sectionId),
+  index("IDX_ucc_subsections_parent").on(table.parentSubsectionId),
+  index("IDX_ucc_subsections_level").on(table.level),
+  index("IDX_ucc_subsections_order").on(table.order),
+  unique("UNQ_ucc_subsections_section_number").on(table.sectionId, table.number),
+]);
+
+// UCC Cross References table - tracks references between UCC sections and external codes
+export const uccCrossReferences = pgTable("ucc_cross_references", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromSectionId: varchar("from_section_id").notNull(),
+  toSectionId: varchar("to_section_id"), // UCC section reference
+  externalReference: varchar("external_reference"), // Non-UCC reference (e.g., "15 USC 1601")
+  referenceType: varchar("reference_type").notNull(), // 'cross_reference', 'see_also', 'superseded', 'amended', 'external'
+  context: text("context"), // Surrounding text where reference appears
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.fromSectionId], foreignColumns: [uccSections.id] }),
+  foreignKey({ columns: [table.toSectionId], foreignColumns: [uccSections.id] }),
+  index("IDX_ucc_cross_refs_from").on(table.fromSectionId),
+  index("IDX_ucc_cross_refs_to").on(table.toSectionId),
+  index("IDX_ucc_cross_refs_external").on(table.externalReference),
+  index("IDX_ucc_cross_refs_type").on(table.referenceType),
+  unique("UNQ_ucc_cross_refs").on(table.fromSectionId, table.toSectionId, table.externalReference, table.referenceType),
+]);
+
+// UCC Definitions table - key terms and definitions extracted from UCC sections
+export const uccDefinitions = pgTable("ucc_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  term: varchar("term").notNull(),
+  definition: text("definition").notNull(),
+  sectionId: varchar("section_id").notNull(), // Section where definition appears
+  articleId: varchar("article_id").notNull(), // Article context
+  scope: varchar("scope").notNull().default("section"), // 'section', 'article', 'general'
+  alternativeTerms: varchar("alternative_terms").array(), // Synonyms and related terms
+  citationContext: text("citation_context"), // Full citation with context
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.sectionId], foreignColumns: [uccSections.id] }),
+  foreignKey({ columns: [table.articleId], foreignColumns: [uccArticles.id] }),
+  index("IDX_ucc_definitions_term").on(table.term),
+  index("IDX_ucc_definitions_section").on(table.sectionId),
+  index("IDX_ucc_definitions_article").on(table.articleId),
+  index("IDX_ucc_definitions_scope").on(table.scope),
+  index("IDX_ucc_definitions_alternative_terms").on(table.alternativeTerms),
+  unique("UNQ_ucc_definitions_term_section").on(table.term, table.sectionId),
+]);
+
+// UCC Search Index table - optimized search index with commercial law metadata
+export const uccSearchIndex = pgTable("ucc_search_index", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sectionId: varchar("section_id").notNull(),
+  searchContent: text("search_content").notNull(), // Processed content for search
+  keywords: varchar("keywords").array(), // Extracted commercial law keywords
+  topics: varchar("topics").array(), // Commercial law topic classifications
+  commercialTerms: varchar("commercial_terms").array(), // UCC-specific commercial terms
+  transactionTypes: varchar("transaction_types").array(), // Types of commercial transactions
+  searchVector: text("search_vector"), // Optimized search vector
+  popularity: integer("popularity").default(0), // Search frequency for ranking
+  lastUpdated: timestamp("last_updated").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.sectionId], foreignColumns: [uccSections.id] }),
+  index("IDX_ucc_search_section").on(table.sectionId),
+  index("IDX_ucc_search_content").on(table.searchContent),
+  index("IDX_ucc_search_keywords").on(table.keywords),
+  index("IDX_ucc_search_topics").on(table.topics),
+  index("IDX_ucc_search_commercial_terms").on(table.commercialTerms),
+  index("IDX_ucc_search_transaction_types").on(table.transactionTypes),
+  index("IDX_ucc_search_popularity").on(table.popularity),
+]);
+
+// UCC Indexing Jobs table - tracks UCC indexing operations
+export const uccIndexingJobs = pgTable("ucc_indexing_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobType: varchar("job_type").notNull(), // 'full_index', 'incremental', 'article_update', 'section_update', 'definitions_extract'
+  status: varchar("status").notNull().default("pending"), // 'pending', 'running', 'completed', 'failed'
+  articleNumber: varchar("article_number"), // Optional - for article-specific jobs
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  progress: jsonb("progress"), // JSON object with progress details
+  stats: jsonb("stats"), // Job statistics (sections processed, definitions extracted, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("IDX_ucc_jobs_type").on(table.jobType),
+  index("IDX_ucc_jobs_status").on(table.status),
+  index("IDX_ucc_jobs_article").on(table.articleNumber),
+  index("IDX_ucc_jobs_created").on(table.createdAt),
+]);
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -620,6 +793,53 @@ export const insertUsCodeIndexingJobSchema = createInsertSchema(usCodeIndexingJo
   createdAt: true,
 });
 
+// UCC insert schemas
+export const insertUccArticleSchema = createInsertSchema(uccArticles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUccPartSchema = createInsertSchema(uccParts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUccSectionSchema = createInsertSchema(uccSections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  contentVector: true, // Exclude search vector from insert schema
+});
+
+export const insertUccSubsectionSchema = createInsertSchema(uccSubsections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUccCrossReferenceSchema = createInsertSchema(uccCrossReferences).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUccDefinitionSchema = createInsertSchema(uccDefinitions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUccSearchIndexSchema = createInsertSchema(uccSearchIndex).omit({
+  id: true,
+  searchVector: true, // Exclude search vector from insert schema
+});
+
+export const insertUccIndexingJobSchema = createInsertSchema(uccIndexingJobs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -659,3 +879,21 @@ export type UsCodeSearchIndex = typeof usCodeSearchIndex.$inferSelect;
 export type InsertUsCodeSearchIndex = z.infer<typeof insertUsCodeSearchIndexSchema>;
 export type UsCodeIndexingJob = typeof usCodeIndexingJobs.$inferSelect;
 export type InsertUsCodeIndexingJob = z.infer<typeof insertUsCodeIndexingJobSchema>;
+
+// UCC types
+export type UccArticle = typeof uccArticles.$inferSelect;
+export type InsertUccArticle = z.infer<typeof insertUccArticleSchema>;
+export type UccPart = typeof uccParts.$inferSelect;
+export type InsertUccPart = z.infer<typeof insertUccPartSchema>;
+export type UccSection = typeof uccSections.$inferSelect;
+export type InsertUccSection = z.infer<typeof insertUccSectionSchema>;
+export type UccSubsection = typeof uccSubsections.$inferSelect;
+export type InsertUccSubsection = z.infer<typeof insertUccSubsectionSchema>;
+export type UccCrossReference = typeof uccCrossReferences.$inferSelect;
+export type InsertUccCrossReference = z.infer<typeof insertUccCrossReferenceSchema>;
+export type UccDefinition = typeof uccDefinitions.$inferSelect;
+export type InsertUccDefinition = z.infer<typeof insertUccDefinitionSchema>;
+export type UccSearchIndex = typeof uccSearchIndex.$inferSelect;
+export type InsertUccSearchIndex = z.infer<typeof insertUccSearchIndexSchema>;
+export type UccIndexingJob = typeof uccIndexingJobs.$inferSelect;
+export type InsertUccIndexingJob = z.infer<typeof insertUccIndexingJobSchema>;
