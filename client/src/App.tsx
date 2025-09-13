@@ -9,6 +9,7 @@ import Home from "@/pages/Home";
 import StatusCorrection from "@/pages/StatusCorrection";
 import MinistryLegitimation from "@/pages/MinistryLegitimation";
 import AdminDashboard from "@/pages/AdminDashboard";
+import UserManagement from "@/pages/UserManagement";
 import InvitationAccept from "@/pages/InvitationAccept";
 import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/not-found";
@@ -27,7 +28,10 @@ function Router() {
           <Route path="/status-correction" component={StatusCorrection} />
           <Route path="/ministry-legitimation" component={MinistryLegitimation} />
           {canAccessAdmin() ? (
-            <Route path="/admin" component={AdminDashboard} />
+            <>
+              <Route path="/admin" component={AdminDashboard} />
+              <Route path="/admin/users" component={UserManagement} />
+            </>
           ) : null}
           <Route path="/" component={Home} />
         </>

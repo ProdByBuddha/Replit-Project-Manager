@@ -129,7 +129,13 @@ export function getRolePermissions(role: UserRole): Permission[] {
   }
   
   // Remove duplicates
-  return [...new Set(permissions)];
+  const uniquePermissions: Permission[] = [];
+  for (const permission of permissions) {
+    if (!uniquePermissions.includes(permission)) {
+      uniquePermissions.push(permission);
+    }
+  }
+  return uniquePermissions;
 }
 
 // Define which permissions each role has (with inheritance)

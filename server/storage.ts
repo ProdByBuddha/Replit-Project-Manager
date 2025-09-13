@@ -93,6 +93,7 @@ export interface IStorage {
   
   // Admin operations
   getAdminUsers(): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
   
   // Notification operations
   getUserNotificationPreferences(userId: string): Promise<NotificationPreferences | undefined>;
@@ -493,7 +494,11 @@ export class DatabaseStorage implements IStorage {
 
   // Admin operations
   async getAdminUsers(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, 'admin'));
+    return await db.select().from(users).where(eq(users.role, 'ministry_admin'));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
   // Notification operations

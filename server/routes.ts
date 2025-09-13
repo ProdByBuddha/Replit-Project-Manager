@@ -233,35 +233,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin users endpoint for workflow rule assignment
+  // Admin users endpoint for user management
   app.get('/api/admin/users', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_USERS), async (req: AuthenticatedRequest, res) => {
     try {
-
-      // Get all users, including family members for assignment
-      const allFamilies = await storage.getAllFamilies();
-      const allUsers = [];
+      // Get all users from database
+      const allUsers = await storage.getAllUsers();
       
-      // Get admin users
-      const adminUsers = await storage.getAdminUsers();
-      allUsers.push(...adminUsers);
-      
-      // Get family members from all families
-      for (const family of allFamilies) {
-        const members = await storage.getFamilyMembers(family.id);
-        allUsers.push(...members);
-      }
-      
-      // Remove duplicates and format for dropdown
-      const uniqueUsers = allUsers.filter((user, index, arr) => 
-        arr.findIndex(u => u.id === user.id) === index
-      );
-      
-      const userData = uniqueUsers.map(u => ({
-        id: u.id,
-        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
-        email: u.email,
-        role: u.role
-      }));
+      // Format user data for the management table
+      const userData = allUsers.map(user => {
+        // Get family name if user belongs to one
+        let familyName = null;
+        if (user.familyId) {
+          // We could populate this later if needed, for now keep it simple
+          familyName = user.familyId;
+        }
+        
+        return {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          familyId: user.familyId,
+          familyName: familyName,
+          profileImageUrl: user.profileImageUrl,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User'
+        };
+      });
       
       res.json(userData);
     } catch (error) {

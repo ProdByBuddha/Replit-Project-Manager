@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { hasPermission, canAccessRoute, isAdmin, hasMinimumRole, type UserRole, type Permission } from "@shared/permissions";
 
 // Enhanced request interface to include user data with role information
-interface AuthenticatedRequest extends Express.Request {
+export interface AuthenticatedRequest extends Express.Request {
   user: {
     claims: {
       sub: string;
@@ -22,6 +22,8 @@ interface AuthenticatedRequest extends Express.Request {
   };
   userRole?: UserRole;
   userFamilyId?: string;
+  body: any;
+  params: any;
 }
 
 // Middleware to load and attach user role information
