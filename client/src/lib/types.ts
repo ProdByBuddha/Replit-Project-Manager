@@ -55,6 +55,56 @@ export interface FamilyStats {
   progress: number;
 }
 
+// Ministry Legitimization types
+export interface MinistryChecklistSection {
+  id: string;
+  title: string;
+  description: string;
+  items: MinistryChecklistItem[];
+}
+
+export interface MinistryChecklistItem {
+  id: string;
+  title: string;
+  description: string;
+  purpose: string;
+  whatItDoes: string[];
+  howToUse: string[];
+  whoSigns: string[];
+  whereToFile: string[];
+  stepByStepInstructions: string[];
+  draftingChecklist: string[];
+  practicalCautions?: string[];
+  outputs: string[];
+  category: 'foundational' | 'governance' | 'operations' | 'banking' | 'digital' | 'assets' | 'optional';
+  priority: 'high' | 'medium' | 'low';
+  estimatedTime: string;
+  requiredDocuments: string[];
+  isOptional: boolean;
+  dependsOn?: string[]; // IDs of other items this depends on
+  status: 'not_started' | 'in_progress' | 'completed' | 'not_applicable';
+  completedAt?: Date;
+  assignedTo?: string;
+  notes?: string;
+  uploadedDocuments?: Document[];
+}
+
+export interface MinistryProgress {
+  totalItems: number;
+  completedItems: number;
+  inProgressItems: number;
+  notStartedItems: number;
+  notApplicableItems: number;
+  overallProgress: number;
+  categoryProgress: {
+    [category: string]: {
+      total: number;
+      completed: number;
+      progress: number;
+    };
+  };
+}
+
 // Admin interface types
 export interface TaskDependencyWithNames extends TaskDependency {
   taskName: string;
