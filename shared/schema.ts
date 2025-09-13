@@ -399,6 +399,127 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ===== US CODE INDEXING SYSTEM =====
+
+// US Code Titles table - represents the 54 titles of the US Code
+export const usCodeTitles = pgTable("us_code_titles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  number: integer("number").notNull().unique(), // Title number (1-54)
+  name: varchar("name").notNull(),
+  description: text("description"),
+  packageId: varchar("package_id"), // GovInfo package ID
+  lastModified: timestamp("last_modified"),
+  lastIndexed: timestamp("last_indexed").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("IDX_us_code_titles_number").on(table.number),
+  index("IDX_us_code_titles_last_modified").on(table.lastModified),
+]);
+
+// US Code Chapters table - represents chapters within titles
+export const usCodeChapters = pgTable("us_code_chapters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  titleId: varchar("title_id").notNull(),
+  number: varchar("number").notNull(), // Chapter number (can be numeric or alphanumeric)
+  name: varchar("name").notNull(),
+  description: text("description"),
+  startSection: varchar("start_section"), // First section in chapter
+  endSection: varchar("end_section"), // Last section in chapter
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.titleId], foreignColumns: [usCodeTitles.id] }),
+  index("IDX_us_code_chapters_title").on(table.titleId),
+  index("IDX_us_code_chapters_number").on(table.number),
+  unique("UNQ_us_code_chapters_title_number").on(table.titleId, table.number),
+]);
+
+// US Code Sections table - individual code sections with full content
+export const usCodeSections = pgTable("us_code_sections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  titleId: varchar("title_id").notNull(),
+  chapterId: varchar("chapter_id"), // Optional - some sections may not have chapters
+  number: varchar("number").notNull(), // Section number (e.g., "101", "1001", "3a")
+  citation: varchar("citation").notNull().unique(), // Full citation (e.g., "15 USC 1001")
+  heading: varchar("heading").notNull(),
+  content: text("content").notNull(),
+  xmlContent: text("xml_content"), // Original XML from GovInfo API
+  contentVector: text("content_vector"), // Full-text search vector for PostgreSQL
+  lastModified: timestamp("last_modified"),
+  sourceUrl: varchar("source_url"),
+  packageId: varchar("package_id"), // GovInfo package ID
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.titleId], foreignColumns: [usCodeTitles.id] }),
+  foreignKey({ columns: [table.chapterId], foreignColumns: [usCodeChapters.id] }),
+  index("IDX_us_code_sections_title").on(table.titleId),
+  index("IDX_us_code_sections_chapter").on(table.chapterId),
+  index("IDX_us_code_sections_number").on(table.number),
+  index("IDX_us_code_sections_citation").on(table.citation),
+  // Full-text search indexes using PostgreSQL's GIN (Generalized Inverted Index)
+  // Note: tsvector indexes will be created after table creation via SQL triggers
+  index("IDX_us_code_sections_content_text").on(table.content),
+  index("IDX_us_code_sections_heading_text").on(table.heading),
+  index("IDX_us_code_sections_last_modified").on(table.lastModified),
+]);
+
+// US Code Cross References table - tracks references between sections
+export const usCodeCrossReferences = pgTable("us_code_cross_references", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromSectionId: varchar("from_section_id").notNull(),
+  toSectionId: varchar("to_section_id").notNull(),
+  referenceType: varchar("reference_type").notNull(), // 'citation', 'see_also', 'superseded', 'amended'
+  context: text("context"), // Surrounding text where reference appears
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.fromSectionId], foreignColumns: [usCodeSections.id] }),
+  foreignKey({ columns: [table.toSectionId], foreignColumns: [usCodeSections.id] }),
+  index("IDX_us_code_cross_refs_from").on(table.fromSectionId),
+  index("IDX_us_code_cross_refs_to").on(table.toSectionId),
+  index("IDX_us_code_cross_refs_type").on(table.referenceType),
+  unique("UNQ_us_code_cross_refs").on(table.fromSectionId, table.toSectionId, table.referenceType),
+]);
+
+// US Code Search Index table - optimized search index with metadata
+export const usCodeSearchIndex = pgTable("us_code_search_index", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sectionId: varchar("section_id").notNull(),
+  searchContent: text("search_content").notNull(), // Processed content for search
+  keywords: varchar("keywords").array(), // Extracted legal keywords
+  topics: varchar("topics").array(), // Legal topic classifications
+  searchVector: text("search_vector"), // Optimized search vector
+  popularity: integer("popularity").default(0), // Search frequency for ranking
+  lastUpdated: timestamp("last_updated").defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.sectionId], foreignColumns: [usCodeSections.id] }),
+  index("IDX_us_code_search_section").on(table.sectionId),
+  index("IDX_us_code_search_content").on(table.searchContent),
+  index("IDX_us_code_search_keywords").on(table.keywords),
+  index("IDX_us_code_search_topics").on(table.topics),
+  index("IDX_us_code_search_popularity").on(table.popularity),
+]);
+
+// US Code Indexing Jobs table - tracks indexing operations
+export const usCodeIndexingJobs = pgTable("us_code_indexing_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobType: varchar("job_type").notNull(), // 'full_index', 'incremental', 'title_update', 'section_update'
+  status: varchar("status").notNull().default("pending"), // 'pending', 'running', 'completed', 'failed'
+  titleNumber: integer("title_number"), // Optional - for title-specific jobs
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  progress: jsonb("progress"), // JSON object with progress details
+  stats: jsonb("stats"), // Job statistics (sections processed, errors, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("IDX_us_code_jobs_type").on(table.jobType),
+  index("IDX_us_code_jobs_status").on(table.status),
+  index("IDX_us_code_jobs_title").on(table.titleNumber),
+  index("IDX_us_code_jobs_created").on(table.createdAt),
+]);
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -464,6 +585,41 @@ export const insertSystemSettingsSchema = createInsertSchema(systemSettings).omi
   updatedAt: true,
 });
 
+// US Code insert schemas
+export const insertUsCodeTitleSchema = createInsertSchema(usCodeTitles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUsCodeChapterSchema = createInsertSchema(usCodeChapters).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUsCodeSectionSchema = createInsertSchema(usCodeSections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  contentVector: true, // Exclude search vector from insert schema
+});
+
+export const insertUsCodeCrossReferenceSchema = createInsertSchema(usCodeCrossReferences).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUsCodeSearchIndexSchema = createInsertSchema(usCodeSearchIndex).omit({
+  id: true,
+  searchVector: true, // Exclude search vector from insert schema
+});
+
+export const insertUsCodeIndexingJobSchema = createInsertSchema(usCodeIndexingJobs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -489,3 +645,17 @@ export type WorkflowRule = typeof workflowRules.$inferSelect;
 export type InsertWorkflowRule = z.infer<typeof insertWorkflowRuleSchema>;
 export type SystemSettings = typeof systemSettings.$inferSelect;
 export type InsertSystemSettings = z.infer<typeof insertSystemSettingsSchema>;
+
+// US Code types
+export type UsCodeTitle = typeof usCodeTitles.$inferSelect;
+export type InsertUsCodeTitle = z.infer<typeof insertUsCodeTitleSchema>;
+export type UsCodeChapter = typeof usCodeChapters.$inferSelect;
+export type InsertUsCodeChapter = z.infer<typeof insertUsCodeChapterSchema>;
+export type UsCodeSection = typeof usCodeSections.$inferSelect;
+export type InsertUsCodeSection = z.infer<typeof insertUsCodeSectionSchema>;
+export type UsCodeCrossReference = typeof usCodeCrossReferences.$inferSelect;
+export type InsertUsCodeCrossReference = z.infer<typeof insertUsCodeCrossReferenceSchema>;
+export type UsCodeSearchIndex = typeof usCodeSearchIndex.$inferSelect;
+export type InsertUsCodeSearchIndex = z.infer<typeof insertUsCodeSearchIndexSchema>;
+export type UsCodeIndexingJob = typeof usCodeIndexingJobs.$inferSelect;
+export type InsertUsCodeIndexingJob = z.infer<typeof insertUsCodeIndexingJobSchema>;

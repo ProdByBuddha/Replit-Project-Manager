@@ -1436,6 +1436,396 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== US CODE INDEXING API ====================
+  
+  // Middleware to authenticate Parlant service requests
+  const authenticateParlantService = (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    const expectedSecret = process.env.PARLANT_SHARED_SECRET || "family-portal-ai-secret-2024";
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: "Missing or invalid authorization header" });
+    }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    if (token !== expectedSecret) {
+      return res.status(401).json({ success: false, message: "Invalid authentication token" });
+    }
+    
+    next();
+  };
+  
+  // US Code Search endpoint - accessible to Parlant service and authenticated users
+  app.get('/api/uscode/search', (req: any, res: any, next: any) => {
+    // Try Parlant service auth first, then fall back to user auth
+    const authHeader = req.headers.authorization;
+    const expectedSecret = process.env.PARLANT_SHARED_SECRET || "family-portal-ai-secret-2024";
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      if (token === expectedSecret) {
+        // Parlant service authentication successful
+        return next();
+      }
+    }
+    
+    // Fall back to user authentication
+    isAuthenticated(req, res, (err: any) => {
+      if (err) return next(err);
+      loadUserRole(req, res, next);
+    });
+  }, async (req: AuthenticatedRequest | any, res) => {
+    try {
+      const { q: query, title, limit, offset, type } = req.query;
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ 
+          message: "Search query 'q' parameter is required" 
+        });
+      }
+
+      const searchOptions = {
+        titleNumber: title ? parseInt(title as string) : undefined,
+        limit: limit ? parseInt(limit as string) : 20,
+        offset: offset ? parseInt(offset as string) : 0,
+        searchType: (type as 'fulltext' | 'citation' | 'keyword') || 'fulltext',
+        includeHeadings: true,
+      };
+
+      const results = await storage.searchUsCodeSections(query, searchOptions);
+      
+      res.json({
+        success: true,
+        data: results,
+        pagination: {
+          limit: searchOptions.limit,
+          offset: searchOptions.offset,
+          totalCount: results.totalCount,
+          hasMore: results.totalCount > (searchOptions.offset + searchOptions.limit),
+        }
+      });
+    } catch (error) {
+      console.error("Error searching US Code:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to search US Code" 
+      });
+    }
+  });
+
+  // US Code Titles listing - accessible to all authenticated users
+  app.get('/api/uscode/titles', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const titles = await storage.getAllUsCodeTitles();
+      
+      res.json({
+        success: true,
+        data: titles,
+        count: titles.length
+      });
+    } catch (error) {
+      console.error("Error fetching US Code titles:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch US Code titles" 
+      });
+    }
+  });
+
+  // Get specific US Code title by number
+  app.get('/api/uscode/titles/:number', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const titleNumber = parseInt(req.params.number);
+      
+      if (isNaN(titleNumber)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid title number" 
+        });
+      }
+
+      const title = await storage.getUsCodeTitleByNumber(titleNumber);
+      if (!title) {
+        return res.status(404).json({ 
+          success: false,
+          message: "US Code title not found" 
+        });
+      }
+
+      // Get chapters for this title
+      const chapters = await storage.getChaptersByTitle(title.id);
+      
+      res.json({
+        success: true,
+        data: {
+          ...title,
+          chapters
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching US Code title:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch US Code title" 
+      });
+    }
+  });
+
+  // Get sections by title
+  app.get('/api/uscode/titles/:number/sections', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const titleNumber = parseInt(req.params.number);
+      const { limit, offset } = req.query;
+      
+      if (isNaN(titleNumber)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid title number" 
+        });
+      }
+
+      const title = await storage.getUsCodeTitleByNumber(titleNumber);
+      if (!title) {
+        return res.status(404).json({ 
+          success: false,
+          message: "US Code title not found" 
+        });
+      }
+
+      const sections = await storage.getSectionsByTitle(title.id);
+      
+      // Apply pagination if specified
+      const limitNum = limit ? parseInt(limit as string) : sections.length;
+      const offsetNum = offset ? parseInt(offset as string) : 0;
+      const paginatedSections = sections.slice(offsetNum, offsetNum + limitNum);
+      
+      res.json({
+        success: true,
+        data: paginatedSections,
+        pagination: {
+          limit: limitNum,
+          offset: offsetNum,
+          totalCount: sections.length,
+          hasMore: sections.length > (offsetNum + limitNum),
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching title sections:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch title sections" 
+      });
+    }
+  });
+
+  // Get specific section by citation
+  app.get('/api/uscode/sections/:citation', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { citation } = req.params;
+      
+      if (!citation) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Citation parameter is required" 
+        });
+      }
+
+      const section = await storage.getUsCodeSectionByCitation(citation);
+      if (!section) {
+        return res.status(404).json({ 
+          success: false,
+          message: "US Code section not found" 
+        });
+      }
+
+      // Get related data
+      const [title, crossReferences] = await Promise.all([
+        storage.getUsCodeTitle(section.titleId),
+        storage.getCrossReferencesForSection(section.id)
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          ...section,
+          title,
+          crossReferences
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching US Code section:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch US Code section" 
+      });
+    }
+  });
+
+  // US Code Statistics (Admin only)
+  app.get('/api/uscode/stats', isAuthenticated, loadUserRole, requirePermission(Permission.VIEW_ADMIN_DASHBOARD), async (req: AuthenticatedRequest, res) => {
+    try {
+      const stats = await storage.getUsCodeStats();
+      
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error("Error fetching US Code statistics:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch US Code statistics" 
+      });
+    }
+  });
+
+  // US Code Indexing Jobs Management (Admin only)
+  app.get('/api/uscode/index/jobs', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { limit } = req.query;
+      const limitNum = limit ? parseInt(limit as string) : 50;
+      
+      const jobs = await storage.getIndexingJobHistory(limitNum);
+      
+      res.json({
+        success: true,
+        data: jobs
+      });
+    } catch (error) {
+      console.error("Error fetching indexing jobs:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch indexing jobs" 
+      });
+    }
+  });
+
+  // Start new indexing job (Admin only)
+  app.post('/api/uscode/index/jobs', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { titleNumber, jobType = 'full_index' } = req.body;
+      const userId = req.user.claims.sub;
+      
+      // Check for existing running jobs
+      const activeJobs = await storage.getActiveIndexingJobs();
+      if (activeJobs.length > 0) {
+        return res.status(409).json({ 
+          success: false,
+          message: "Another indexing job is already running",
+          activeJobs: activeJobs.map(job => ({ id: job.id, status: job.status, titleNumber: job.titleNumber }))
+        });
+      }
+
+      // Create new indexing job
+      const jobData = {
+        titleNumber: titleNumber || null,
+        status: 'pending',
+        startedBy: userId,
+        jobType,
+        progress: { stage: 'initializing', percentage: 0 },
+        stats: { processed: 0, errors: 0 },
+      };
+
+      const newJob = await storage.createIndexingJob(jobData);
+      
+      res.status(201).json({
+        success: true,
+        data: newJob,
+        message: "Indexing job created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating indexing job:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to create indexing job" 
+      });
+    }
+  });
+
+  // Get specific indexing job status
+  app.get('/api/uscode/index/jobs/:jobId', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      const job = await storage.getIndexingJob(jobId);
+      if (!job) {
+        return res.status(404).json({ 
+          success: false,
+          message: "Indexing job not found" 
+        });
+      }
+
+      res.json({
+        success: true,
+        data: job
+      });
+    } catch (error) {
+      console.error("Error fetching indexing job:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to fetch indexing job" 
+      });
+    }
+  });
+
+  // US Code Maintenance Operations (Admin only)
+  app.post('/api/uscode/maintenance/optimize', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const results = await storage.optimizeSearchIndexes();
+      
+      res.json({
+        success: true,
+        data: results,
+        message: "Search index optimization completed"
+      });
+    } catch (error) {
+      console.error("Error optimizing search indexes:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to optimize search indexes" 
+      });
+    }
+  });
+
+  app.get('/api/uscode/maintenance/validate', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const validation = await storage.validateCrossReferences();
+      
+      res.json({
+        success: true,
+        data: validation,
+        message: "Cross-reference validation completed"
+      });
+    } catch (error) {
+      console.error("Error validating cross references:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to validate cross references" 
+      });
+    }
+  });
+
+  // Rebuild search indexes (Admin only)
+  app.post('/api/uscode/index/rebuild', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { titleNumber } = req.body;
+      
+      const results = await storage.rebuildSearchIndexes(titleNumber);
+      
+      res.json({
+        success: true,
+        data: results,
+        message: "Search index rebuild completed"
+      });
+    } catch (error) {
+      console.error("Error rebuilding search indexes:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to rebuild search indexes" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Initialize sample data and default tasks

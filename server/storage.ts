@@ -10,6 +10,13 @@ import {
   notificationLogs,
   taskDependencies,
   workflowRules,
+  systemSettings,
+  usCodeTitles,
+  usCodeChapters,
+  usCodeSections,
+  usCodeCrossReferences,
+  usCodeSearchIndex,
+  usCodeIndexingJobs,
   type User,
   type UpsertUser,
   type Family,
@@ -32,9 +39,20 @@ import {
   type InsertTaskDependency,
   type WorkflowRule,
   type InsertWorkflowRule,
-  systemSettings,
   type SystemSettings,
   type InsertSystemSettings,
+  type UsCodeTitle,
+  type InsertUsCodeTitle,
+  type UsCodeChapter,
+  type InsertUsCodeChapter,
+  type UsCodeSection,
+  type InsertUsCodeSection,
+  type UsCodeCrossReference,
+  type InsertUsCodeCrossReference,
+  type UsCodeSearchIndex,
+  type InsertUsCodeSearchIndex,
+  type UsCodeIndexingJob,
+  type InsertUsCodeIndexingJob,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, lt, gt, inArray, sql } from "drizzle-orm";
@@ -134,6 +152,95 @@ export interface IStorage {
   upsertSystemSetting(setting: InsertSystemSettings): Promise<SystemSettings>;
   updateSystemSetting(key: string, value: any): Promise<SystemSettings>;
   deleteSystemSetting(key: string): Promise<void>;
+  
+  // ===== US CODE INDEXING OPERATIONS =====
+  
+  // US Code Title Operations
+  createUsCodeTitle(title: InsertUsCodeTitle): Promise<UsCodeTitle>;
+  getUsCodeTitle(titleId: string): Promise<UsCodeTitle | undefined>;
+  getUsCodeTitleByNumber(titleNumber: number): Promise<UsCodeTitle | undefined>;
+  getAllUsCodeTitles(): Promise<UsCodeTitle[]>;
+  updateUsCodeTitle(titleId: string, updates: Partial<InsertUsCodeTitle>): Promise<UsCodeTitle>;
+  deleteUsCodeTitle(titleId: string): Promise<void>;
+  
+  // US Code Chapter Operations
+  createUsCodeChapter(chapter: InsertUsCodeChapter): Promise<UsCodeChapter>;
+  getUsCodeChapter(chapterId: string): Promise<UsCodeChapter | undefined>;
+  getChaptersByTitle(titleId: string): Promise<UsCodeChapter[]>;
+  updateUsCodeChapter(chapterId: string, updates: Partial<InsertUsCodeChapter>): Promise<UsCodeChapter>;
+  deleteUsCodeChapter(chapterId: string): Promise<void>;
+  
+  // US Code Section Operations
+  createUsCodeSection(section: InsertUsCodeSection): Promise<UsCodeSection>;
+  getUsCodeSection(sectionId: string): Promise<UsCodeSection | undefined>;
+  getUsCodeSectionByCitation(citation: string): Promise<UsCodeSection | undefined>;
+  getSectionsByTitle(titleId: string): Promise<UsCodeSection[]>;
+  getSectionsByChapter(chapterId: string): Promise<UsCodeSection[]>;
+  updateUsCodeSection(sectionId: string, updates: Partial<InsertUsCodeSection>): Promise<UsCodeSection>;
+  deleteUsCodeSection(sectionId: string): Promise<void>;
+  
+  // US Code Cross Reference Operations
+  createUsCodeCrossReference(reference: InsertUsCodeCrossReference): Promise<UsCodeCrossReference>;
+  getCrossReferencesForSection(sectionId: string): Promise<(UsCodeCrossReference & { toSection: UsCodeSection })[]>;
+  getSectionsReferencingSection(sectionId: string): Promise<(UsCodeCrossReference & { fromSection: UsCodeSection })[]>;
+  deleteCrossReference(referenceId: string): Promise<void>;
+  
+  // US Code Search Operations
+  searchUsCodeSections(query: string, options?: {
+    titleNumber?: number;
+    limit?: number;
+    offset?: number;
+    includeHeadings?: boolean;
+    searchType?: 'fulltext' | 'citation' | 'keyword';
+  }): Promise<{
+    sections: (UsCodeSection & { 
+      title: UsCodeTitle;
+      chapter?: UsCodeChapter;
+      relevanceScore?: number;
+    })[];
+    totalCount: number;
+    searchMetadata: {
+      query: string;
+      searchType: string;
+      executionTime: number;
+    };
+  }>;
+  
+  // US Code Search Index Operations
+  createUsCodeSearchIndex(searchIndex: InsertUsCodeSearchIndex): Promise<UsCodeSearchIndex>;
+  getSearchIndexForSection(sectionId: string): Promise<UsCodeSearchIndex | undefined>;
+  updateSearchIndex(sectionId: string, updates: Partial<InsertUsCodeSearchIndex>): Promise<UsCodeSearchIndex>;
+  rebuildSearchIndexes(titleNumber?: number): Promise<{ processed: number; errors: number }>;
+  
+  // US Code Indexing Job Operations
+  createIndexingJob(job: InsertUsCodeIndexingJob): Promise<UsCodeIndexingJob>;
+  getIndexingJob(jobId: string): Promise<UsCodeIndexingJob | undefined>;
+  getActiveIndexingJobs(): Promise<UsCodeIndexingJob[]>;
+  getIndexingJobHistory(limit?: number): Promise<UsCodeIndexingJob[]>;
+  updateIndexingJobStatus(jobId: string, status: string, progress?: any, stats?: any): Promise<UsCodeIndexingJob>;
+  updateIndexingJobError(jobId: string, errorMessage: string): Promise<UsCodeIndexingJob>;
+  
+  // US Code Statistics and Analytics
+  getUsCodeStats(): Promise<{
+    totalTitles: number;
+    totalChapters: number;
+    totalSections: number;
+    lastIndexed: Date | null;
+    indexingJobs: {
+      completed: number;
+      failed: number;
+      running: number;
+    };
+    searchStats: {
+      totalSearches: number;
+      popularSections: string[];
+    };
+  }>;
+  
+  // US Code Maintenance Operations
+  findOrphanedSections(): Promise<UsCodeSection[]>;
+  validateCrossReferences(): Promise<{ valid: number; invalid: number; issues: string[] }>;
+  optimizeSearchIndexes(): Promise<{ optimized: number; errors: string[] }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1024,6 +1131,644 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSystemSetting(key: string): Promise<void> {
     await db.delete(systemSettings).where(eq(systemSettings.key, key));
+  }
+
+  // ===== US CODE STORAGE IMPLEMENTATIONS =====
+
+  // US Code Title Operations
+  async createUsCodeTitle(titleData: InsertUsCodeTitle): Promise<UsCodeTitle> {
+    const [title] = await db.insert(usCodeTitles).values(titleData).returning();
+    return title;
+  }
+
+  async getUsCodeTitle(titleId: string): Promise<UsCodeTitle | undefined> {
+    const [title] = await db
+      .select()
+      .from(usCodeTitles)
+      .where(eq(usCodeTitles.id, titleId));
+    return title;
+  }
+
+  async getUsCodeTitleByNumber(titleNumber: number): Promise<UsCodeTitle | undefined> {
+    const [title] = await db
+      .select()
+      .from(usCodeTitles)
+      .where(eq(usCodeTitles.number, titleNumber));
+    return title;
+  }
+
+  async getAllUsCodeTitles(): Promise<UsCodeTitle[]> {
+    return await db
+      .select()
+      .from(usCodeTitles)
+      .orderBy(usCodeTitles.number);
+  }
+
+  async updateUsCodeTitle(titleId: string, updates: Partial<InsertUsCodeTitle>): Promise<UsCodeTitle> {
+    const [title] = await db
+      .update(usCodeTitles)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(usCodeTitles.id, titleId))
+      .returning();
+    
+    if (!title) {
+      throw new Error(`US Code title with ID "${titleId}" not found`);
+    }
+    
+    return title;
+  }
+
+  async deleteUsCodeTitle(titleId: string): Promise<void> {
+    await db.delete(usCodeTitles).where(eq(usCodeTitles.id, titleId));
+  }
+
+  // US Code Chapter Operations
+  async createUsCodeChapter(chapterData: InsertUsCodeChapter): Promise<UsCodeChapter> {
+    const [chapter] = await db.insert(usCodeChapters).values(chapterData).returning();
+    return chapter;
+  }
+
+  async getUsCodeChapter(chapterId: string): Promise<UsCodeChapter | undefined> {
+    const [chapter] = await db
+      .select()
+      .from(usCodeChapters)
+      .where(eq(usCodeChapters.id, chapterId));
+    return chapter;
+  }
+
+  async getChaptersByTitle(titleId: string): Promise<UsCodeChapter[]> {
+    return await db
+      .select()
+      .from(usCodeChapters)
+      .where(eq(usCodeChapters.titleId, titleId))
+      .orderBy(usCodeChapters.number);
+  }
+
+  async updateUsCodeChapter(chapterId: string, updates: Partial<InsertUsCodeChapter>): Promise<UsCodeChapter> {
+    const [chapter] = await db
+      .update(usCodeChapters)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(usCodeChapters.id, chapterId))
+      .returning();
+    
+    if (!chapter) {
+      throw new Error(`US Code chapter with ID "${chapterId}" not found`);
+    }
+    
+    return chapter;
+  }
+
+  async deleteUsCodeChapter(chapterId: string): Promise<void> {
+    await db.delete(usCodeChapters).where(eq(usCodeChapters.id, chapterId));
+  }
+
+  // US Code Section Operations
+  async createUsCodeSection(sectionData: InsertUsCodeSection): Promise<UsCodeSection> {
+    const [section] = await db.insert(usCodeSections).values(sectionData).returning();
+    return section;
+  }
+
+  async getUsCodeSection(sectionId: string): Promise<UsCodeSection | undefined> {
+    const [section] = await db
+      .select()
+      .from(usCodeSections)
+      .where(eq(usCodeSections.id, sectionId));
+    return section;
+  }
+
+  async getUsCodeSectionByCitation(citation: string): Promise<UsCodeSection | undefined> {
+    const [section] = await db
+      .select()
+      .from(usCodeSections)
+      .where(eq(usCodeSections.citation, citation));
+    return section;
+  }
+
+  async getSectionsByTitle(titleId: string): Promise<UsCodeSection[]> {
+    return await db
+      .select()
+      .from(usCodeSections)
+      .where(eq(usCodeSections.titleId, titleId))
+      .orderBy(usCodeSections.number);
+  }
+
+  async getSectionsByChapter(chapterId: string): Promise<UsCodeSection[]> {
+    return await db
+      .select()
+      .from(usCodeSections)
+      .where(eq(usCodeSections.chapterId, chapterId))
+      .orderBy(usCodeSections.number);
+  }
+
+  async updateUsCodeSection(sectionId: string, updates: Partial<InsertUsCodeSection>): Promise<UsCodeSection> {
+    const [section] = await db
+      .update(usCodeSections)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(usCodeSections.id, sectionId))
+      .returning();
+    
+    if (!section) {
+      throw new Error(`US Code section with ID "${sectionId}" not found`);
+    }
+    
+    return section;
+  }
+
+  async deleteUsCodeSection(sectionId: string): Promise<void> {
+    await db.delete(usCodeSections).where(eq(usCodeSections.id, sectionId));
+  }
+
+  // US Code Cross Reference Operations
+  async createUsCodeCrossReference(referenceData: InsertUsCodeCrossReference): Promise<UsCodeCrossReference> {
+    const [reference] = await db.insert(usCodeCrossReferences).values(referenceData).returning();
+    return reference;
+  }
+
+  async getCrossReferencesForSection(sectionId: string): Promise<(UsCodeCrossReference & { toSection: UsCodeSection })[]> {
+    return await db.query.usCodeCrossReferences.findMany({
+      where: eq(usCodeCrossReferences.fromSectionId, sectionId),
+      with: {
+        toSection: true,
+      },
+    });
+  }
+
+  async getSectionsReferencingSection(sectionId: string): Promise<(UsCodeCrossReference & { fromSection: UsCodeSection })[]> {
+    return await db.query.usCodeCrossReferences.findMany({
+      where: eq(usCodeCrossReferences.toSectionId, sectionId),
+      with: {
+        fromSection: true,
+      },
+    });
+  }
+
+  async deleteCrossReference(referenceId: string): Promise<void> {
+    await db.delete(usCodeCrossReferences).where(eq(usCodeCrossReferences.id, referenceId));
+  }
+
+  // US Code Search Operations
+  async searchUsCodeSections(query: string, options: {
+    titleNumber?: number;
+    limit?: number;
+    offset?: number;
+    includeHeadings?: boolean;
+    searchType?: 'fulltext' | 'citation' | 'keyword';
+  } = {}): Promise<{
+    sections: (UsCodeSection & { 
+      title: UsCodeTitle;
+      chapter?: UsCodeChapter;
+      relevanceScore?: number;
+    })[];
+    totalCount: number;
+    searchMetadata: {
+      query: string;
+      searchType: string;
+      executionTime: number;
+    };
+  }> {
+    const startTime = Date.now();
+    const {
+      titleNumber,
+      limit = 20,
+      offset = 0,
+      includeHeadings = true,
+      searchType = 'fulltext'
+    } = options;
+
+    let searchQuery = db
+      .select({
+        section: usCodeSections,
+        title: usCodeTitles,
+        chapter: usCodeChapters,
+      })
+      .from(usCodeSections)
+      .innerJoin(usCodeTitles, eq(usCodeSections.titleId, usCodeTitles.id))
+      .leftJoin(usCodeChapters, eq(usCodeSections.chapterId, usCodeChapters.id));
+
+    // Apply search conditions based on search type
+    if (searchType === 'citation') {
+      // Search by citation pattern
+      searchQuery = searchQuery.where(
+        sql`${usCodeSections.citation} ILIKE ${`%${query}%`}`
+      );
+    } else if (searchType === 'keyword') {
+      // Search in keywords and content
+      searchQuery = searchQuery.where(
+        sql`${usCodeSections.content} ILIKE ${`%${query}%`} OR ${usCodeSections.heading} ILIKE ${`%${query}%`}`
+      );
+    } else {
+      // Full-text search using PostgreSQL's text search
+      if (includeHeadings) {
+        searchQuery = searchQuery.where(
+          sql`(to_tsvector('english', ${usCodeSections.content}) @@ plainto_tsquery('english', ${query}) OR to_tsvector('english', ${usCodeSections.heading}) @@ plainto_tsquery('english', ${query}))`
+        );
+      } else {
+        searchQuery = searchQuery.where(
+          sql`to_tsvector('english', ${usCodeSections.content}) @@ plainto_tsquery('english', ${query})`
+        );
+      }
+    }
+
+    // Apply title filter if specified
+    if (titleNumber) {
+      searchQuery = searchQuery.where(eq(usCodeTitles.number, titleNumber));
+    }
+
+    // Add ranking for full-text search
+    if (searchType === 'fulltext') {
+      searchQuery = searchQuery.orderBy(
+        sql`ts_rank(to_tsvector('english', ${usCodeSections.content}), plainto_tsquery('english', ${query})) DESC`,
+        usCodeSections.citation
+      );
+    } else {
+      searchQuery = searchQuery.orderBy(usCodeSections.citation);
+    }
+
+    // Get total count for pagination
+    const countQuery = db
+      .select({ count: sql`count(*)`.mapWith(Number) })
+      .from(usCodeSections)
+      .innerJoin(usCodeTitles, eq(usCodeSections.titleId, usCodeTitles.id));
+
+    // Apply same filters to count query
+    if (searchType === 'citation') {
+      countQuery.where(sql`${usCodeSections.citation} ILIKE ${`%${query}%`}`);
+    } else if (searchType === 'keyword') {
+      countQuery.where(
+        sql`${usCodeSections.content} ILIKE ${`%${query}%`} OR ${usCodeSections.heading} ILIKE ${`%${query}%`}`
+      );
+    } else {
+      // Full-text search using PostgreSQL's text search
+      if (includeHeadings) {
+        countQuery.where(
+          sql`(to_tsvector('english', ${usCodeSections.content}) @@ plainto_tsquery('english', ${query}) OR to_tsvector('english', ${usCodeSections.heading}) @@ plainto_tsquery('english', ${query}))`
+        );
+      } else {
+        countQuery.where(
+          sql`to_tsvector('english', ${usCodeSections.content}) @@ plainto_tsquery('english', ${query})`
+        );
+      }
+    }
+
+    if (titleNumber) {
+      countQuery.where(eq(usCodeTitles.number, titleNumber));
+    }
+
+    // Execute queries
+    const [results, countResult] = await Promise.all([
+      searchQuery.limit(limit).offset(offset),
+      countQuery
+    ]);
+
+    const totalCount = countResult[0]?.count || 0;
+    const executionTime = Date.now() - startTime;
+
+    // Format results
+    const sections = results.map(result => ({
+      ...result.section,
+      title: result.title,
+      chapter: result.chapter || undefined,
+      relevanceScore: searchType === 'fulltext' ? Math.random() : undefined, // Placeholder for ranking
+    }));
+
+    return {
+      sections,
+      totalCount,
+      searchMetadata: {
+        query,
+        searchType,
+        executionTime,
+      },
+    };
+  }
+
+  // US Code Search Index Operations
+  async createUsCodeSearchIndex(searchIndexData: InsertUsCodeSearchIndex): Promise<UsCodeSearchIndex> {
+    const [searchIndex] = await db.insert(usCodeSearchIndex).values(searchIndexData).returning();
+    return searchIndex;
+  }
+
+  async getSearchIndexForSection(sectionId: string): Promise<UsCodeSearchIndex | undefined> {
+    const [searchIndex] = await db
+      .select()
+      .from(usCodeSearchIndex)
+      .where(eq(usCodeSearchIndex.sectionId, sectionId));
+    return searchIndex;
+  }
+
+  async updateSearchIndex(sectionId: string, updates: Partial<InsertUsCodeSearchIndex>): Promise<UsCodeSearchIndex> {
+    const [searchIndex] = await db
+      .update(usCodeSearchIndex)
+      .set({
+        ...updates,
+        lastUpdated: new Date(),
+      })
+      .where(eq(usCodeSearchIndex.sectionId, sectionId))
+      .returning();
+    
+    if (!searchIndex) {
+      throw new Error(`Search index for section ID "${sectionId}" not found`);
+    }
+    
+    return searchIndex;
+  }
+
+  async rebuildSearchIndexes(titleNumber?: number): Promise<{ processed: number; errors: number }> {
+    let processed = 0;
+    let errors = 0;
+
+    try {
+      // Get sections to process
+      let sectionsQuery = db.select().from(usCodeSections);
+      
+      if (titleNumber) {
+        const title = await this.getUsCodeTitleByNumber(titleNumber);
+        if (title) {
+          sectionsQuery = sectionsQuery.where(eq(usCodeSections.titleId, title.id));
+        }
+      }
+
+      const sections = await sectionsQuery;
+
+      // Process each section
+      for (const section of sections) {
+        try {
+          // Extract keywords and topics (simplified implementation)
+          const keywords = this.extractKeywordsFromContent(section.content);
+          const topics = this.classifyLegalContent(section.content);
+          
+          // Create or update search index
+          const searchContent = `${section.heading} ${section.content}`;
+          
+          await db
+            .insert(usCodeSearchIndex)
+            .values({
+              sectionId: section.id,
+              searchContent,
+              keywords,
+              topics,
+              lastUpdated: new Date(),
+            })
+            .onConflictDoUpdate({
+              target: usCodeSearchIndex.sectionId,
+              set: {
+                searchContent,
+                keywords,
+                topics,
+                lastUpdated: new Date(),
+              },
+            });
+
+          processed++;
+        } catch (error) {
+          errors++;
+          console.error(`Error processing section ${section.id}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in rebuildSearchIndexes:', error);
+      errors++;
+    }
+
+    return { processed, errors };
+  }
+
+  // US Code Indexing Job Operations
+  async createIndexingJob(jobData: InsertUsCodeIndexingJob): Promise<UsCodeIndexingJob> {
+    const [job] = await db.insert(usCodeIndexingJobs).values(jobData).returning();
+    return job;
+  }
+
+  async getIndexingJob(jobId: string): Promise<UsCodeIndexingJob | undefined> {
+    const [job] = await db
+      .select()
+      .from(usCodeIndexingJobs)
+      .where(eq(usCodeIndexingJobs.id, jobId));
+    return job;
+  }
+
+  async getActiveIndexingJobs(): Promise<UsCodeIndexingJob[]> {
+    return await db
+      .select()
+      .from(usCodeIndexingJobs)
+      .where(inArray(usCodeIndexingJobs.status, ['pending', 'running']))
+      .orderBy(desc(usCodeIndexingJobs.createdAt));
+  }
+
+  async getIndexingJobHistory(limit: number = 50): Promise<UsCodeIndexingJob[]> {
+    return await db
+      .select()
+      .from(usCodeIndexingJobs)
+      .orderBy(desc(usCodeIndexingJobs.createdAt))
+      .limit(limit);
+  }
+
+  async updateIndexingJobStatus(jobId: string, status: string, progress?: any, stats?: any): Promise<UsCodeIndexingJob> {
+    const updateData: any = {
+      status,
+      ...(progress && { progress }),
+      ...(stats && { stats }),
+    };
+
+    if (status === 'running' && !updateData.startedAt) {
+      updateData.startedAt = new Date();
+    } else if (status === 'completed' || status === 'failed') {
+      updateData.completedAt = new Date();
+    }
+
+    const [job] = await db
+      .update(usCodeIndexingJobs)
+      .set(updateData)
+      .where(eq(usCodeIndexingJobs.id, jobId))
+      .returning();
+    
+    if (!job) {
+      throw new Error(`Indexing job with ID "${jobId}" not found`);
+    }
+    
+    return job;
+  }
+
+  async updateIndexingJobError(jobId: string, errorMessage: string): Promise<UsCodeIndexingJob> {
+    const [job] = await db
+      .update(usCodeIndexingJobs)
+      .set({
+        status: 'failed',
+        errorMessage,
+        completedAt: new Date(),
+      })
+      .where(eq(usCodeIndexingJobs.id, jobId))
+      .returning();
+    
+    if (!job) {
+      throw new Error(`Indexing job with ID "${jobId}" not found`);
+    }
+    
+    return job;
+  }
+
+  // US Code Statistics and Analytics
+  async getUsCodeStats(): Promise<{
+    totalTitles: number;
+    totalChapters: number;
+    totalSections: number;
+    lastIndexed: Date | null;
+    indexingJobs: {
+      completed: number;
+      failed: number;
+      running: number;
+    };
+    searchStats: {
+      totalSearches: number;
+      popularSections: string[];
+    };
+  }> {
+    const [titleCount, chapterCount, sectionCount, lastIndexedResult, jobStats] = await Promise.all([
+      db.select({ count: sql`count(*)`.mapWith(Number) }).from(usCodeTitles),
+      db.select({ count: sql`count(*)`.mapWith(Number) }).from(usCodeChapters),
+      db.select({ count: sql`count(*)`.mapWith(Number) }).from(usCodeSections),
+      db.select({ lastIndexed: sql`max(${usCodeTitles.lastIndexed})` }).from(usCodeTitles),
+      db.select({
+        status: usCodeIndexingJobs.status,
+        count: sql`count(*)`.mapWith(Number),
+      }).from(usCodeIndexingJobs).groupBy(usCodeIndexingJobs.status),
+    ]);
+
+    const jobStatistics = {
+      completed: 0,
+      failed: 0,
+      running: 0,
+    };
+
+    jobStats.forEach(stat => {
+      if (stat.status === 'completed') jobStatistics.completed = stat.count;
+      else if (stat.status === 'failed') jobStatistics.failed = stat.count;
+      else if (stat.status === 'running') jobStatistics.running = stat.count;
+    });
+
+    // Get popular sections (simplified - would need actual search tracking)
+    const popularSections = await db
+      .select({ citation: usCodeSections.citation })
+      .from(usCodeSections)
+      .limit(10);
+
+    return {
+      totalTitles: titleCount[0]?.count || 0,
+      totalChapters: chapterCount[0]?.count || 0,
+      totalSections: sectionCount[0]?.count || 0,
+      lastIndexed: lastIndexedResult[0]?.lastIndexed || null,
+      indexingJobs: jobStatistics,
+      searchStats: {
+        totalSearches: 0, // Would need search tracking
+        popularSections: popularSections.map(s => s.citation),
+      },
+    };
+  }
+
+  // US Code Maintenance Operations
+  async findOrphanedSections(): Promise<UsCodeSection[]> {
+    return await db
+      .select()
+      .from(usCodeSections)
+      .leftJoin(usCodeTitles, eq(usCodeSections.titleId, usCodeTitles.id))
+      .where(sql`${usCodeTitles.id} IS NULL`);
+  }
+
+  async validateCrossReferences(): Promise<{ valid: number; invalid: number; issues: string[] }> {
+    let valid = 0;
+    let invalid = 0;
+    const issues: string[] = [];
+
+    try {
+      const references = await db.select().from(usCodeCrossReferences);
+
+      for (const ref of references) {
+        const [fromSection, toSection] = await Promise.all([
+          this.getUsCodeSection(ref.fromSectionId),
+          this.getUsCodeSection(ref.toSectionId),
+        ]);
+
+        if (!fromSection) {
+          invalid++;
+          issues.push(`Reference ${ref.id}: From section ${ref.fromSectionId} not found`);
+        } else if (!toSection) {
+          invalid++;
+          issues.push(`Reference ${ref.id}: To section ${ref.toSectionId} not found`);
+        } else {
+          valid++;
+        }
+      }
+    } catch (error) {
+      issues.push(`Error validating cross references: ${error}`);
+    }
+
+    return { valid, invalid, issues };
+  }
+
+  async optimizeSearchIndexes(): Promise<{ optimized: number; errors: string[] }> {
+    const errors: string[] = [];
+    let optimized = 0;
+
+    try {
+      // Run PostgreSQL optimization commands
+      await db.execute(sql`VACUUM ANALYZE us_code_sections`);
+      await db.execute(sql`VACUUM ANALYZE us_code_search_index`);
+      optimized += 2;
+
+      // Reindex text search indexes
+      await db.execute(sql`REINDEX INDEX CONCURRENTLY IF EXISTS IDX_us_code_sections_content_text`);
+      await db.execute(sql`REINDEX INDEX CONCURRENTLY IF EXISTS IDX_us_code_sections_heading_text`);
+      optimized += 2;
+
+    } catch (error) {
+      errors.push(`Error optimizing indexes: ${error}`);
+    }
+
+    return { optimized, errors };
+  }
+
+  // Helper methods for content processing
+  private extractKeywordsFromContent(content: string): string[] {
+    // Simplified keyword extraction
+    const legalTerms = [
+      'shall', 'may', 'must', 'required', 'prohibited', 'unlawful',
+      'penalty', 'fine', 'liability', 'damages', 'jurisdiction',
+      'enforcement', 'compliance', 'violation', 'regulation'
+    ];
+
+    const words = content.toLowerCase().split(/\W+/);
+    const keywords = legalTerms.filter(term => words.includes(term));
+    
+    return [...new Set(keywords)]; // Remove duplicates
+  }
+
+  private classifyLegalContent(content: string): string[] {
+    const topics: string[] = [];
+    const contentLower = content.toLowerCase();
+
+    if (/criminal|crime|felony|misdemeanor/.test(contentLower)) {
+      topics.push('criminal');
+    }
+    if (/civil|liability|damages/.test(contentLower)) {
+      topics.push('civil');
+    }
+    if (/regulation|compliance|administrative/.test(contentLower)) {
+      topics.push('regulatory');
+    }
+    if (/procedure|process|hearing/.test(contentLower)) {
+      topics.push('procedure');
+    }
+
+    return topics;
   }
 }
 

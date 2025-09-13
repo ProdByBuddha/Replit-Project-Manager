@@ -12,8 +12,9 @@ import asyncio
 import logging
 import os
 import json
+import re
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 
 from parlant.client import AsyncParlantClient
@@ -23,6 +24,7 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+import httpx
 
 # Configure logging
 logging.basicConfig(
@@ -47,7 +49,7 @@ class ChatResponse(BaseModel):
 security = HTTPBearer()
 
 class FamilyPortalAI:
-    """Family Portal AI Assistant powered by Parlant"""
+    """Family Portal AI Assistant powered by Parlant with US Code integration"""
     
     def __init__(self, parlant_base_url: str, port: int = 8800, api_key: Optional[str] = None):
         self.port = port
@@ -56,7 +58,7 @@ class FamilyPortalAI:
         self.parlant_client = None
         self.app = FastAPI(
             title="Family Portal AI Assistant",
-            description="AI assistance for families navigating the portal",
+            description="AI assistance for families navigating the portal with US Code integration",
             version="1.0.0"
         )
         self.setup_middleware()
@@ -64,6 +66,26 @@ class FamilyPortalAI:
         
         # Parlant configuration
         self.parlant_base_url = parlant_base_url
+        
+        # US Code integration configuration
+        self.backend_base_url = os.getenv("BACKEND_BASE_URL", "http://127.0.0.1:5000")
+        self.backend_secret = os.getenv("PARLANT_SHARED_SECRET", "family-portal-ai-secret-2024")
+        
+        # Legal question detection patterns
+        self.legal_keywords = {
+            'constitutional': ['constitution', 'constitutional', 'bill of rights', 'amendment', 'first amendment', 'fourth amendment'],
+            'criminal': ['criminal', 'crime', 'felony', 'misdemeanor', 'arrest', 'prosecution', 'police', 'law enforcement'],
+            'civil_rights': ['civil rights', 'discrimination', 'equal protection', 'due process', 'civil liberties'],
+            'immigration': ['immigration', 'visa', 'green card', 'citizenship', 'naturalization', 'deportation'],
+            'tax': ['tax', 'taxes', 'taxation', 'irs', 'income tax', 'property tax'],
+            'business': ['business', 'corporation', 'LLC', 'partnership', 'securities', 'commerce'],
+            'family_law': ['marriage', 'divorce', 'custody', 'adoption', 'family court'],
+            'property': ['property', 'real estate', 'ownership', 'deed', 'mortgage', 'zoning'],
+            'contract': ['contract', 'agreement', 'breach', 'damages', 'liability'],
+            'employment': ['employment', 'labor', 'workplace', 'wages', 'discrimination', 'unemployment'],
+            'government': ['government', 'federal', 'state', 'local', 'agency', 'regulation', 'administrative'],
+            'legal_process': ['court', 'lawsuit', 'litigation', 'judge', 'trial', 'appeal', 'legal process']
+        }
         
     def setup_middleware(self):
         """Configure CORS and other middleware"""
@@ -152,13 +174,27 @@ class FamilyPortalAI:
             logger.warning(f"Parlant connection test failed: {e}")
     
     async def process_chat(self, request: ChatRequest) -> ChatResponse:
-        """Process chat request with family portal specific logic"""
+        """Process chat request with family portal specific logic and US Code integration"""
         try:
             # Add family portal context to the message
             enhanced_message = self.enhance_message_with_context(request.message, request.context)
             
-            # For now, provide helpful responses based on common family portal needs
-            response_text = await self.generate_family_portal_response(enhanced_message, request.context)
+            # Check if this is a legal question that could benefit from US Code search
+            legal_context = self.detect_legal_question(request.message)
+            uscode_results = None
+            
+            if legal_context['is_legal_question']:
+                logger.info(f"Detected legal question with context: {legal_context['categories']}")
+                # Search US Code for relevant information
+                uscode_results = await self.search_uscode(request.message, legal_context)
+            
+            # Generate response with US Code integration
+            response_text = await self.generate_enhanced_response(
+                enhanced_message, 
+                request.context, 
+                legal_context, 
+                uscode_results
+            )
             
             return ChatResponse(
                 response=response_text,
@@ -185,6 +221,160 @@ class FamilyPortalAI:
         
         context_str = " | ".join(context_info) if context_info else ""
         return f"Family Portal Question [{context_str}]: {message}"
+    
+    def detect_legal_question(self, message: str) -> Dict[str, Any]:
+        """Detect if a message contains legal questions and categorize them"""
+        message_lower = message.lower()
+        
+        # Look for direct legal indicators
+        legal_indicators = [
+            'law', 'legal', 'code', 'statute', 'regulation', 'usc', 'u.s.c',
+            'federal law', 'title', 'section', 'chapter', 'citation'
+        ]
+        
+        has_legal_indicator = any(indicator in message_lower for indicator in legal_indicators)
+        
+        # Categorize by legal domain
+        detected_categories = []
+        for category, keywords in self.legal_keywords.items():
+            if any(keyword in message_lower for keyword in keywords):
+                detected_categories.append(category)
+        
+        # Check for citation patterns (e.g., "15 USC 1", "Title 8", "Section 1101")
+        citation_patterns = [
+            r'\b(\d+)\s+u\.?s\.?c\.?\s+§?\s*(\d+)',  # 15 USC 1
+            r'\btitle\s+(\d+)',  # Title 8
+            r'\bsection\s+(\d+)',  # Section 1101
+            r'\b(\d+)\s+cfr\s+(\d+)',  # CFR references
+        ]
+        
+        has_citation = False
+        for pattern in citation_patterns:
+            if re.search(pattern, message_lower):
+                has_citation = True
+                break
+        
+        # Determine if this is a legal question
+        is_legal_question = (
+            has_legal_indicator or 
+            len(detected_categories) > 0 or 
+            has_citation or
+            any(word in message_lower for word in [
+                'what is the law', 'what does the law say', 'is it legal',
+                'what are my rights', 'legal requirement', 'federal law',
+                'what code', 'what statute', 'legal definition'
+            ])
+        )
+        
+        return {
+            'is_legal_question': is_legal_question,
+            'categories': detected_categories,
+            'has_citation': has_citation,
+            'confidence': len(detected_categories) + (1 if has_legal_indicator else 0) + (1 if has_citation else 0)
+        }
+    
+    async def search_uscode(self, query: str, legal_context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Search US Code database for relevant legal information"""
+        try:
+            # Prepare search query for US Code API
+            search_params = {
+                'q': query,
+                'limit': 5,  # Limit for AI response
+                'type': 'fulltext'
+            }
+            
+            # Adjust search based on legal context
+            if legal_context.get('categories'):
+                # Could map categories to specific titles if needed
+                if 'immigration' in legal_context['categories']:
+                    search_params['title'] = 8  # Immigration law
+                elif 'tax' in legal_context['categories']:
+                    search_params['title'] = 26  # Tax code
+                elif 'criminal' in legal_context['categories']:
+                    search_params['title'] = 18  # Criminal code
+                elif 'business' in legal_context['categories']:
+                    search_params['title'] = 15  # Commerce and trade
+            
+            # Make request to backend US Code API
+            async with httpx.AsyncClient() as client:
+                headers = {
+                    'Authorization': f'Bearer {self.backend_secret}',
+                    'Content-Type': 'application/json'
+                }
+                
+                logger.info(f"Searching US Code with params: {search_params}")
+                response = await client.get(
+                    f"{self.backend_base_url}/api/uscode/search",
+                    params=search_params,
+                    headers=headers,
+                    timeout=10.0
+                )
+                
+                if response.status_code == 200:
+                    return response.json()
+                else:
+                    logger.warning(f"US Code search failed: {response.status_code}")
+                    return None
+                    
+        except Exception as e:
+            logger.error(f"Error searching US Code: {e}")
+            return None
+    
+    def format_uscode_results(self, results: Dict[str, Any]) -> str:
+        """Format US Code search results for inclusion in AI response"""
+        if not results or not results.get('success') or not results.get('data'):
+            return ""
+        
+        sections = results['data'].get('sections', [])
+        if not sections:
+            return ""
+        
+        formatted_results = ["**Relevant US Code Sections:**\n"]
+        
+        for i, section in enumerate(sections[:3]):  # Limit to top 3 results
+            title_name = section.get('title', {}).get('name', 'Unknown Title')
+            citation = section.get('citation', 'Unknown Citation')
+            heading = section.get('heading', 'No heading available')
+            
+            # Truncate content for AI response
+            content = section.get('content', '')
+            if len(content) > 300:
+                content = content[:300] + "..."
+            
+            formatted_results.append(f"**{citation}** - {heading}")
+            formatted_results.append(f"*From: {title_name}*")
+            formatted_results.append(f"{content}\n")
+        
+        formatted_results.append("*Note: This information is provided for general reference. For specific legal advice, consult with a qualified attorney.*")
+        
+        return "\n".join(formatted_results)
+    
+    async def generate_enhanced_response(
+        self, 
+        message: str, 
+        context: Optional[Dict[str, Any]], 
+        legal_context: Dict[str, Any], 
+        uscode_results: Optional[Dict[str, Any]]
+    ) -> str:
+        """Generate enhanced response combining family portal guidance with US Code information"""
+        
+        # Get base family portal response
+        base_response = await self.generate_family_portal_response(message, context)
+        
+        # If no legal context, return base response
+        if not legal_context.get('is_legal_question') or not uscode_results:
+            return base_response
+        
+        # Format US Code results
+        legal_info = self.format_uscode_results(uscode_results)
+        
+        if not legal_info:
+            return base_response
+        
+        # Combine responses
+        enhanced_response = f"{base_response}\n\n---\n\n{legal_info}"
+        
+        return enhanced_response
     
     async def generate_family_portal_response(self, message: str, context: Optional[Dict[str, Any]]) -> str:
         """Generate helpful responses for family portal questions"""
