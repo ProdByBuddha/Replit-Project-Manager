@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
+import StatusCorrection from "@/pages/StatusCorrection";
 import AdminDashboard from "@/pages/AdminDashboard";
 import InvitationAccept from "@/pages/InvitationAccept";
 import Notifications from "@/pages/Notifications";
@@ -22,6 +23,7 @@ function Router() {
       ) : (
         <>
           <Route path="/notifications" component={Notifications} />
+          <Route path="/status-correction" component={StatusCorrection} />
           {user?.role === 'admin' ? (
             <Route path="/" component={AdminDashboard} />
           ) : (
