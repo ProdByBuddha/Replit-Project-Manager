@@ -56,6 +56,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize default tasks if they don't exist
   await initializeDefaultTasks();
 
+  // Initialize default scheduler settings
+  await initializeSchedulerSettings();
+
   // Start Parlant service integration
   await initializeParlantService();
 
@@ -1826,6 +1829,236 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== US CODE SCHEDULER ADMIN ENDPOINTS ====================
+  
+  // Get scheduler health and status
+  app.get('/api/admin/uscode/scheduler/status', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { getSchedulerHealth } = await import('./scheduling/USCodeScheduler');
+      const health = getSchedulerHealth();
+      
+      res.json({
+        success: true,
+        data: health
+      });
+    } catch (error) {
+      console.error('Error getting scheduler status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get scheduler status'
+      });
+    }
+  });
+
+  // Update scheduler configuration
+  app.put('/api/admin/uscode/scheduler/config', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { updateSchedulerConfiguration } = await import('./scheduling/USCodeScheduler');
+      const config = req.body;
+      
+      // Validate configuration
+      if (config.schedule && !require('node-cron').validate(config.schedule)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid cron schedule format'
+        });
+      }
+      
+      await updateSchedulerConfiguration(config);
+      
+      res.json({
+        success: true,
+        message: 'Scheduler configuration updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating scheduler configuration:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update scheduler configuration'
+      });
+    }
+  });
+
+  // Get scheduler configuration
+  app.get('/api/admin/uscode/scheduler/config', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { usCodeScheduler } = await import('./scheduling/USCodeScheduler');
+      const config = usCodeScheduler.getConfiguration();
+      
+      res.json({
+        success: true,
+        data: config
+      });
+    } catch (error) {
+      console.error('Error getting scheduler configuration:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get scheduler configuration'
+      });
+    }
+  });
+
+  // Manually trigger full re-indexing
+  app.post('/api/admin/uscode/reindex', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { triggerManualIndexing } = await import('./scheduling/USCodeScheduler');
+      const userId = req.user.claims.sub;
+      
+      const jobId = await triggerManualIndexing('full', userId);
+      
+      res.status(202).json({
+        success: true,
+        data: { jobId },
+        message: 'Full re-indexing job started successfully'
+      });
+    } catch (error) {
+      console.error('Error triggering manual full indexing:', error);
+      
+      if (error instanceof Error && error.message.includes('already running')) {
+        return res.status(409).json({
+          success: false,
+          message: error.message
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start re-indexing job'
+      });
+    }
+  });
+
+  // Manually trigger incremental indexing
+  app.post('/api/admin/uscode/reindex/incremental', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { triggerManualIndexing } = await import('./scheduling/USCodeScheduler');
+      const userId = req.user.claims.sub;
+      
+      const jobId = await triggerManualIndexing('incremental', userId);
+      
+      res.status(202).json({
+        success: true,
+        data: { jobId },
+        message: 'Incremental indexing job started successfully'
+      });
+    } catch (error) {
+      console.error('Error triggering manual incremental indexing:', error);
+      
+      if (error instanceof Error && error.message.includes('already running')) {
+        return res.status(409).json({
+          success: false,
+          message: error.message
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: 'Failed to start incremental indexing job'
+      });
+    }
+  });
+
+  // Get current indexing job status
+  app.get('/api/admin/uscode/indexing-status', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const activeJobs = await storage.getActiveIndexingJobs();
+      const recentJobs = await storage.getIndexingJobHistory(10);
+      const { getSchedulerHealth } = await import('./scheduling/USCodeScheduler');
+      const schedulerHealth = getSchedulerHealth();
+      
+      res.json({
+        success: true,
+        data: {
+          activeJobs,
+          recentJobs,
+          schedulerHealth,
+          hasActiveJobs: activeJobs.length > 0
+        }
+      });
+    } catch (error) {
+      console.error('Error getting indexing status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get indexing status'
+      });
+    }
+  });
+
+  // Stop/cancel running indexing job
+  app.post('/api/admin/uscode/indexing/:jobId/cancel', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      // Update job status to cancelled
+      const job = await storage.updateIndexingJobStatus(jobId, 'cancelled');
+      
+      res.json({
+        success: true,
+        data: job,
+        message: 'Indexing job cancelled successfully'
+      });
+    } catch (error) {
+      console.error('Error cancelling indexing job:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to cancel indexing job'
+      });
+    }
+  });
+
+  // Enhanced health check with scheduler information
+  app.get('/api/admin/uscode/health', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      // Get US Code statistics
+      const usCodeStats = await storage.getUsCodeStats();
+      
+      // Get scheduler health
+      const { getSchedulerHealth } = await import('./scheduling/USCodeScheduler');
+      const schedulerHealth = getSchedulerHealth();
+      
+      // Get recent job history for analysis
+      const recentJobs = await storage.getIndexingJobHistory(20);
+      const completedJobs = recentJobs.filter(job => job.status === 'completed');
+      const failedJobs = recentJobs.filter(job => job.status === 'failed');
+      
+      // Calculate success rate
+      const totalRecentJobs = completedJobs.length + failedJobs.length;
+      const successRate = totalRecentJobs > 0 ? (completedJobs.length / totalRecentJobs) * 100 : 0;
+      
+      // Determine overall health status
+      let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+      if (schedulerHealth.status === 'unhealthy' || successRate < 50) {
+        overallStatus = 'unhealthy';
+      } else if (schedulerHealth.status === 'degraded' || successRate < 80) {
+        overallStatus = 'degraded';
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          overall: {
+            status: overallStatus,
+            timestamp: new Date(),
+          },
+          usCode: usCodeStats,
+          scheduler: schedulerHealth,
+          recentPerformance: {
+            totalJobs: totalRecentJobs,
+            successRate,
+            completedJobs: completedJobs.length,
+            failedJobs: failedJobs.length,
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting system health:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get system health'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Initialize sample data and default tasks
@@ -1888,6 +2121,79 @@ async function initializeParlantService(): Promise<void> {
   } catch (error) {
     console.error("Failed to initialize Parlant service:", error);
     console.log("Application will continue without AI chat functionality");
+  }
+}
+
+// Initialize default scheduler settings
+async function initializeSchedulerSettings(): Promise<void> {
+  try {
+    console.log("Initializing US Code scheduler settings...");
+    
+    // Define default scheduler settings
+    const defaultSettings = [
+      {
+        key: 'uscode_scheduler_enabled',
+        value: true, // Default enabled for production use
+        category: 'scheduler',
+        description: 'Enable/disable automatic daily US Code re-indexing',
+        isReadOnly: false,
+      },
+      {
+        key: 'uscode_scheduler_schedule',
+        value: '0 2 * * *', // 2 AM daily
+        category: 'scheduler',
+        description: 'Cron schedule for automatic US Code re-indexing (2 AM daily)',
+        isReadOnly: false,
+      },
+      {
+        key: 'uscode_scheduler_incremental_enabled',
+        value: true,
+        category: 'scheduler',
+        description: 'Enable incremental updates (vs full re-indexing every time)',
+        isReadOnly: false,
+      },
+      {
+        key: 'uscode_scheduler_priority_titles',
+        value: [15, 18, 26], // Commerce, Employment, Internal Revenue Code
+        category: 'scheduler',
+        description: 'US Code title numbers to prioritize during indexing',
+        isReadOnly: false,
+      },
+      {
+        key: 'uscode_scheduler_max_retries',
+        value: 3,
+        category: 'scheduler',
+        description: 'Maximum number of retries for failed indexing operations',
+        isReadOnly: false,
+      },
+      {
+        key: 'uscode_scheduler_timeout_minutes',
+        value: 180, // 3 hours
+        category: 'scheduler',
+        description: 'Timeout for indexing jobs in minutes',
+        isReadOnly: false,
+      },
+      {
+        key: 'uscode_scheduler_notify_on_failure',
+        value: true,
+        category: 'scheduler',
+        description: 'Send notifications to admins when indexing jobs fail',
+        isReadOnly: false,
+      },
+    ];
+    
+    // Create settings if they don't exist
+    for (const setting of defaultSettings) {
+      const existing = await storage.getSystemSettingByKey(setting.key);
+      if (!existing) {
+        await storage.upsertSystemSetting(setting);
+        console.log(`Created default scheduler setting: ${setting.key}`);
+      }
+    }
+    
+    console.log("US Code scheduler settings initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize scheduler settings:", error);
   }
 }
 

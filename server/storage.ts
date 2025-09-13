@@ -149,7 +149,9 @@ export interface IStorage {
   getSystemSettings(): Promise<SystemSettings[]>;
   getSystemSettingsByCategory(category: string): Promise<SystemSettings[]>;
   getSystemSettingByKey(key: string): Promise<SystemSettings | undefined>;
+  getSystemSetting(key: string): Promise<SystemSettings | undefined>;
   upsertSystemSetting(setting: InsertSystemSettings): Promise<SystemSettings>;
+  setSystemSetting(key: string, value: any): Promise<SystemSettings>;
   updateSystemSetting(key: string, value: any): Promise<SystemSettings>;
   deleteSystemSetting(key: string): Promise<void>;
   
@@ -217,6 +219,7 @@ export interface IStorage {
   getIndexingJob(jobId: string): Promise<UsCodeIndexingJob | undefined>;
   getActiveIndexingJobs(): Promise<UsCodeIndexingJob[]>;
   getIndexingJobHistory(limit?: number): Promise<UsCodeIndexingJob[]>;
+  getLastIndexingJobByType(jobType: string): Promise<UsCodeIndexingJob | undefined>;
   updateIndexingJobStatus(jobId: string, status: string, progress?: any, stats?: any): Promise<UsCodeIndexingJob>;
   updateIndexingJobError(jobId: string, errorMessage: string): Promise<UsCodeIndexingJob>;
   
@@ -1133,6 +1136,31 @@ export class DatabaseStorage implements IStorage {
     await db.delete(systemSettings).where(eq(systemSettings.key, key));
   }
 
+  async getSystemSetting(key: string): Promise<SystemSettings | undefined> {
+    // Alias for getSystemSettingByKey for compatibility
+    return this.getSystemSettingByKey(key);
+  }
+
+  async setSystemSetting(key: string, value: any): Promise<SystemSettings> {
+    // Check if setting exists
+    const existing = await this.getSystemSettingByKey(key);
+    
+    if (existing) {
+      // Update existing setting
+      return this.updateSystemSetting(key, value);
+    } else {
+      // Create new setting with reasonable defaults
+      const setting: InsertSystemSettings = {
+        key,
+        value,
+        category: 'scheduler', // Default category for scheduler settings
+        description: `Auto-generated setting for ${key}`,
+        isReadOnly: false,
+      };
+      return this.upsertSystemSetting(setting);
+    }
+  }
+
   // ===== US CODE STORAGE IMPLEMENTATIONS =====
 
   // US Code Title Operations
@@ -1570,6 +1598,16 @@ export class DatabaseStorage implements IStorage {
       .from(usCodeIndexingJobs)
       .orderBy(desc(usCodeIndexingJobs.createdAt))
       .limit(limit);
+  }
+
+  async getLastIndexingJobByType(jobType: string): Promise<UsCodeIndexingJob | undefined> {
+    const [job] = await db
+      .select()
+      .from(usCodeIndexingJobs)
+      .where(eq(usCodeIndexingJobs.jobType, jobType))
+      .orderBy(desc(usCodeIndexingJobs.createdAt))
+      .limit(1);
+    return job;
   }
 
   async updateIndexingJobStatus(jobId: string, status: string, progress?: any, stats?: any): Promise<UsCodeIndexingJob> {

@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 // Initialize workflow automation engine
 import "./automation/index";
+// Initialize US Code re-indexing scheduler
+import "./scheduling/index";
 
 const app = express();
 app.use(express.json());
