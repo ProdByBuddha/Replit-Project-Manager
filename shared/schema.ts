@@ -46,6 +46,9 @@ export const users = pgTable(
     firstName: varchar("first_name"),
     lastName: varchar("last_name"),
     profileImageUrl: varchar("profile_image_url"),
+    phone: varchar("phone"),
+    emailNotifications: boolean("email_notifications").default(true),
+    darkMode: boolean("dark_mode").default(false),
     role: userRoleEnum("role").notNull().default("family"),
     familyId: varchar("family_id"),
     createdAt: timestamp("created_at").defaultNow(),
@@ -699,6 +702,22 @@ export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
 });
+
+// Profile update schema
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  phone: z.string().optional(),
+  emailNotifications: z.boolean(),
+  darkMode: z.boolean(),
+});
+
+// Profile types
+export type User = typeof users.$inferSelect;
+export type ProfileUpdate = z.infer<typeof updateProfileSchema>;
+export type ProfileResponse = User & {
+  familyCode?: string;
+};
 
 export const insertFamilySchema = createInsertSchema(families).omit({
   id: true,

@@ -240,7 +240,7 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
                       data-testid="button-user-profile"
                     >
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src={user?.profileImageUrl} alt={user?.firstName} />
+                        <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.firstName || undefined} />
                         <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                           {user?.firstName?.[0]}{user?.lastName?.[0]}
                         </AvatarFallback>
@@ -281,9 +281,11 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     
-                    <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
-                      <UserCircle className="w-4 h-4 mr-2" />
-                      <span>Profile Settings</span>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/profile" data-testid="menu-profile">
+                        <UserCircle className="w-4 h-4 mr-2" />
+                        <span>Profile Settings</span>
+                      </Link>
                     </DropdownMenuItem>
                     
                     {isAdmin() && (

@@ -96,6 +96,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile endpoints
+  app.get('/api/profile', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getUserProfile(userId);
+      
+      if (!profile) {
+        return res.status(404).json({ message: "User profile not found" });
+      }
+
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.put('/api/profile', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Import the schema at the top of the file if not already imported
+      const { updateProfileSchema } = await import("@shared/schema");
+      
+      // Validate request body with Zod
+      const validationResult = updateProfileSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid profile data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const updatedUser = await storage.updateUserProfile(userId, validationResult.data);
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // Family authentication endpoint
   app.post('/api/auth/family', async (req, res) => {
     try {

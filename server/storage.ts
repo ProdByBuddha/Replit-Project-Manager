@@ -85,6 +85,14 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getUserProfile(userId: string): Promise<(User & { familyCode?: string }) | undefined>;
+  updateUserProfile(userId: string, updates: { 
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    emailNotifications: boolean;
+    darkMode: boolean;
+  }): Promise<User>;
   
   // Family operations
   createFamily(family: InsertFamily): Promise<Family>;
@@ -426,6 +434,47 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async getUserProfile(userId: string): Promise<(User & { familyCode?: string }) | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+    
+    // If user has a family, get the family code
+    if (user.familyId) {
+      const family = await this.getFamily(user.familyId);
+      if (family) {
+        return { ...user, familyCode: family.familyCode };
+      }
+    }
+    
+    return user;
+  }
+
+  async updateUserProfile(
+    userId: string, 
+    updates: { 
+      firstName: string;
+      lastName: string;
+      phone?: string;
+      emailNotifications: boolean;
+      darkMode: boolean;
+    }
+  ): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        firstName: updates.firstName,
+        lastName: updates.lastName,
+        phone: updates.phone,
+        emailNotifications: updates.emailNotifications,
+        darkMode: updates.darkMode,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
   }
 
   // Family operations
