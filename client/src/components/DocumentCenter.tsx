@@ -17,7 +17,7 @@ interface Document {
   uploadedBy: string;
 }
 
-export function DocumentCenter() {
+export default function DocumentCenter() {
   const { toast } = useToast();
 
   // Fetch documents
