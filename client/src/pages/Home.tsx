@@ -16,7 +16,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import type { FamilyStats as FamilyStatsType } from "@/lib/types";
 
 export default function Home() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
   const { toast } = useToast();
   const [showJoinFamily, setShowJoinFamily] = useState(false);
   const [familyCode, setFamilyCode] = useState("");
@@ -107,8 +107,8 @@ export default function Home() {
     return null;
   }
 
-  // Show family join screen if user doesn't have a family
-  if (!user.familyId || showJoinFamily) {
+  // Show family join screen if user doesn't have a family (but not for admin users)
+  if ((!user.familyId || showJoinFamily) && !isAdmin()) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-card border-border">

@@ -2,9 +2,35 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
-import { Shield, Clock, Bell, Home as HomeIcon, FileCheck, Building, Settings, Users, BarChart3 } from "lucide-react";
+import { 
+  Shield, 
+  Clock, 
+  Bell, 
+  Home as HomeIcon, 
+  FileCheck, 
+  Building, 
+  Settings, 
+  Users, 
+  BarChart3,
+  User,
+  LogOut,
+  ChevronDown,
+  CreditCard,
+  UserCircle,
+  HelpCircle
+} from "lucide-react";
 import { Permission } from "@shared/permissions";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -165,23 +191,34 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
       <SidebarInset>
         <div className="min-h-screen bg-background">
           {/* Header */}
-          <header className="bg-card border-b border-border">
-            <div className="flex justify-between items-center h-16 px-4">
-              <div className="flex items-center">
-                <SidebarTrigger />
-                <div className="w-8 h-8 bg-primary rounded flex items-center justify-center mr-3">
-                  <Shield className="text-primary-foreground" />
+          <header className="bg-card border-b border-border sticky top-0 z-50">
+            <div className="flex justify-between items-center h-16 px-2 sm:px-4 lg:px-6">
+              {/* Left side */}
+              <div className="flex items-center min-w-0 flex-1">
+                <SidebarTrigger className="mr-2 lg:mr-3" />
+                <div className="w-8 h-8 bg-primary rounded flex items-center justify-center mr-2 lg:mr-3 flex-shrink-0">
+                  <Shield className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <h1 className="text-xl font-bold text-card-foreground" data-testid="text-page-title">
-                  {user?.family?.name || "Family"} {getPageTitle()}
-                </h1>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg sm:text-xl font-bold text-card-foreground truncate" data-testid="text-page-title">
+                    <span className="hidden sm:inline">{user?.family?.name || "Family"} </span>
+                    <span className="sm:hidden">{getPageTitle()}</span>
+                    <span className="hidden sm:inline">{getPageTitle()}</span>
+                  </h1>
+                </div>
               </div>
               
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center text-sm text-muted-foreground">
+              {/* Right side */}
+              <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+                {/* Last updated - hidden on mobile */}
+                <div className="hidden lg:flex items-center text-sm text-muted-foreground">
                   <Clock className="w-4 h-4 mr-2" />
-                  <span data-testid="text-last-update">Last Updated: {new Date().toLocaleDateString()}</span>
+                  <span data-testid="text-last-update">
+                    Last Updated: {new Date().toLocaleDateString()}
+                  </span>
                 </div>
+                
+                {/* Notifications */}
                 <Link href="/notifications">
                   <Button
                     variant="ghost"
@@ -190,17 +227,106 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
                     data-testid="button-notifications"
                   >
                     <Bell className="w-4 h-4" />
+                    <span className="sr-only">Notifications</span>
                   </Button>
                 </Link>
-                <Button
-                  onClick={handleLogout}
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-primary"
-                  data-testid="button-logout"
-                >
-                  <i className="fas fa-sign-out-alt" />
-                </Button>
+
+                {/* User Profile Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      className="flex items-center space-x-2 hover:bg-accent/50 px-2 sm:px-3"
+                      data-testid="button-user-profile"
+                    >
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={user?.profileImageUrl} alt={user?.firstName} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                          {user?.firstName?.[0]}{user?.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="hidden sm:flex flex-col items-start text-left">
+                        <span className="text-sm font-medium text-card-foreground">
+                          {user?.firstName} {user?.lastName}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            {roleDisplayName}
+                          </Badge>
+                        </div>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground hidden sm:block" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium text-card-foreground">
+                          {user?.firstName} {user?.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {user?.email}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {roleDisplayName}
+                          </Badge>
+                          {user?.family?.name && (
+                            <Badge variant="secondary" className="text-xs">
+                              {user.family.name}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
+                      <UserCircle className="w-4 h-4 mr-2" />
+                      <span>Profile Settings</span>
+                    </DropdownMenuItem>
+                    
+                    {isAdmin() && (
+                      <>
+                        <DropdownMenuItem asChild className="cursor-pointer">
+                          <Link href="/admin" data-testid="menu-admin-dashboard">
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            <span>Admin Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="cursor-pointer">
+                          <Link href="/admin/users" data-testid="menu-user-management">
+                            <Users className="w-4 h-4 mr-2" />
+                            <span>User Management</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="cursor-pointer">
+                          <Link href="/admin/settings" data-testid="menu-system-settings">
+                            <Settings className="w-4 h-4 mr-2" />
+                            <span>System Settings</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    
+                    <DropdownMenuItem className="cursor-pointer" data-testid="menu-help">
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      <span>Help & Support</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuItem 
+                      onClick={handleLogout}
+                      className="cursor-pointer text-red-600 dark:text-red-400"
+                      data-testid="menu-logout"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </header>

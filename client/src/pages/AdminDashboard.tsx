@@ -11,17 +11,18 @@ import FamilyManagement from "@/components/FamilyManagement";
 import DependencyManagement from "@/components/DependencyManagement";
 import WorkflowRulesManagement from "@/components/WorkflowRulesManagement";
 import OnboardingFlow from "@/components/OnboardingFlow";
+import PortalLayout from "@/components/PortalLayout";
 import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function AdminDashboard() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const { showOnboarding, markOnboardingComplete } = useOnboarding();
 
   // Redirect to login if not authenticated or not admin
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || user?.role !== 'admin')) {
+    if (!isLoading && (!isAuthenticated || !isAdmin())) {
       toast({
         title: "Unauthorized",
         description: "Admin access required. Logging in again...",
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, user?.role, toast]);
+  }, [isAuthenticated, isLoading, isAdmin, toast]);
 
   const handleLogout = () => {
     window.location.href = "/api/logout";
@@ -51,58 +52,12 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || !isAdmin()) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Admin Header */}
-      <header className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-accent rounded flex items-center justify-center mr-3">
-                <Settings className="text-accent-foreground" />
-              </div>
-              <h1 className="text-xl font-bold text-card-foreground" data-testid="text-admin-title">
-                Administrator Dashboard
-              </h1>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Button
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90"
-                data-testid="button-add-family"
-              >
-                <i className="fas fa-plus mr-2" />
-                Add Family
-              </Button>
-              <Link href="/notifications">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-primary"
-                  data-testid="button-admin-notifications"
-                >
-                  <Bell className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-primary"
-                data-testid="button-logout"
-              >
-                <i className="fas fa-sign-out-alt" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <PortalLayout pageTitle="Administrator Dashboard">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3" data-testid="tabs-admin-navigation">
             <TabsTrigger value="overview" className="flex items-center space-x-2" data-testid="tab-overview">
@@ -135,15 +90,14 @@ export default function AdminDashboard() {
             <WorkflowRulesManagement />
           </TabsContent>
         </Tabs>
-      </div>
 
-      {/* Onboarding Flow */}
-      {showOnboarding && (
-        <OnboardingFlow
-          onComplete={markOnboardingComplete}
-          userRole="admin"
-        />
-      )}
-    </div>
+        {/* Onboarding Flow */}
+        {showOnboarding && (
+          <OnboardingFlow
+            onComplete={markOnboardingComplete}
+            userRole="admin"
+          />
+        )}
+    </PortalLayout>
   );
 }
