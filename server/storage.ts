@@ -32,6 +32,9 @@ import {
   type InsertTaskDependency,
   type WorkflowRule,
   type InsertWorkflowRule,
+  systemSettings,
+  type SystemSettings,
+  type InsertSystemSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, lt, gt, inArray, sql } from "drizzle-orm";
@@ -123,6 +126,14 @@ export interface IStorage {
   getWorkflowRulesForTask(taskId: string): Promise<WorkflowRule[]>;
   addWorkflowRule(rule: InsertWorkflowRule): Promise<WorkflowRule>;
   toggleWorkflowRule(ruleId: string, isActive: boolean): Promise<WorkflowRule>;
+  
+  // System Settings Methods
+  getSystemSettings(): Promise<SystemSettings[]>;
+  getSystemSettingsByCategory(category: string): Promise<SystemSettings[]>;
+  getSystemSettingByKey(key: string): Promise<SystemSettings | undefined>;
+  upsertSystemSetting(setting: InsertSystemSettings): Promise<SystemSettings>;
+  updateSystemSetting(key: string, value: any): Promise<SystemSettings>;
+  deleteSystemSetting(key: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -953,6 +964,66 @@ export class DatabaseStorage implements IStorage {
       .where(eq(workflowRules.id, ruleId))
       .returning();
     return result;
+  }
+
+  // System Settings Methods
+  async getSystemSettings(): Promise<SystemSettings[]> {
+    return await db.select().from(systemSettings).orderBy(systemSettings.category, systemSettings.key);
+  }
+
+  async getSystemSettingsByCategory(category: string): Promise<SystemSettings[]> {
+    return await db.select().from(systemSettings).where(eq(systemSettings.category, category)).orderBy(systemSettings.key);
+  }
+
+  async getSystemSettingByKey(key: string): Promise<SystemSettings | undefined> {
+    const [result] = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+    return result;
+  }
+
+  async upsertSystemSetting(setting: InsertSystemSettings): Promise<SystemSettings> {
+    // Check if setting exists
+    const existing = await this.getSystemSettingByKey(setting.key);
+    
+    if (existing) {
+      // Update existing setting
+      const [result] = await db
+        .update(systemSettings)
+        .set({
+          value: setting.value,
+          category: setting.category,
+          description: setting.description,
+          isReadOnly: setting.isReadOnly,
+          updatedAt: new Date(),
+        })
+        .where(eq(systemSettings.key, setting.key))
+        .returning();
+      return result;
+    } else {
+      // Insert new setting
+      const [result] = await db.insert(systemSettings).values(setting).returning();
+      return result;
+    }
+  }
+
+  async updateSystemSetting(key: string, value: any): Promise<SystemSettings> {
+    const [result] = await db
+      .update(systemSettings)
+      .set({
+        value: value,
+        updatedAt: new Date(),
+      })
+      .where(eq(systemSettings.key, key))
+      .returning();
+    
+    if (!result) {
+      throw new Error(`System setting with key "${key}" not found`);
+    }
+    
+    return result;
+  }
+
+  async deleteSystemSetting(key: string): Promise<void> {
+    await db.delete(systemSettings).where(eq(systemSettings.key, key));
   }
 }
 

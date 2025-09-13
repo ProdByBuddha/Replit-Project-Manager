@@ -10,6 +10,7 @@ import StatusCorrection from "@/pages/StatusCorrection";
 import MinistryLegitimation from "@/pages/MinistryLegitimation";
 import AdminDashboard from "@/pages/AdminDashboard";
 import UserManagement from "@/pages/UserManagement";
+import SystemSettings from "@/pages/SystemSettings";
 import InvitationAccept from "@/pages/InvitationAccept";
 import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/not-found";
@@ -31,6 +32,7 @@ function Router() {
             <>
               <Route path="/admin" component={AdminDashboard} />
               <Route path="/admin/users" component={UserManagement} />
+              <Route path="/admin/settings" component={SystemSettings} />
             </>
           ) : null}
           <Route path="/" component={Home} />

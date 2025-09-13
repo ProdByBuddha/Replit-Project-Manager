@@ -387,6 +387,18 @@ export const workflowRulesRelations = relations(workflowRules, ({ one }) => ({
   }),
 }));
 
+// System Settings table - for platform-wide configuration
+export const systemSettings = pgTable("system_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key").notNull().unique(),
+  value: jsonb("value").notNull(),
+  category: varchar("category").notNull(), // 'general', 'notifications', 'security', 'features', 'integrations'
+  description: text("description"),
+  isReadOnly: boolean("is_read_only").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -446,6 +458,12 @@ export const insertWorkflowRuleSchema = createInsertSchema(workflowRules).omit({
   createdAt: true,
 });
 
+export const insertSystemSettingsSchema = createInsertSchema(systemSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -469,3 +487,5 @@ export type TaskDependency = typeof taskDependencies.$inferSelect;
 export type InsertTaskDependency = z.infer<typeof insertTaskDependencySchema>;
 export type WorkflowRule = typeof workflowRules.$inferSelect;
 export type InsertWorkflowRule = z.infer<typeof insertWorkflowRuleSchema>;
+export type SystemSettings = typeof systemSettings.$inferSelect;
+export type InsertSystemSettings = z.infer<typeof insertSystemSettingsSchema>;

@@ -16,7 +16,7 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, users, invitations, workflowRules } from "@shared/schema";
+import { insertFamilySchema, insertTaskSchema, insertMessageSchema, insertInvitationSchema, insertNotificationPreferencesSchema, insertTaskDependencySchema, insertWorkflowRuleSchema, insertSystemSettingsSchema, users, invitations, workflowRules } from "@shared/schema";
 import { Permission, hasPermission, getEnabledFeatures, getRolePermissions, isAdmin } from "@shared/permissions";
 import { notificationService } from "./email/notificationService";
 import { eventBus } from "./automation/EventBus";
@@ -677,6 +677,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error toggling workflow rule:", error);
       res.status(500).json({ message: "Failed to toggle workflow rule" });
+    }
+  });
+
+  // System Settings endpoints
+  app.get('/api/admin/settings', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const settings = await storage.getSystemSettings();
+      
+      // Group settings by category for easier frontend consumption
+      const groupedSettings = settings.reduce((acc, setting) => {
+        if (!acc[setting.category]) {
+          acc[setting.category] = [];
+        }
+        acc[setting.category].push(setting);
+        return acc;
+      }, {} as Record<string, typeof settings>);
+
+      res.json(groupedSettings);
+    } catch (error) {
+      console.error("Error fetching system settings:", error);
+      res.status(500).json({ message: "Failed to fetch system settings" });
+    }
+  });
+
+  app.put('/api/admin/settings', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { settings } = req.body;
+      
+      if (!settings || !Array.isArray(settings)) {
+        return res.status(400).json({ message: "Settings must be an array" });
+      }
+
+      // Validate and update each setting
+      const updatedSettings = [];
+      for (const setting of settings) {
+        try {
+          const validatedSetting = insertSystemSettingsSchema.parse(setting);
+          const updated = await storage.upsertSystemSetting(validatedSetting);
+          updatedSettings.push(updated);
+        } catch (validationError) {
+          console.error("Invalid setting:", setting, validationError);
+          return res.status(400).json({ 
+            message: `Invalid setting: ${setting.key}`,
+            error: validationError
+          });
+        }
+      }
+
+      // Return grouped settings
+      const allSettings = await storage.getSystemSettings();
+      const groupedSettings = allSettings.reduce((acc, setting) => {
+        if (!acc[setting.category]) {
+          acc[setting.category] = [];
+        }
+        acc[setting.category].push(setting);
+        return acc;
+      }, {} as Record<string, typeof allSettings>);
+
+      res.json(groupedSettings);
+    } catch (error) {
+      console.error("Error updating system settings:", error);
+      res.status(500).json({ message: "Failed to update system settings" });
+    }
+  });
+
+  // Individual system setting endpoint
+  app.put('/api/admin/settings/:key', isAuthenticated, loadUserRole, requirePermission(Permission.MANAGE_SYSTEM_SETTINGS), async (req: AuthenticatedRequest, res) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+
+      if (value === undefined) {
+        return res.status(400).json({ message: "Value is required" });
+      }
+
+      const updatedSetting = await storage.updateSystemSetting(key, value);
+      res.json(updatedSetting);
+    } catch (error) {
+      console.error("Error updating system setting:", error);
+      if (error instanceof Error && error.message.includes("not found")) {
+        res.status(404).json({ message: "Setting not found" });
+      } else {
+        res.status(500).json({ message: "Failed to update system setting" });
+      }
     }
   });
 
