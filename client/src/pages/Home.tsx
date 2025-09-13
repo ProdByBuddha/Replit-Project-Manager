@@ -6,7 +6,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Clock, UserPlus, Bell } from "lucide-react";
+import { Shield, Clock, UserPlus, Bell, Home as HomeIcon, FileCheck, Building } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import FamilyStats from "@/components/FamilyStats";
@@ -18,6 +18,19 @@ import InvitationManager from "@/components/InvitationManager";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import type { FamilyStats as FamilyStatsType } from "@/lib/types";
+import { 
+  Sidebar, 
+  SidebarContent, 
+  SidebarGroup, 
+  SidebarGroupContent, 
+  SidebarGroupLabel, 
+  SidebarMenu, 
+  SidebarMenuItem, 
+  SidebarMenuButton, 
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger
+} from "@/components/ui/sidebar";
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -159,77 +172,110 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-primary rounded flex items-center justify-center mr-3">
-                <Shield className="text-primary-foreground" />
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Family Portal</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton isActive={true} data-testid="nav-home">
+                    <HomeIcon className="w-4 h-4" />
+                    <span>Home</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton data-testid="nav-status-correction">
+                    <FileCheck className="w-4 h-4" />
+                    <span>Status Correction</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton data-testid="nav-ministry-legitimation">
+                    <Building className="w-4 h-4" />
+                    <span>Ministry Legitimation</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+      
+      <SidebarInset>
+        <div className="min-h-screen bg-background">
+          {/* Header */}
+          <header className="bg-card border-b border-border">
+            <div className="flex justify-between items-center h-16 px-4">
+              <div className="flex items-center">
+                <SidebarTrigger />
+                <div className="w-8 h-8 bg-primary rounded flex items-center justify-center mr-3">
+                  <Shield className="text-primary-foreground" />
+                </div>
+                <h1 className="text-xl font-bold text-card-foreground" data-testid="text-family-name">
+                  {user.family?.name || "Family"} Portal
+                </h1>
               </div>
-              <h1 className="text-xl font-bold text-card-foreground" data-testid="text-family-name">
-                {user.family?.name || "Family"} Portal
-              </h1>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Clock className="w-4 h-4 mr-2" />
-                <span data-testid="text-last-update">Last Updated: {new Date().toLocaleDateString()}</span>
-              </div>
-              <Link href="/notifications">
+              
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Clock className="w-4 h-4 mr-2" />
+                  <span data-testid="text-last-update">Last Updated: {new Date().toLocaleDateString()}</span>
+                </div>
+                <Link href="/notifications">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-primary"
+                    data-testid="button-notifications"
+                  >
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                </Link>
                 <Button
+                  onClick={handleLogout}
                   variant="ghost"
                   size="sm"
                   className="text-muted-foreground hover:text-primary"
-                  data-testid="button-notifications"
+                  data-testid="button-logout"
                 >
-                  <Bell className="w-4 h-4" />
+                  <i className="fas fa-sign-out-alt" />
                 </Button>
-              </Link>
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-primary"
-                data-testid="button-logout"
-              >
-                <i className="fas fa-sign-out-alt" />
-              </Button>
+              </div>
+            </div>
+          </header>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Progress Overview */}
+            <FamilyStats familyId={user.familyId || undefined} stats={familyStats} isLoading={statsLoading} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Task Checklist */}
+              <div className="lg:col-span-2">
+                <TaskChecklist familyId={user.familyId || undefined} />
+              </div>
+
+              {/* Right Sidebar */}
+              <div className="space-y-6">
+                {/* Document Center */}
+                <DocumentCenter familyId={user.familyId || undefined} />
+                
+                {/* Messages from Admin */}
+                <MessageCenter familyId={user.familyId || undefined} userRole={user.role} />
+              </div>
             </div>
           </div>
+
+          {/* Onboarding Flow */}
+          {showOnboarding && (
+            <OnboardingFlow
+              onComplete={markOnboardingComplete}
+              userRole="family"
+            />
+          )}
         </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Progress Overview */}
-        <FamilyStats familyId={user.familyId || undefined} stats={familyStats} isLoading={statsLoading} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Task Checklist */}
-          <div className="lg:col-span-2">
-            <TaskChecklist familyId={user.familyId || undefined} />
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            {/* Document Center */}
-            <DocumentCenter familyId={user.familyId || undefined} />
-            
-            {/* Messages from Admin */}
-            <MessageCenter familyId={user.familyId || undefined} userRole={user.role} />
-          </div>
-        </div>
-      </div>
-
-      {/* Onboarding Flow */}
-      {showOnboarding && (
-        <OnboardingFlow
-          onComplete={markOnboardingComplete}
-          userRole="family"
-        />
-      )}
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

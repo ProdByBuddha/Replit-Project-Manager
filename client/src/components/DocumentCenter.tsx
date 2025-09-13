@@ -17,11 +17,15 @@ interface Document {
   uploadedBy: string;
 }
 
-export default function DocumentCenter() {
+interface DocumentCenterProps {
+  familyId?: string;
+}
+
+export default function DocumentCenter({ familyId }: DocumentCenterProps) {
   const { toast } = useToast();
 
   // Fetch documents
-  const { data: documents = [], isLoading, refetch } = useQuery({
+  const { data: documents = [], isLoading, refetch } = useQuery<Document[]>({
     queryKey: ['/api/documents'],
   });
 
