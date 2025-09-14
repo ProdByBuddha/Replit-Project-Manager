@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { DevProgressService } from '../services/devProgress';
 import { config } from 'dotenv';
+import * as readline from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -189,15 +190,15 @@ program
     
     // Confirm before sending (unless -y flag is used)
     if (!options.yes) {
-      const readline = require('readline').createInterface({
+      const readlineInterface = readline.createInterface({
         input: process.stdin,
         output: process.stdout
       });
       
       const answer = await new Promise<string>((resolve) => {
-        readline.question('Send this report? (y/n): ', resolve);
+        readlineInterface.question('Send this report? (y/n): ', resolve);
       });
-      readline.close();
+      readlineInterface.close();
       
       if (answer.toLowerCase() !== 'y') {
         console.log('❌ Report cancelled');
@@ -293,15 +294,15 @@ program
     
     // Confirm unless -y flag
     if (!options.yes) {
-      const readline = require('readline').createInterface({
+      const readlineInterface = require('readline').createInterface({
         input: process.stdin,
         output: process.stdout
       });
       
       const answer = await new Promise<string>((resolve) => {
-        readline.question('Send this report? (y/n): ', resolve);
+        readlineInterface.question('Send this report? (y/n): ', resolve);
       });
-      readline.close();
+      readlineInterface.close();
       
       if (answer.toLowerCase() !== 'y') {
         console.log('❌ Report cancelled');
