@@ -121,3 +121,45 @@ A comprehensive system for analyzing git history and generating client-friendly 
 - Regular cumulative reports help maintain client visibility
 - Quick updates for immediate progress communication
 - Analyze patterns to improve development efficiency
+
+### Cost-Benefit Analysis System
+A comprehensive system that measures actual development progress against historical industry benchmarks to demonstrate concrete client savings.
+
+**Core Functionality:**
+- Calculates Work Contribution Units (WCU) from git commit history and file changes
+- Compares traditional development estimates (using COCOMO II, ISBSG, DORA benchmarks) vs actual development time
+- Generates compelling client savings reports showing hours, dollars, and weeks saved
+- Integrates seamlessly with existing progress reporting and Dart AI communication
+
+**Industry Benchmarks Integrated:**
+- COCOMO II 2000 Model Definition parameters for effort estimation
+- ISBSG 2023 Development & Enhancement Repository hourly rates
+- DORA State of DevOps Report 2024 throughput benchmarks
+- Regional cost adjustments and risk-based multipliers
+
+**Savings Calculation Formula:**
+- Traditional Hours = WCU * categoryMultiplier * riskFactor * hoursPerWCU
+- Actual Hours = commits * avgHoursPerCommit (with category-specific adjustments)
+- Savings = max(Traditional Hours - Actual Hours, 0)
+- Dollar Savings = Savings Hours * blended hourly rate
+- Weeks Saved = Savings Hours / team capacity hours per week
+
+**Available Commands:**
+- `npx tsx server/cli/gitprogress.ts analyze --since "period"` - Git analysis with savings calculation
+- `npx tsx server/cli/gitprogress.ts savings --since "period"` - Detailed savings breakdown
+- `npx tsx server/cli/gitprogress.ts calibrate --actual-hours N` - Calibrate estimates against known data
+- `npx tsx server/cli/gitprogress.ts report --since "period"` - Send comprehensive reports to Dart AI
+
+**Client Value Demonstration:**
+Every progress report now includes compelling headlines like:
+- "💰 MAJOR SAVINGS ACHIEVED: $XXX,XXX (45% cost reduction)"
+- "⚡ X weeks ahead of traditional timeline"
+- "🚀 X.X productivity multiplier vs industry standards"
+
+**When to Highlight Savings:**
+1. **Major Development Phases** - After completing significant feature sets or milestones
+2. **Monthly Client Reports** - Regular savings summaries for ongoing relationship value
+3. **Project Retrospectives** - Demonstrating total value delivered vs traditional approaches
+4. **New Client Presentations** - Historical data proving development efficiency and cost savings
+5. **Contract Renewals** - Concrete ROI data supporting continued collaboration
+6. **Stakeholder Updates** - Executive-level summaries showing business impact and value

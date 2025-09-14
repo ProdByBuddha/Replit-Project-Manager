@@ -455,19 +455,19 @@ export class GitIntegratedProgressService {
     if (savings?.calculationSucceeded && savings.confidence >= 70) {
       const { calculation, summary: execSummary } = savings;
       
-      if (calculation.savings.dollars > 1000) {
-        summary += `💰 SIGNIFICANT SAVINGS ACHIEVED: $${Math.round(calculation.savings.dollars).toLocaleString()} saved (${calculation.savings.percentage}% cost reduction) `;
+      if (calculation?.savings?.dollars && calculation.savings.dollars > 1000) {
+        summary += `💰 SIGNIFICANT SAVINGS ACHIEVED: $${Math.round(calculation.savings.dollars).toLocaleString()} saved (${calculation.savings.percentage || 0}% cost reduction) `;
       }
       
-      if (calculation.savings.weeks > 1) {
+      if (calculation?.savings?.weeks && calculation.savings.weeks > 1) {
         summary += `⚡ ${Math.round(calculation.savings.weeks)} weeks ahead of traditional timeline `;
       }
       
-      if (execSummary.efficiency.productivityMultiplier > 1.5) {
+      if (execSummary?.efficiency?.productivityMultiplier && execSummary.efficiency.productivityMultiplier > 1.5) {
         summary += `🚀 ${execSummary.efficiency.productivityMultiplier}x productivity multiplier vs industry standards `;
       }
       
-      if (execSummary.totalSavings.roi > 2) {
+      if (execSummary?.totalSavings?.roi && execSummary.totalSavings.roi > 2) {
         summary += `📈 ${execSummary.totalSavings.roi}x ROI on development investment `;
       }
     }
@@ -486,7 +486,10 @@ export class GitIntegratedProgressService {
     
     // Add savings context if available but with lower confidence
     if (savings?.calculationSucceeded && savings.confidence >= 50 && savings.confidence < 70) {
-      summary += ` Estimated cost savings: $${Math.round(savings.calculation.savings.dollars).toLocaleString()} (${savings.confidence}% confidence).`;
+      const savingsAmount = savings.calculation?.savings?.dollars;
+      if (savingsAmount !== undefined) {
+        summary += ` Estimated cost savings: $${Math.round(savingsAmount).toLocaleString()} (${savings.confidence}% confidence).`;
+      }
     }
     
     return summary;
@@ -504,11 +507,13 @@ export class GitIntegratedProgressService {
     const categorySavingsMap = new Map<string, { savings: number; efficiency: number }>();
     if (analysis.savings?.calculationSucceeded && analysis.savings.topFeatures) {
       analysis.savings.topFeatures.forEach(feature => {
-        const categoryName = feature.cluster.name;
-        categorySavingsMap.set(categoryName, {
-          savings: feature.savings.savings.dollars,
-          efficiency: feature.efficiency.velocityScore
-        });
+        const categoryName = feature.cluster?.name;
+        if (categoryName && feature.savings?.savings?.dollars !== undefined && feature.efficiency?.velocityScore !== undefined) {
+          categorySavingsMap.set(categoryName, {
+            savings: feature.savings.savings.dollars,
+            efficiency: feature.efficiency.velocityScore
+          });
+        }
       });
     }
     
