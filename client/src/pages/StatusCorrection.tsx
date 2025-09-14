@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import PortalLayout from "@/components/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ObjectUploader } from "@/components/ObjectUploader";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Search, 
@@ -33,7 +32,8 @@ import {
   FileCheck,
   Scale,
   UserCheck,
-  Gavel
+  Gavel,
+  X
 } from "lucide-react";
 import type { StatusCorrectionItem, StatusCorrectionSection, StatusProgress } from "@/lib/types";
 import type { Document } from "@shared/schema";
@@ -452,6 +452,14 @@ export default function StatusCorrection() {
     percentage: 0
   });
 
+  // State for file upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingFiles, setUploadingFiles] = useState<Array<{
+    file: File;
+    progress: number;
+    error?: string;
+  }>>([]);
+
   // Calculate progress from checklist data
   const allItems = useMemo(() => {
     return statusCorrectionData.flatMap(section => section.items);
@@ -537,6 +545,209 @@ export default function StatusCorrection() {
       title: "Status Updated",
       description: `Item status updated to ${newStatus.replace('_', ' ')}`,
     });
+  };
+
+  // File upload helper functions
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleGetUploadParameters = async () => {
+    const response = await fetch('/api/objects/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get upload URL');
+    }
+
+    const data = await response.json();
+    return {
+      method: 'PUT' as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const validateFiles = (files: FileList | File[]): { valid: File[], errors: string[] } => {
+    const fileArray = Array.from(files);
+    const errors: string[] = [];
+    const valid: File[] = [];
+
+    // Check total number of files
+    if (fileArray.length + uploadingFiles.length > 5) {
+      errors.push(`Cannot upload more than 5 files total. Currently ${uploadingFiles.length} uploading.`);
+      return { valid, errors };
+    }
+
+    for (const file of fileArray) {
+      // Check file size (10MB)
+      if (file.size > 10485760) {
+        errors.push(`${file.name} is too large (${formatFileSize(file.size)}). Maximum size is 10MB.`);
+        continue;
+      }
+
+      // Check file type (basic check)
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+      const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt'];
+      const hasValidType = allowedTypes.includes(file.type) || allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+      
+      if (!hasValidType) {
+        errors.push(`${file.name} is not a supported file type. Please upload PDF, DOC, DOCX, or TXT files.`);
+        continue;
+      }
+
+      valid.push(file);
+    }
+
+    return { valid, errors };
+  };
+
+  const uploadFile = async (file: File) => {
+    try {
+      // Get upload parameters
+      const uploadParams = await handleGetUploadParameters();
+      
+      // Update progress
+      setUploadingFiles(prev => 
+        prev.map(f => f.file === file ? { ...f, progress: 10 } : f)
+      );
+
+      // Upload to S3
+      const xhr = new XMLHttpRequest();
+      
+      return new Promise((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const progress = (e.loaded / e.total) * 90 + 10; // 10-100%
+            setUploadingFiles(prev => 
+              prev.map(f => f.file === file ? { ...f, progress } : f)
+            );
+          }
+        });
+
+        xhr.addEventListener('load', async () => {
+          if (xhr.status === 200 || xhr.status === 204) {
+            // Complete progress
+            setUploadingFiles(prev => 
+              prev.map(f => f.file === file ? { ...f, progress: 100 } : f)
+            );
+
+            // Save document metadata
+            try {
+              const response = await fetch('/api/documents', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  fileName: file.name,
+                  originalFileName: file.name,
+                  fileSize: file.size,
+                  mimeType: file.type,
+                  uploadURL: uploadParams.url.split('?')[0], // Remove query params
+                  familyTaskId: selectedItem?.id || null,
+                }),
+              });
+              
+              if (!response.ok) {
+                throw new Error('Failed to save document metadata');
+              }
+
+              resolve({ success: true, file });
+            } catch (error) {
+              console.error('Error saving document metadata:', error);
+              setUploadingFiles(prev => 
+                prev.map(f => f.file === file ? { ...f, error: 'Failed to save metadata' } : f)
+              );
+              reject(error);
+            }
+          } else {
+            setUploadingFiles(prev => 
+              prev.map(f => f.file === file ? { ...f, error: 'Upload failed' } : f)
+            );
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        });
+
+        xhr.addEventListener('error', () => {
+          setUploadingFiles(prev => 
+            prev.map(f => f.file === file ? { ...f, error: 'Upload failed' } : f)
+          );
+          reject(new Error('Upload failed'));
+        });
+
+        xhr.open(uploadParams.method, uploadParams.url);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadingFiles(prev => 
+        prev.map(f => f.file === file ? { ...f, error: 'Upload failed' } : f)
+      );
+      throw error;
+    }
+  };
+
+  const handleFileSelection = async (files: FileList | File[]) => {
+    const { valid, errors } = validateFiles(files);
+    
+    if (errors.length > 0) {
+      toast({
+        title: "File Validation Error",
+        description: errors.join('\n'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (valid.length === 0) return;
+
+    // Add files to uploading state
+    const newUploadingFiles = valid.map(file => ({ file, progress: 0 }));
+    setUploadingFiles(prev => [...prev, ...newUploadingFiles]);
+
+    // Upload files concurrently
+    const uploadPromises = valid.map(uploadFile);
+    
+    try {
+      await Promise.all(uploadPromises);
+      
+      // Remove completed uploads
+      setUploadingFiles(prev => prev.filter(f => !valid.includes(f.file)));
+      
+      toast({
+        title: "Document Uploaded",
+        description: `${valid.length} file(s) uploaded successfully!`,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Error",
+        description: "Some files failed to upload. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileSelection(files);
+    }
+    // Reset input value to allow selecting the same file again
+    e.target.value = '';
+  };
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeUploadingFile = (file: File) => {
+    setUploadingFiles(prev => prev.filter(f => f.file !== file));
   };
 
   if (isLoading) {
@@ -1088,20 +1299,80 @@ function StatusCorrectionItemDetails({ item }: { item: StatusCorrectionItem }) {
       <div className="border-t pt-6">
         <h4 className="font-semibold text-card-foreground mb-3">Upload Documents</h4>
         {user?.familyId && (
-          <ObjectUploader
-            onGetUploadParameters={async () => ({
-              method: "PUT" as const,
-              url: "/api/upload/presigned-url"
-            })}
-            onComplete={() => {
-              toast({
-                title: "Document Uploaded",
-                description: "Document has been uploaded successfully.",
-              });
-            }}
-          >
-            Upload Document
-          </ObjectUploader>
+          <div className="space-y-4">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.txt"
+              onChange={handleFileInputChange}
+              className="hidden"
+              data-testid="input-file-upload"
+            />
+            
+            {/* Upload button */}
+            <Button
+              onClick={handleClick}
+              disabled={uploadingFiles.length >= 5}
+              className="w-full"
+              data-testid="button-upload-document"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Document
+            </Button>
+            
+            {/* File size and type restrictions */}
+            <p className="text-xs text-muted-foreground">
+              Supported file types: PDF, DOC, DOCX, TXT. Maximum file size: 10MB each. Maximum 5 files total.
+            </p>
+            
+            {/* Upload progress display */}
+            {uploadingFiles.length > 0 && (
+              <div className="space-y-3" data-testid="container-upload-progress">
+                {uploadingFiles.map((upload, index) => (
+                  <div key={index} className="border rounded-lg p-3 bg-muted/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-card-foreground truncate" data-testid={`text-uploading-filename-${index}`}>
+                          {upload.file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(upload.file.size)}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeUploadingFile(upload.file)}
+                        className="h-8 w-8 p-0"
+                        data-testid={`button-remove-upload-${index}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    
+                    {upload.error ? (
+                      <div className="text-sm text-destructive" data-testid={`text-upload-error-${index}`}>
+                        Error: {upload.error}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Progress 
+                          value={upload.progress} 
+                          className="h-2" 
+                          data-testid={`progress-upload-${index}`}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {upload.progress === 100 ? 'Upload complete' : `Uploading... ${Math.round(upload.progress)}%`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
