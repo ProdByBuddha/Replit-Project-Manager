@@ -11,7 +11,7 @@ import * as path from 'path';
 config();
 
 const program = new Command();
-const devProgress = new DevProgressService();
+const devProgress = DevProgressService.getInstance();
 
 // Helper to parse multiple values
 function collect(value: string, previous: string[]) {
@@ -52,18 +52,18 @@ program
   .action(async () => {
     console.log('🔍 Checking Dart integration status...\n');
     
-    const status = await devProgress.status();
+    const configured = devProgress.isConfigured();
+    const connected = configured ? await devProgress.testConnection() : false;
     
     console.log('📊 Dart Integration Status');
     console.log('─'.repeat(40));
-    console.log(`✅ Configured: ${status.configured ? 'Yes' : 'No (Set DART_API_KEY)'}`);
-    console.log(`👤 User ID: ${status.userId}`);
-    console.log(`📁 Workspace ID: ${status.workspaceId}`);
-    console.log(`📋 Project ID: ${status.projectId}`);
-    console.log(`🌐 API Endpoint: ${status.apiEndpoint}`);
+    console.log(`✅ Configured: ${configured ? 'Yes' : 'No (Set DART_TOKEN)'}`);
+    console.log(`🔌 Connected: ${connected ? 'Yes' : 'No'}`);
+    console.log(`📁 Workspace ID: LTPknvYLuLH9`);
+    console.log(`🌐 Using dart-tools npm package`);
     
-    if (!status.configured) {
-      console.log('\n⚠️  To enable Dart integration, set the DART_API_KEY environment variable');
+    if (!configured) {
+      console.log('\n⚠️  To enable Dart integration, set the DART_TOKEN environment variable');
     }
   });
 
@@ -118,7 +118,7 @@ program
     console.log('═'.repeat(60));
     console.log();
     
-    const message = devProgress.previewUpdate(update);
+    const message = devProgress.formatUpdate(update);
     console.log(message);
     
     console.log();
@@ -183,7 +183,7 @@ program
     
     // Show preview
     console.log('📤 Preparing to send progress report...\n');
-    const message = devProgress.previewUpdate(update);
+    const message = devProgress.formatUpdate(update);
     console.log('─'.repeat(60));
     console.log(message);
     console.log('─'.repeat(60));
@@ -287,7 +287,7 @@ program
     
     // Show what will be sent
     console.log(`📤 Sending ${type} update...\n`);
-    const message = devProgress.previewUpdate(update);
+    const message = devProgress.formatUpdate(update);
     console.log('─'.repeat(60));
     console.log(message);
     console.log('─'.repeat(60));

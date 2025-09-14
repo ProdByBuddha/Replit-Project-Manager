@@ -13,5 +13,6 @@
     ]
   },
   "formatted": "📊 Development Progress Update\nSunday, September 14, 2025\n\n**Executive Summary**\nSuccessfully integrated Dart AI using dart-tools npm package\n\n✨ **What's New**\n• Dart integration with official dart-tools SDK\n\n🚀 **Improvements**\n• Developer progress reporting with automatic task/doc creation in Dart\n\n🐛 **Bug Fixes**\n• Authentication issues by switching from OAuth2 to DART_TOKEN\n\n---\n*This update was generated automatically from the development team.*",
-  "sent": false
+  "sent": true,
+  "sentAt": "2025-09-14T22:23:22.740Z"
 }

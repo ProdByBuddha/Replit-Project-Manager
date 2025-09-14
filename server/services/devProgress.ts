@@ -1,4 +1,7 @@
-import axios, { AxiosInstance, AxiosError } from "axios";
+import { TaskService, DocService } from 'dart-tools';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Developer Progress Service
@@ -23,95 +26,102 @@ interface UpdateSection {
 }
 
 export class DevProgressService {
-  private apiKey: string;
-  private userId: string = 'VYHg5vybmVQ3'; // Dart user ID
-  private workspaceId: string = 'LTPknvYLuLH9'; // Dart workspace ID
-  private projectId: string = 'UDY98NgvnZ4z'; // Dart project ID
-  private baseUrl = 'https://app.dartai.com/api/v0/public';
-  private axiosInstance: AxiosInstance;
   private static instance: DevProgressService;
+  private dartToken: string;
+  private workspaceId = 'LTPknvYLuLH9'; // Your Dart workspace ID (Space ID)
+  private reportsDir: string;
 
-  constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.DART_API_KEY || '';
-    this.userId = process.env.DART_USER_ID || 'VYHg5vybmVQ3';
-    this.workspaceId = process.env.DART_WORKSPACE_ID || 'LTPknvYLuLH9';
-    this.projectId = process.env.DART_PROJECT_ID || 'UDY98NgvnZ4z';
+  private constructor() {
+    this.dartToken = process.env.DART_TOKEN || '';
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    this.reportsDir = path.join(process.cwd(), '.dart-reports');
     
-    if (!this.apiKey) {
-      console.warn('[DevProgress] API key not configured. Service will be disabled.');
-    }
-
-    this.axiosInstance = axios.create({
-      baseURL: this.baseUrl,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'X-User-Id': this.userId, // Include user ID in headers
-        'X-Workspace-ID': this.workspaceId, // Include workspace ID
-        'X-Project-ID': this.projectId, // Include project ID
-      },
-      timeout: 30000,
-    });
-
-    // Add response interceptor for error handling
-    this.axiosInstance.interceptors.response.use(
-      response => response,
-      async error => {
-        console.error('[DevProgress] API request failed:', this.formatError(error));
-        throw error;
-      }
-    );
+    // Ensure reports directory exists
+    this.ensureReportsDir();
   }
 
   // Singleton pattern
-  public static getInstance(apiKey?: string): DevProgressService {
+  public static getInstance(): DevProgressService {
     if (!DevProgressService.instance) {
-      DevProgressService.instance = new DevProgressService(apiKey);
+      DevProgressService.instance = new DevProgressService();
     }
     return DevProgressService.instance;
   }
 
-  // Check if service is configured
-  isConfigured(): boolean {
-    return !!this.apiKey;
+  // Ensure reports directory exists
+  private async ensureReportsDir(): Promise<void> {
+    try {
+      await fs.mkdir(this.reportsDir, { recursive: true });
+    } catch (error) {
+      console.error('[DevProgress] Failed to create reports directory:', error);
+    }
   }
 
-  /**
-   * Send a natural language update to Dart
-   * @param message The formatted message to send
-   * @param metadata Optional metadata for the update
-   */
-  async sendUpdate(message: string, metadata?: Record<string, any>): Promise<boolean> {
-    if (!this.isConfigured()) {
-      console.error('[DevProgress] Cannot send update - API key not configured');
+  // Check if service is configured
+  isConfigured(): boolean {
+    return !!this.dartToken;
+  }
+
+  // Test connection and configuration
+  async testConnection(): Promise<boolean> {
+    if (!this.dartToken) {
+      console.log('[DevProgress] Warning: DART_TOKEN not configured');
       return false;
     }
 
     try {
-      // Create a doc with the progress update using Dart public API
-      // Use wrapped format with correct field names: 'name' and 'content'
-      const response = await this.axiosInstance.post('/docs', {
-        doc: {
-          name: `Progress Update - ${new Date().toLocaleDateString()}`,
-          content: message, // Dart API uses 'content' not 'text'
-        }
-      });
-
-      console.log('[DevProgress] Update sent successfully');
+      // Try to list tasks as a connection test
+      const tasks = await TaskService.listTasks({ limit: 1 });
+      console.log('[DevProgress] Successfully connected to Dart API using dart-tools');
       return true;
-    } catch (error) {
-      console.error('[DevProgress] Failed to send update:', this.formatError(error));
+    } catch (error: any) {
+      console.error('[DevProgress] Connection test failed:', error.message);
       return false;
     }
   }
 
-  /**
-   * Compose a natural language update from sections
-   * @param update The update sections to compose
-   * @returns The formatted message
-   */
-  composeUpdate(update: ProgressUpdate): string {
-    const lines: string[] = [];
+  // Send update to Dart
+  async sendUpdate(message: string): Promise<boolean> {
+    if (!this.dartToken) {
+      console.log('[DevProgress] DART_TOKEN not configured');
+      return false;
+    }
+
+    try {
+      // Create a task with the progress update using dart-tools
+      const task = await TaskService.createTask({
+        item: {
+          title: `Dev Progress - ${new Date().toLocaleDateString()}`,
+          description: message,
+          status: 'Done', // Mark as done since it's a completed progress update
+        }
+      });
+
+      console.log('[DevProgress] Progress update sent successfully as task');
+      return true;
+    } catch (error: any) {
+      console.error('[DevProgress] Failed to send update as task:', error.message);
+      
+      // Try sending as a doc if task creation fails
+      try {
+        const doc = await DocService.createDoc({
+          item: {
+            title: `Dev Progress - ${new Date().toLocaleDateString()}`,
+            text: message,
+          }
+        });
+        console.log('[DevProgress] Progress update sent successfully as doc');
+        return true;
+      } catch (docError: any) {
+        console.error('[DevProgress] Failed to send as doc:', docError.message);
+        return false;
+      }
+    }
+  }
+
+  // Format progress update for clients
+  formatUpdate(update: ProgressUpdate): string {
+    const sections: UpdateSection[] = [];
     const date = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -119,131 +129,157 @@ export class DevProgressService {
       day: 'numeric' 
     });
     
-    // Header
-    lines.push(`📊 Development Progress Update`);
-    lines.push(`${date}`);
-    lines.push('');
+    // Build the message with markdown formatting
+    let message = `📊 Development Progress Update\n${date}\n\n`;
     
-    // Executive Summary
+    // Add executive summary
     if (update.summary) {
-      lines.push('**Executive Summary**');
-      lines.push(update.summary);
-      lines.push('');
+      message += `**Executive Summary**\n${update.summary}\n\n`;
     }
     
-    // What's New
+    // Add sections with appropriate icons
     if (update.added && update.added.length > 0) {
-      lines.push('✨ **What\'s New**');
+      message += `✨ **What's New**\n`;
       update.added.forEach(item => {
-        lines.push(`• ${item}`);
+        message += `• ${item}\n`;
       });
-      lines.push('');
+      message += '\n';
     }
     
-    // Improvements
     if (update.improved && update.improved.length > 0) {
-      lines.push('🚀 **Improvements**');
+      message += `🚀 **Improvements**\n`;
       update.improved.forEach(item => {
-        lines.push(`• ${item}`);
+        message += `• ${item}\n`;
       });
-      lines.push('');
+      message += '\n';
     }
     
-    // Bug Fixes
     if (update.fixed && update.fixed.length > 0) {
-      lines.push('🐛 **Bug Fixes**');
+      message += `🐛 **Bug Fixes**\n`;
       update.fixed.forEach(item => {
-        lines.push(`• ${item}`);
+        message += `• ${item}\n`;
       });
-      lines.push('');
+      message += '\n';
     }
     
-    // Next Steps
     if (update.nextSteps && update.nextSteps.length > 0) {
-      lines.push('📅 **Next Steps**');
+      message += `📋 **Next Steps**\n`;
       update.nextSteps.forEach(item => {
-        lines.push(`• ${item}`);
+        message += `• ${item}\n`;
       });
-      lines.push('');
+      message += '\n';
     }
     
-    // Footer
-    lines.push('---');
-    lines.push('*This update was generated automatically from the development team.*');
-    
-    return lines.join('\n');
-  }
-
-  /**
-   * Send a composed progress update
-   * @param update The update sections
-   * @returns Success status
-   */
-  async sendProgressUpdate(update: ProgressUpdate): Promise<boolean> {
-    const message = this.composeUpdate(update);
-    const metadata = {
-      summary: update.summary,
-      addedCount: update.added?.length || 0,
-      fixedCount: update.fixed?.length || 0,
-      improvedCount: update.improved?.length || 0,
-      ...update.metadata,
-    };
-    
-    return this.sendUpdate(message, metadata);
-  }
-
-  /**
-   * Get service status
-   * @returns Status information
-   */
-  async status(): Promise<{
-    configured: boolean;
-    userId: string;
-    workspaceId: string;
-    projectId: string;
-    apiEndpoint: string;
-  }> {
-    return {
-      configured: this.isConfigured(),
-      userId: this.userId,
-      workspaceId: this.workspaceId,
-      projectId: this.projectId,
-      apiEndpoint: this.baseUrl,
-    };
-  }
-
-  /**
-   * Format error for logging
-   */
-  private formatError(error: any): string {
-    if (error instanceof AxiosError) {
-      if (error.response) {
-        return `Status ${error.response.status}: ${JSON.stringify(error.response.data)}`;
-      } else if (error.request) {
-        return `No response received: ${error.message}`;
-      } else {
-        return `Request setup error: ${error.message}`;
-      }
-    }
-    return error instanceof Error ? error.message : 'Unknown error';
-  }
-
-  /**
-   * Preview an update without sending
-   * @param update The update to preview
-   * @returns The formatted message
-   */
-  previewUpdate(update: ProgressUpdate): string {
-    const message = this.composeUpdate(update);
-    const wordCount = message.split(/\s+/).length;
-    
-    if (wordCount > 300) {
-      console.warn(`[DevProgress] Warning: Update is ${wordCount} words (recommended: under 300)`);
-    }
+    message += '---\n*This update was generated automatically from the development team.*';
     
     return message;
+  }
+
+  // Validate update content
+  validateUpdate(update: ProgressUpdate): string[] {
+    const errors: string[] = [];
+    
+    if (!update.summary || update.summary.trim().length === 0) {
+      errors.push('Summary is required');
+    }
+    
+    if (update.summary && update.summary.split(' ').length > 50) {
+      errors.push('Summary should be concise (max 50 words)');
+    }
+    
+    const allItems = [
+      ...(update.added || []),
+      ...(update.fixed || []),
+      ...(update.improved || []),
+      ...(update.nextSteps || [])
+    ];
+    
+    allItems.forEach((item, index) => {
+      if (item.split(' ').length > 30) {
+        errors.push(`Item "${item.substring(0, 30)}..." is too long (max 30 words)`);
+      }
+    });
+    
+    if (allItems.length === 0) {
+      errors.push('At least one update item is required');
+    }
+    
+    return errors;
+  }
+
+  // Save report to file system
+  async saveReport(update: ProgressUpdate, message: string): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `progress-${timestamp}.json`;
+    const filepath = path.join(this.reportsDir, filename);
+    
+    const report = {
+      timestamp: new Date().toISOString(),
+      update,
+      formatted: message,
+      sent: false
+    };
+    
+    await fs.writeFile(filepath, JSON.stringify(report, null, 2));
+    
+    // Also save as "last-report.json" for easy access
+    const lastReportPath = path.join(this.reportsDir, 'last-report.json');
+    await fs.writeFile(lastReportPath, JSON.stringify(report, null, 2));
+    
+    return filepath;
+  }
+
+  // Get recent reports
+  async getRecentReports(limit: number = 10): Promise<any[]> {
+    try {
+      const files = await fs.readdir(this.reportsDir);
+      const reportFiles = files
+        .filter(f => f.startsWith('progress-') && f.endsWith('.json'))
+        .sort()
+        .reverse()
+        .slice(0, limit);
+      
+      const reports = [];
+      for (const file of reportFiles) {
+        const content = await fs.readFile(path.join(this.reportsDir, file), 'utf-8');
+        reports.push(JSON.parse(content));
+      }
+      
+      return reports;
+    } catch (error) {
+      console.error('[DevProgress] Failed to get recent reports:', error);
+      return [];
+    }
+  }
+
+  // Send comprehensive update
+  async sendProgressUpdate(update: ProgressUpdate): Promise<boolean> {
+    const errors = this.validateUpdate(update);
+    if (errors.length > 0) {
+      console.error('[DevProgress] Validation errors:', errors);
+      return false;
+    }
+    
+    const message = this.formatUpdate(update);
+    
+    // Save report
+    const filepath = await this.saveReport(update, message);
+    console.log(`[DevProgress] Report saved to ${filepath}`);
+    
+    // Send to Dart
+    const sent = await this.sendUpdate(message);
+    
+    if (sent) {
+      // Update the saved report to mark as sent
+      const report = JSON.parse(await fs.readFile(filepath, 'utf-8'));
+      report.sent = true;
+      report.sentAt = new Date().toISOString();
+      await fs.writeFile(filepath, JSON.stringify(report, null, 2));
+    }
+    
+    return sent;
   }
 }
 
 // Export singleton instance
-export const devProgress = DevProgressService.getInstance();
+export const devProgressService = DevProgressService.getInstance();
