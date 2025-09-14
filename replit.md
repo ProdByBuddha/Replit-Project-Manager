@@ -47,10 +47,13 @@ Preferred communication style: Simple, everyday language.
 - **Upload Interface**: Uppy dashboard for multi-file management with progress tracking
 
 ### Real-time Features
+- **WebSocket Communication**: Socket.IO for real-time messaging with session authentication
+- **Chat System**: Family and inter-family messaging with connection codes
 - **Query Invalidation**: Automatic cache updates on data mutations
 - **Optimistic Updates**: Client-side state updates for improved UX
 - **Error Boundaries**: Comprehensive error handling with user feedback
 - **Toast Notifications**: Real-time user feedback for all operations
+- **Typing Indicators**: Real-time typing status in chat windows
 
 ## External Dependencies
 
