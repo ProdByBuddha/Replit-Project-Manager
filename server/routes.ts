@@ -29,6 +29,10 @@ import { eq, and } from "drizzle-orm";
 import axios from "axios";
 import { spawn } from "child_process";
 import { migrateAdminUsers, verifyMigration } from "./migration";
+import { dartService } from "./services/dartai";
+
+// Initialize Dart AI service (registers event listeners automatically)
+console.log('[Server] Initializing Dart AI service for automatic progress reporting...');
 
 // TypeScript interfaces for AI chat service
 interface ChatRequest {
