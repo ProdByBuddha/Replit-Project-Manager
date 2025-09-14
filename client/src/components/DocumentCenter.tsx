@@ -51,7 +51,7 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
   };
 
   const handleGetUploadParameters = async () => {
-    const response = await fetch('/api/documents/upload-url', {
+    const response = await fetch('/api/objects/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -60,12 +60,58 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
       throw new Error('Failed to get upload URL');
     }
 
-    return await response.json();
+    const data = await response.json();
+    // Transform response to match ObjectUploader expected format
+    return {
+      method: 'PUT' as const,
+      url: data.uploadURL,
+    };
   };
 
-  const handleUploadComplete = (result: any) => {
+  const handleUploadComplete = async (result: any) => {
     console.log('Upload complete:', result);
+    
+    // Save document metadata to database
+    if (result.successful && result.successful.length > 0) {
+      for (const file of result.successful) {
+        try {
+          // Extract file information
+          const uploadURL = file.uploadURL || file.xhrUpload?.endpoint;
+          const fileName = file.name;
+          const fileSize = file.size;
+          const mimeType = file.type;
+          
+          // Save document metadata
+          const response = await fetch('/api/documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileName,
+              originalFileName: fileName,
+              fileSize,
+              mimeType,
+              uploadURL,
+              familyTaskId: null, // Optional: can be linked to a task
+            }),
+          });
+          
+          if (!response.ok) {
+            console.error('Failed to save document metadata');
+            toast({
+              title: "Warning",
+              description: "File uploaded but metadata not saved",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Error saving document metadata:', error);
+        }
+      }
+    }
+    
+    // Refresh the documents list
     refetch();
+    
     toast({
       title: "Success",
       description: "Document uploaded successfully!",
