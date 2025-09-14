@@ -55,6 +55,8 @@ interface DebouncedReport {
 export class DartAIService {
   private apiKey: string;
   private workspaceId: string = 'LTPknvYLuLH9'; // Dart workspace/space ID
+  private projectId: string = 'UDY98NgvnZ4z'; // Dart project ID for tasks
+  private docsProjectId: string = '3VJqaEIFAlYs'; // Dart project ID for documents
   private baseUrl = 'https://app.itsdart.com/api/v0';
   private axiosInstance: AxiosInstance;
   private debouncedReports: Map<string, DebouncedReport> = new Map();
@@ -64,12 +66,16 @@ export class DartAIService {
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.DART_API_KEY || '';
     this.workspaceId = process.env.DART_WORKSPACE_ID || 'LTPknvYLuLH9';
+    this.projectId = process.env.DART_PROJECT_ID || 'UDY98NgvnZ4z';
+    this.docsProjectId = process.env.DART_DOCS_PROJECT_ID || '3VJqaEIFAlYs';
     
     if (!this.apiKey) {
       console.warn('[DartAI] API key not configured. Service will be disabled.');
     }
     
     console.log(`[DartAI] Using workspace/space ID: ${this.workspaceId}`);
+    console.log(`[DartAI] Using project ID for tasks: ${this.projectId}`);
+    console.log(`[DartAI] Using project ID for docs: ${this.docsProjectId}`);
 
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
@@ -190,7 +196,7 @@ export class DartAIService {
         try {
           // Calculate and send progress report
           const report = await this.calculateFamilyProgress(familyId);
-          await this.sendProjectProgressReport(project.dartId, report);
+          await this.sendProjectProgressReport(this.projectId, report);
           
           // Clear the debounced report
           this.debouncedReports.delete(key);
@@ -264,12 +270,12 @@ export class DartAIService {
     };
   }
 
-  // Ensure a Dart project exists for a family
+  // Use existing Dart project for all families (no creation needed)
   async ensureFamilyProject(familyId: string, projectName?: string): Promise<DartProject | null> {
     if (!this.isConfigured()) return null;
 
     try {
-      // Check if project already exists
+      // Check if project mapping already exists in database
       const [existingProject] = await db
         .select()
         .from(dartProjects)
@@ -285,33 +291,38 @@ export class DartAIService {
         };
       }
 
-      // Create new project
+      // Use the existing project ID (no API call needed)
       const family = await storage.getFamily(familyId);
       const name = projectName || (family ? `${family.name} - Status Correction` : 'Status Correction');
       
-      const response = await this.axiosInstance.post('/projects', {
+      // Map family to the existing Dart project
+      const dartProject: DartProject = {
+        dartId: this.projectId, // Use the existing project ID: UDY98NgvnZ4z
+        workspaceDartId: this.workspaceId,
         name,
         description: `Status correction tracking for family ${familyId}`,
         status: 'active',
-        spaceId: this.workspaceId, // Include workspace/space ID
-      });
+        metadata: {},
+      };
 
-      const dartProject: DartProject = response.data;
-
-      // Store project mapping
+      // Store the mapping in database
       await db.insert(dartProjects).values({
         familyId,
         dartProjectId: dartProject.dartId,
-        name,
+        projectName: name,
+        projectDescription: dartProject.description || `Status correction tracking for family ${familyId}`,
+        dartWorkspaceId: this.workspaceId,
         status: 'active',
-        metadata: {},
+        syncStatus: 'pending',
       });
 
-      await this.logSync('project', dartProject.dartId, 'create', 'success', familyId);
+      console.log(`[DartAI] Mapped family ${familyId} to existing Dart project ${this.projectId}`);
+      await this.logSync('project', dartProject.dartId, 'map', 'success', familyId);
 
       return dartProject;
     } catch (error) {
-      await this.logSync('project', familyId, 'create', 'failed', familyId, null, null,
+      console.error(`[DartAI] Error mapping family to project:`, error);
+      await this.logSync('project', familyId, 'map', 'failed', familyId, null, null,
         error instanceof Error ? error.message : 'Unknown error', error);
       return null;
     }
@@ -344,7 +355,7 @@ export class DartAIService {
         title: familyTask.task.title,
         description: familyTask.task.description || familyTask.notes || undefined,
         status: dartStatus,
-        projectDartId: project.dartId,
+        projectDartId: this.projectId, // Use the fixed project ID
         progress: familyTask.status === 'completed' ? 100 : 
                  familyTask.status === 'in_progress' ? 50 : 0,
       });
@@ -389,7 +400,7 @@ export class DartAIService {
             title: familyTask.task.title,
             description: familyTask.task.description || familyTask.notes || undefined,
             status: dartStatus,
-            projectDartId: project.dartId,
+            projectDartId: this.projectId, // Use the fixed project ID
             progress: familyTask.status === 'completed' ? 100 : 
                      familyTask.status === 'in_progress' ? 50 : 0,
           });
@@ -404,7 +415,7 @@ export class DartAIService {
 
       // Send progress report after sync
       const report = await this.calculateFamilyProgress(familyId);
-      await this.sendProjectProgressReport(project.dartId, report);
+      await this.sendProjectProgressReport(this.projectId, report);
 
       return {
         success: tasksFailed === 0,
@@ -527,7 +538,7 @@ Last Updated: ${report.lastUpdated.toLocaleString()}
         // Create new task
         operation = 'create';
         const response = await this.axiosInstance.post('/tasks', {
-          projectDartId: data.projectDartId,
+          projectDartId: this.projectId, // Use the configured project ID
           spaceId: this.workspaceId, // Include workspace/space ID
           title: data.title,
           description: data.description,
