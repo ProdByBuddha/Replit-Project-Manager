@@ -168,23 +168,23 @@ export default function UserManagement() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-3 sm:mx-0">
               <table className="w-full" data-testid="table-users">
                 <thead className="bg-muted/30">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Family
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Join Date
                     </th>
                   </tr>
@@ -196,7 +196,7 @@ export default function UserManagement() {
                     
                     return (
                       <tr key={user.id} className="hover:bg-muted/20" data-testid={`user-row-${user.id}`}>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 sm:px-6 py-4">
                           <div className="flex items-center">
                             <Avatar className="w-10 h-10 mr-3">
                               <AvatarImage 
@@ -209,16 +209,16 @@ export default function UserManagement() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="text-sm font-medium text-card-foreground" data-testid={`user-name-${user.id}`}>
+                              <div className="text-sm font-medium text-card-foreground truncate max-w-[150px] sm:max-w-none" data-testid={`user-name-${user.id}`}>
                                 {user.displayName}
                               </div>
-                              <div className="text-sm text-muted-foreground" data-testid={`user-email-${user.id}`}>
+                              <div className="text-sm text-muted-foreground truncate max-w-[150px] sm:max-w-none" data-testid={`user-email-${user.id}`}>
                                 {user.email || 'No email'}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 sm:px-6 py-4">
                           <Badge 
                             className={getRoleColor(user.role)}
                             data-testid={`user-role-${user.id}`}
@@ -227,7 +227,7 @@ export default function UserManagement() {
                             {getRoleDisplayName(user.role)}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 sm:px-6 py-4">
                           <Badge 
                             className={getStatusColor(status)}
                             data-testid={`user-status-${user.id}`}
@@ -235,14 +235,14 @@ export default function UserManagement() {
                             {status}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground" data-testid={`user-family-${user.id}`}>
+                        <td className="px-3 sm:px-6 py-4 text-sm text-muted-foreground" data-testid={`user-family-${user.id}`}>
                           {user.familyId ? (
                             <span>Family Member</span>
                           ) : (
                             <span className="text-muted-foreground/60">No Family</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground" data-testid={`user-join-date-${user.id}`}>
+                        <td className="px-3 sm:px-6 py-4 text-sm text-muted-foreground" data-testid={`user-join-date-${user.id}`}>
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
                       </tr>

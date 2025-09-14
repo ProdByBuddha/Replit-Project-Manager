@@ -280,7 +280,7 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
   if (isLoading) {
     return (
       <Card className="bg-card border-border">
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
@@ -298,7 +298,7 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
         <p className="text-muted-foreground mt-1">Upload and manage your documents</p>
       </CardHeader>
       
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         {/* File Upload Area */}
         <div className="mb-6" data-testid="container-upload-area">
           {/* Hidden file input */}
@@ -420,7 +420,7 @@ export default function DocumentCenter({ familyId }: DocumentCenterProps) {
                 >
                   {getFileIcon(document.mimeType)}
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-card-foreground truncate break-all" data-testid={`text-document-name-${document.id}`}>
+                    <p className="text-sm font-medium text-card-foreground truncate" data-testid={`text-document-name-${document.id}`}>
                       {document.originalFileName}
                     </p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">

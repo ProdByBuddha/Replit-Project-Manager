@@ -119,17 +119,17 @@ export default function ChatPage() {
     <PortalLayout pageTitle="Chat">
       <div className="h-[calc(100vh-8rem)] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <MessageSquare className="w-6 h-6 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold" data-testid="text-chat-title">Family Chat</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-chat-title">Family Chat</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Connect and communicate with your family
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {totalUnread > 0 && (
               <Badge variant="destructive" data-testid="badge-unread-total">
                 {totalUnread} unread

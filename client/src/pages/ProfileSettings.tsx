@@ -136,7 +136,7 @@ export default function ProfileSettings() {
   };
 
   return (
-    <div className="container max-w-4xl mx-auto py-6 px-4">
+    <div className="container max-w-4xl mx-auto py-6 px-4 overflow-x-hidden">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Profile Settings</h1>
         <p className="text-muted-foreground mt-2">
@@ -159,7 +159,7 @@ export default function ProfileSettings() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="firstName"
@@ -233,7 +233,7 @@ export default function ProfileSettings() {
                   )}
                 />
 
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-4">
                   <Button
                     type="submit"
                     disabled={isLoading || !form.formState.isDirty}
@@ -270,7 +270,7 @@ export default function ProfileSettings() {
               control={form.control}
               name="emailNotifications"
               render={({ field }) => (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
                       <Bell className="h-4 w-4" />
@@ -297,7 +297,7 @@ export default function ProfileSettings() {
               control={form.control}
               name="darkMode"
               render={({ field }) => (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <FormLabel className="text-base">Dark Mode</FormLabel>
                     <FormDescription>

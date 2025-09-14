@@ -119,7 +119,7 @@ export default function MessageCenter({ familyId, userRole }: MessageCenterProps
                       getMessageIcon(message.messageType)
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-sm font-medium text-card-foreground" data-testid={`message-subject-${message.id}`}>
                         {message.subject}
@@ -128,7 +128,7 @@ export default function MessageCenter({ familyId, userRole }: MessageCenterProps
                         <Badge variant="secondary" className="ml-2">New</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2" data-testid={`message-content-${message.id}`}>
+                    <p className="text-sm text-muted-foreground mb-2 break-words" data-testid={`message-content-${message.id}`}>
                       {message.content}
                     </p>
                     <p className="text-xs text-muted-foreground" data-testid={`message-time-${message.id}`}>

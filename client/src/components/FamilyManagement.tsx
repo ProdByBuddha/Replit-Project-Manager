@@ -106,19 +106,19 @@ export default function FamilyManagement() {
             <table className="w-full" data-testid="table-families">
               <thead className="bg-muted/30">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Family
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Progress
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Last Activity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -126,7 +126,7 @@ export default function FamilyManagement() {
               <tbody className="divide-y divide-border">
                 {families.map((family: any) => (
                   <tr key={family.id} className="hover:bg-muted/20" data-testid={`family-row-${family.id}`}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center mr-3">
                           <span className="text-primary font-medium" data-testid={`family-initial-${family.id}`}>
@@ -143,8 +143,8 @@ export default function FamilyManagement() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="w-full">
+                    <td className="px-3 sm:px-6 py-4">
+                      <div className="min-w-[100px]">
                         <Progress 
                           value={family.stats?.progress || 0} 
                           className="w-24 h-2" 
@@ -155,7 +155,7 @@ export default function FamilyManagement() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4">
                       <Badge 
                         className={getStatusColor(family.stats?.progress || 0)}
                         data-testid={`family-status-${family.id}`}
@@ -163,11 +163,11 @@ export default function FamilyManagement() {
                         {getStatusText(family.stats?.progress || 0)}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground" data-testid={`family-last-activity-${family.id}`}>
+                    <td className="px-3 sm:px-6 py-4 text-sm text-muted-foreground" data-testid={`family-last-activity-${family.id}`}>
                       {new Date(family.updatedAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                    <td className="px-3 sm:px-6 py-4 text-sm font-medium">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                         <Button
                           size="sm"
                           variant="ghost"

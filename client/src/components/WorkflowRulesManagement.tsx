@@ -349,7 +349,7 @@ export default function WorkflowRulesManagement() {
     <>
       <Card className="bg-card border-border">
         <CardHeader className="border-b border-border">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-2">
               <Settings className="w-5 h-5 text-primary" />
               <CardTitle className="text-card-foreground">Workflow Rules</CardTitle>
@@ -383,6 +383,7 @@ export default function WorkflowRulesManagement() {
               {searchQuery ? "No workflow rules match your search." : "No workflow rules configured."}
             </div>
           ) : (
+            <div className="overflow-x-auto -mx-3 sm:mx-0">
             <Table data-testid="table-workflow-rules">
               <TableHeader>
                 <TableRow>
@@ -455,7 +456,7 @@ export default function WorkflowRulesManagement() {
                       {new Date(rule.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -479,6 +480,7 @@ export default function WorkflowRulesManagement() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -492,7 +494,7 @@ export default function WorkflowRulesManagement() {
           resetForm();
         }}
       >
-        <DialogContent className="max-w-2xl" data-testid="dialog-workflow-rule-form">
+        <DialogContent className="w-[95vw] max-w-2xl sm:w-full" data-testid="dialog-workflow-rule-form">
           <DialogHeader>
             <DialogTitle>
               {editingRule ? 'Edit Workflow Rule' : 'Add Workflow Rule'}

@@ -217,7 +217,7 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
               </div>
               
               {/* Right side */}
-              <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+              <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
                 {/* Last updated - hidden on mobile */}
                 <div className="hidden lg:flex items-center text-sm text-muted-foreground">
                   <Clock className="w-4 h-4 mr-2" />
@@ -244,7 +244,7 @@ export default function PortalLayout({ children, pageTitle }: PortalLayoutProps)
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      className="flex items-center space-x-2 hover:bg-accent/50 px-2 sm:px-3"
+                      className="flex items-center gap-2 hover:bg-accent/50 px-2 sm:px-3"
                       data-testid="button-user-profile"
                     >
                       <Avatar className="w-8 h-8">

@@ -95,7 +95,7 @@ export default function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 overflow-x-hidden">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center space-x-2">
@@ -127,7 +127,7 @@ export default function Notifications() {
                     control={form.control}
                     name="emailOnTaskStatus"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="flex items-center space-x-2">
                             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -153,7 +153,7 @@ export default function Notifications() {
                     control={form.control}
                     name="emailOnDocumentUpload"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="flex items-center space-x-2">
                             <FileText className="h-4 w-4 text-blue-600" />
@@ -179,7 +179,7 @@ export default function Notifications() {
                     control={form.control}
                     name="emailOnAdminMessage"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="flex items-center space-x-2">
                             <MessageSquare className="h-4 w-4 text-purple-600" />
@@ -205,7 +205,7 @@ export default function Notifications() {
                     control={form.control}
                     name="emailOnInvitations"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                         <div className="space-y-0.5">
                           <FormLabel className="flex items-center space-x-2">
                             <UserPlus className="h-4 w-4 text-orange-600" />

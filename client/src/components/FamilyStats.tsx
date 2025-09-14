@@ -15,12 +15,12 @@ interface FamilyStatsProps {
 export default function FamilyStats({ stats, isLoading }: FamilyStatsProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="bg-card border-border">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="animate-pulse">
-                <div className="flex items-center">
+                <div className="flex items-center flex-wrap">
                   <div className="w-12 h-12 bg-muted rounded-lg mr-4" />
                   <div>
                     <div className="h-8 bg-muted rounded w-16 mb-2" />
@@ -40,66 +40,66 @@ export default function FamilyStats({ stats, isLoading }: FamilyStatsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" data-testid="container-family-stats">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8" data-testid="container-family-stats">
       <Card className="bg-card border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mr-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center flex-wrap">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-lg flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
               <CheckCircle className="text-primary text-xl" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-card-foreground" data-testid="stat-completed-tasks">
+              <h3 className="text-xl sm:text-2xl font-bold text-card-foreground truncate" data-testid="stat-completed-tasks">
                 {stats.completed}
               </h3>
-              <p className="text-muted-foreground">Completed Tasks</p>
+              <p className="text-sm sm:text-base text-muted-foreground">Completed Tasks</p>
             </div>
           </div>
         </CardContent>
       </Card>
       
       <Card className="bg-card border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center flex-wrap">
             <div className="w-12 h-12 bg-chart-3/20 rounded-lg flex items-center justify-center mr-4">
               <Clock className="text-chart-3 text-xl" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-card-foreground" data-testid="stat-pending-tasks">
+              <h3 className="text-xl sm:text-2xl font-bold text-card-foreground truncate" data-testid="stat-pending-tasks">
                 {stats.pending}
               </h3>
-              <p className="text-muted-foreground">Pending Tasks</p>
+              <p className="text-sm sm:text-base text-muted-foreground">Pending Tasks</p>
             </div>
           </div>
         </CardContent>
       </Card>
       
       <Card className="bg-card border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center flex-wrap">
             <div className="w-12 h-12 bg-chart-1/20 rounded-lg flex items-center justify-center mr-4">
               <FileText className="text-chart-1 text-xl" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-card-foreground" data-testid="stat-documents">
+              <h3 className="text-xl sm:text-2xl font-bold text-card-foreground truncate" data-testid="stat-documents">
                 {stats.documents}
               </h3>
-              <p className="text-muted-foreground">Documents</p>
+              <p className="text-sm sm:text-base text-muted-foreground">Documents</p>
             </div>
           </div>
         </CardContent>
       </Card>
       
       <Card className="bg-card border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center flex-wrap">
             <div className="w-12 h-12 bg-chart-2/20 rounded-lg flex items-center justify-center mr-4">
               <TrendingUp className="text-chart-2 text-xl" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-card-foreground" data-testid="stat-progress">
+              <h3 className="text-xl sm:text-2xl font-bold text-card-foreground truncate" data-testid="stat-progress">
                 {stats.progress}%
               </h3>
-              <p className="text-muted-foreground">Overall Progress</p>
+              <p className="text-sm sm:text-base text-muted-foreground">Overall Progress</p>
             </div>
           </div>
         </CardContent>

@@ -312,7 +312,7 @@ export default function DependencyManagement() {
     <>
       <Card className="bg-card border-border">
         <CardHeader className="border-b border-border">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-2">
               <Network className="w-5 h-5 text-primary" />
               <CardTitle className="text-card-foreground">Task Dependencies</CardTitle>
@@ -346,6 +346,7 @@ export default function DependencyManagement() {
               {searchQuery ? "No dependencies match your search." : "No task dependencies configured."}
             </div>
           ) : (
+            <div className="overflow-x-auto -mx-3 sm:mx-0">
             <Table data-testid="table-dependencies">
               <TableHeader>
                 <TableRow>
@@ -375,7 +376,7 @@ export default function DependencyManagement() {
                       {new Date(dependency.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -399,6 +400,7 @@ export default function DependencyManagement() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -412,7 +414,7 @@ export default function DependencyManagement() {
           resetForm();
         }}
       >
-        <DialogContent data-testid="dialog-dependency-form">
+        <DialogContent className="w-[95vw] max-w-xl sm:w-full" data-testid="dialog-dependency-form">
           <DialogHeader>
             <DialogTitle>
               {editingDependency ? 'Edit Dependency' : 'Add Task Dependency'}

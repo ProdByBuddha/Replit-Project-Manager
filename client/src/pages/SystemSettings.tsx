@@ -360,7 +360,7 @@ export default function SystemSettings() {
     <PortalLayout pageTitle="System Settings">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground" data-testid="text-settings-title">
               System Settings
@@ -389,7 +389,7 @@ export default function SystemSettings() {
 
         {/* Settings Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6" data-testid="tabs-settings-navigation">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 overflow-x-auto" data-testid="tabs-settings-navigation">
             <TabsTrigger value="general" className="flex items-center space-x-2" data-testid="tab-general">
               <Settings className="w-4 h-4" />
               <span>General</span>
@@ -507,7 +507,7 @@ export default function SystemSettings() {
                       control={generalForm.control}
                       name="maintenanceMode"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Maintenance Mode</FormLabel>
                             <FormDescription>
@@ -583,7 +583,7 @@ export default function SystemSettings() {
                       control={notificationForm.control}
                       name="emailNotificationsEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Email Notifications</FormLabel>
                             <FormDescription>
@@ -605,7 +605,7 @@ export default function SystemSettings() {
                       control={notificationForm.control}
                       name="systemAlertsEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">System Alerts</FormLabel>
                             <FormDescription>
@@ -627,7 +627,7 @@ export default function SystemSettings() {
                       control={notificationForm.control}
                       name="taskReminderEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Task Reminders</FormLabel>
                             <FormDescription>
@@ -649,7 +649,7 @@ export default function SystemSettings() {
                       control={notificationForm.control}
                       name="documentUploadNotifications"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Document Upload Notifications</FormLabel>
                             <FormDescription>
@@ -780,7 +780,7 @@ export default function SystemSettings() {
                       control={securityForm.control}
                       name="requireStrongPasswords"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Require Strong Passwords</FormLabel>
                             <FormDescription>
@@ -802,7 +802,7 @@ export default function SystemSettings() {
                       control={securityForm.control}
                       name="enableTwoFactor"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Two-Factor Authentication</FormLabel>
                             <FormDescription>
@@ -860,7 +860,7 @@ export default function SystemSettings() {
                       control={featureForm.control}
                       name="chatEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">AI Chat</FormLabel>
                             <FormDescription>
@@ -882,7 +882,7 @@ export default function SystemSettings() {
                       control={featureForm.control}
                       name="fileUploadsEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">File Uploads</FormLabel>
                             <FormDescription>
@@ -904,7 +904,7 @@ export default function SystemSettings() {
                       control={featureForm.control}
                       name="invitationsEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Family Invitations</FormLabel>
                             <FormDescription>
@@ -926,7 +926,7 @@ export default function SystemSettings() {
                       control={featureForm.control}
                       name="publicRegistration"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Public Registration</FormLabel>
                             <FormDescription>
@@ -948,7 +948,7 @@ export default function SystemSettings() {
                       control={featureForm.control}
                       name="advancedWorkflowsEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Advanced Workflows</FormLabel>
                             <FormDescription>
@@ -1024,7 +1024,7 @@ export default function SystemSettings() {
                       control={integrationForm.control}
                       name="parlantApiEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Parlant AI Service</FormLabel>
                             <FormDescription>
@@ -1046,7 +1046,7 @@ export default function SystemSettings() {
                       control={integrationForm.control}
                       name="objectStorageEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Object Storage</FormLabel>
                             <FormDescription>
@@ -1068,7 +1068,7 @@ export default function SystemSettings() {
                       control={integrationForm.control}
                       name="analyticsEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Usage Analytics</FormLabel>
                             <FormDescription>
@@ -1090,7 +1090,7 @@ export default function SystemSettings() {
                       control={integrationForm.control}
                       name="backupEnabled"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Automatic Backups</FormLabel>
                             <FormDescription>
@@ -1155,7 +1155,7 @@ export default function SystemSettings() {
                         control={schedulerForm.control}
                         name="uscode_scheduler_enabled"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">Enable US Code Indexing</FormLabel>
                               <FormDescription>
@@ -1245,7 +1245,7 @@ export default function SystemSettings() {
                           control={schedulerForm.control}
                           name="uscode_scheduler_incremental_enabled"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                               <div className="space-y-0.5">
                                 <FormLabel className="text-base">Incremental Updates</FormLabel>
                                 <FormDescription>
@@ -1268,7 +1268,7 @@ export default function SystemSettings() {
                         control={schedulerForm.control}
                         name="uscode_scheduler_notify_on_failure"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">US Code Failure Notifications</FormLabel>
                               <FormDescription>
@@ -1300,7 +1300,7 @@ export default function SystemSettings() {
                         control={schedulerForm.control}
                         name="ucc_scheduler_enabled"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">Enable UCC Indexing</FormLabel>
                               <FormDescription>
@@ -1390,7 +1390,7 @@ export default function SystemSettings() {
                           control={schedulerForm.control}
                           name="ucc_scheduler_incremental_enabled"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                               <div className="space-y-0.5">
                                 <FormLabel className="text-base">Incremental Updates</FormLabel>
                                 <FormDescription>
@@ -1413,7 +1413,7 @@ export default function SystemSettings() {
                         control={schedulerForm.control}
                         name="ucc_scheduler_notify_on_failure"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">UCC Failure Notifications</FormLabel>
                               <FormDescription>
@@ -1445,7 +1445,7 @@ export default function SystemSettings() {
                         control={schedulerForm.control}
                         name="legal_scheduler_concurrent_execution"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">Concurrent Execution</FormLabel>
                               <FormDescription>
@@ -1467,7 +1467,7 @@ export default function SystemSettings() {
                         control={schedulerForm.control}
                         name="legal_scheduler_resource_throttling"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-lg border p-4">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">Resource Throttling</FormLabel>
                               <FormDescription>

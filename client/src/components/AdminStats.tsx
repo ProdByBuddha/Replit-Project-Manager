@@ -11,12 +11,12 @@ export default function AdminStats() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="bg-card border-border">
             <CardContent className="p-6">
               <div className="animate-pulse">
-                <div className="flex items-center">
+                <div className="flex items-center flex-wrap">
                   <div className="w-12 h-12 bg-muted rounded-lg mr-4" />
                   <div>
                     <div className="h-8 bg-muted rounded w-16 mb-2" />
@@ -36,10 +36,10 @@ export default function AdminStats() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" data-testid="container-admin-stats">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8" data-testid="container-admin-stats">
       <Card className="bg-card border-border">
         <CardContent className="p-6">
-          <div className="flex items-center">
+          <div className="flex items-center flex-wrap">
             <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mr-4">
               <Users className="text-primary text-xl" />
             </div>
@@ -55,7 +55,7 @@ export default function AdminStats() {
       
       <Card className="bg-card border-border">
         <CardContent className="p-6">
-          <div className="flex items-center">
+          <div className="flex items-center flex-wrap">
             <div className="w-12 h-12 bg-chart-2/20 rounded-lg flex items-center justify-center mr-4">
               <CheckCircle className="text-chart-2 text-xl" />
             </div>
@@ -71,7 +71,7 @@ export default function AdminStats() {
       
       <Card className="bg-card border-border">
         <CardContent className="p-6">
-          <div className="flex items-center">
+          <div className="flex items-center flex-wrap">
             <div className="w-12 h-12 bg-chart-3/20 rounded-lg flex items-center justify-center mr-4">
               <Clock className="text-chart-3 text-xl" />
             </div>
@@ -87,7 +87,7 @@ export default function AdminStats() {
       
       <Card className="bg-card border-border">
         <CardContent className="p-6">
-          <div className="flex items-center">
+          <div className="flex items-center flex-wrap">
             <div className="w-12 h-12 bg-chart-1/20 rounded-lg flex items-center justify-center mr-4">
               <FileText className="text-chart-1 text-xl" />
             </div>
