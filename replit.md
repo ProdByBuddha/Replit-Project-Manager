@@ -62,7 +62,7 @@ Preferred communication style: Simple, everyday language.
 - **Google Cloud Storage**: Object storage for document and file management
 - **Replit Authentication**: OIDC-based user authentication service
 - **Replit Sidecar**: Service mesh for secure cloud service access
-- **Dart AI**: Project management integration for automatic progress reporting (Space ID: LTPknvYLuLH9)
+- **Dart AI**: Project management integration for automatic progress reporting (Workspace: Eric Parker/Tasks, Space ID: LTPknvYLuLH9)
 
 ### UI Component Libraries
 - **Radix UI**: Accessible, unstyled component primitives
@@ -81,3 +81,43 @@ Preferred communication style: Simple, everyday language.
 - **Passport**: Authentication middleware for various strategies
 - **Multer**: Multipart form data handling for file uploads
 - **Connect-PG-Simple**: PostgreSQL session store for Express
+
+## Development & Project Management
+
+### Git-Integrated Progress Reporting System
+A comprehensive system for analyzing git history and generating client-friendly progress reports automatically sent to Dart AI.
+
+**Core Functionality:**
+- Analyzes complete git commit history and categorizes development work
+- Generates natural language progress summaries for client communication
+- Integrates directly with Replit's git repository using shell commands
+- Automatically sends cumulative reports to Eric Parker's Dart AI workspace
+
+**Available CLI Commands:**
+- `npx tsx server/cli/gitprogress.ts analyze --since "period"` - Analyze git history patterns
+- `npx tsx server/cli/gitprogress.ts report --since "period"` - Generate and send comprehensive reports
+- `npx tsx server/cli/gitprogress.ts quick --days N` - Quick updates for recent work
+- `npx tsx server/cli/gitprogress.ts status` - Check repository status
+
+**When to Use Git Progress Reporting:**
+1. **Project Milestones** - After completing major features or development phases
+2. **Client Updates** - When clients need comprehensive progress summaries
+3. **Weekly/Monthly Reports** - Regular scheduled progress communications
+4. **Development Reviews** - When analyzing productivity and development patterns
+5. **Feature Completion** - After finishing significant feature implementations
+6. **Bug Fix Cycles** - When reporting resolution of multiple issues
+7. **Architecture Changes** - After major system refactoring or improvements
+
+**Integration Details:**
+- Service: `GitIntegratedProgressService` in `server/services/gitIntegratedProgress.ts`
+- CLI Tool: `server/cli/gitprogress.ts`
+- Dart AI Target: Eric Parker/Tasks workspace (LTPknvYLuLH9)
+- Report Storage: `.dart-reports/` directory with JSON archives
+- Categories: 11 automatic development categories (Dart AI Integration, Document Management, Real-Time Communication, RBAC, Legal Research, UI/UX, Authentication, System Configuration, Data Management, Notifications, General Improvements)
+
+**Best Practices:**
+- Use `--preview` flag to review reports before sending
+- Include appropriate time periods (`--since "1 month ago"`, `--days 7`)
+- Regular cumulative reports help maintain client visibility
+- Quick updates for immediate progress communication
+- Analyze patterns to improve development efficiency
