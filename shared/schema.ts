@@ -402,6 +402,92 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ===== DART AI PROJECT MANAGEMENT INTEGRATION =====
+
+// Dart Projects table - tracks Dart project mapping
+export const dartProjects = pgTable(
+  "dart_projects",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    familyId: varchar("family_id").notNull(),
+    dartProjectId: varchar("dart_project_id").notNull().unique(),
+    dartWorkspaceId: varchar("dart_workspace_id"),
+    projectName: varchar("project_name").notNull(),
+    projectDescription: text("project_description"),
+    status: varchar("status").notNull().default("active"), // 'active', 'completed', 'archived'
+    syncStatus: varchar("sync_status").notNull().default("pending"), // 'pending', 'syncing', 'synced', 'error'
+    lastSyncAt: timestamp("last_sync_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints for referential integrity
+    foreignKey({ columns: [table.familyId], foreignColumns: [families.id] }),
+    // Indexes for performance
+    index("IDX_dart_projects_family").on(table.familyId),
+    index("IDX_dart_projects_dart_id").on(table.dartProjectId),
+    index("IDX_dart_projects_sync_status").on(table.syncStatus),
+  ]
+);
+
+// Dart Tasks table - tracks task synchronization with Dart
+export const dartTasks = pgTable(
+  "dart_tasks",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    familyTaskId: varchar("family_task_id").notNull(),
+    dartTaskId: varchar("dart_task_id").notNull().unique(),
+    dartProjectId: varchar("dart_project_id").notNull(),
+    title: varchar("title").notNull(),
+    description: text("description"),
+    priority: varchar("priority").default("medium"), // 'low', 'medium', 'high', 'urgent'
+    status: varchar("status").notNull(), // 'todo', 'in_progress', 'completed', 'blocked'
+    assignee: varchar("assignee"), // Dart user identifier
+    progress: integer("progress").default(0), // 0-100 percentage
+    syncStatus: varchar("sync_status").notNull().default("pending"), // 'pending', 'syncing', 'synced', 'error'
+    lastSyncAt: timestamp("last_sync_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints for referential integrity
+    foreignKey({ columns: [table.familyTaskId], foreignColumns: [familyTasks.id] }),
+    foreignKey({ columns: [table.dartProjectId], foreignColumns: [dartProjects.dartProjectId] }),
+    // Indexes for performance
+    index("IDX_dart_tasks_family_task").on(table.familyTaskId),
+    index("IDX_dart_tasks_dart_id").on(table.dartTaskId),
+    index("IDX_dart_tasks_project").on(table.dartProjectId),
+    index("IDX_dart_tasks_sync_status").on(table.syncStatus),
+  ]
+);
+
+// Dart Sync Logs table - tracks sync history and errors
+export const dartSyncLogs = pgTable(
+  "dart_sync_logs",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    entityType: varchar("entity_type").notNull(), // 'project', 'task', 'workspace'
+    entityId: varchar("entity_id").notNull(), // ID of the entity being synced
+    familyId: varchar("family_id"),
+    operation: varchar("operation").notNull(), // 'create', 'update', 'delete', 'sync'
+    status: varchar("status").notNull(), // 'success', 'failed', 'partial'
+    requestData: jsonb("request_data"), // Data sent to Dart
+    responseData: jsonb("response_data"), // Response from Dart
+    errorMessage: text("error_message"),
+    errorDetails: jsonb("error_details"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints for referential integrity
+    foreignKey({ columns: [table.familyId], foreignColumns: [families.id] }),
+    // Indexes for performance
+    index("IDX_dart_sync_logs_entity").on(table.entityType, table.entityId),
+    index("IDX_dart_sync_logs_family").on(table.familyId),
+    index("IDX_dart_sync_logs_status").on(table.status),
+    index("IDX_dart_sync_logs_created").on(table.createdAt),
+  ]
+);
+
 // ===== FAMILY CONNECTION AND CHAT SYSTEM =====
 
 // Family Connections table - manages connections between families
@@ -1037,6 +1123,24 @@ export const insertUccIndexingJobSchema = createInsertSchema(uccIndexingJobs).om
   createdAt: true,
 });
 
+// Dart AI Schemas
+export const insertDartProjectSchema = createInsertSchema(dartProjects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDartTaskSchema = createInsertSchema(dartTasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDartSyncLogSchema = createInsertSchema(dartSyncLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -1104,3 +1208,11 @@ export type UccSearchIndex = typeof uccSearchIndex.$inferSelect;
 export type InsertUccSearchIndex = z.infer<typeof insertUccSearchIndexSchema>;
 export type UccIndexingJob = typeof uccIndexingJobs.$inferSelect;
 export type InsertUccIndexingJob = z.infer<typeof insertUccIndexingJobSchema>;
+
+// Dart AI types
+export type DartProject = typeof dartProjects.$inferSelect;
+export type InsertDartProject = z.infer<typeof insertDartProjectSchema>;
+export type DartTask = typeof dartTasks.$inferSelect;
+export type InsertDartTask = z.infer<typeof insertDartTaskSchema>;
+export type DartSyncLog = typeof dartSyncLogs.$inferSelect;
+export type InsertDartSyncLog = z.infer<typeof insertDartSyncLogSchema>;
