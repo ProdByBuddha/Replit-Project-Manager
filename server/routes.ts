@@ -3908,23 +3908,39 @@ async function initializeSampleData() {
       familyId: null,
     });
 
-    // Create sample family
-    const sampleFamily = await storage.createFamily({
-      name: "Johnson Family",
-      familyCode: "JOHNSON2024",
-    });
+    // Check if sample family already exists before creating
+    let sampleFamily = await storage.getFamilyByCode("JOHNSON2024");
+    
+    if (!sampleFamily) {
+      // Create sample family only if it doesn't exist
+      sampleFamily = await storage.createFamily({
+        name: "Johnson Family",
+        familyCode: "JOHNSON2024",
+      });
+      console.log(`Sample family created: ${sampleFamily.name} with code ${sampleFamily.familyCode}`);
+    } else {
+      console.log(`Sample family already exists: ${sampleFamily.name} with code ${sampleFamily.familyCode}`);
+    }
 
-    // Create sample family member
-    await storage.upsertUser({
-      id: "family-sample-456",
-      email: "mary@johnson.com",
-      firstName: "Mary",
-      lastName: "Johnson",
-      role: "family",
-      familyId: sampleFamily.id,
-    });
+    // Check if sample family member already exists
+    const existingFamilyMember = await storage.getUser("family-sample-456");
+    
+    if (!existingFamilyMember) {
+      // Create sample family member only if they don't exist
+      await storage.upsertUser({
+        id: "family-sample-456",
+        email: "mary@johnson.com",
+        firstName: "Mary",
+        lastName: "Johnson",
+        role: "family",
+        familyId: sampleFamily.id,
+      });
+      console.log("Sample family member created: Mary Johnson");
+    } else {
+      console.log("Sample family member already exists: Mary Johnson");
+    }
 
-    console.log(`Sample data initialized: Family ${sampleFamily.name} with code ${sampleFamily.familyCode}`);
+    console.log("Sample data initialization complete");
   } catch (error) {
     console.error("Error initializing sample data:", error);
   }

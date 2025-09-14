@@ -33,7 +33,12 @@ async function initializeUccDefaultSettings(): Promise<void> {
     for (const setting of uccSettings) {
       const existing = await storage.getSystemSetting(setting.key);
       if (!existing) {
-        await storage.upsertSystemSetting(setting.key, setting.value, setting.description);
+        await storage.upsertSystemSetting({
+          key: setting.key,
+          value: setting.value,
+          category: 'scheduler',
+          description: setting.description
+        });
         log(`[Scheduler] Created default UCC setting: ${setting.key} = ${setting.value}`);
       }
     }
