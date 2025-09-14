@@ -62,6 +62,7 @@ Preferred communication style: Simple, everyday language.
 - **Google Cloud Storage**: Object storage for document and file management
 - **Replit Authentication**: OIDC-based user authentication service
 - **Replit Sidecar**: Service mesh for secure cloud service access
+- **Dart AI**: Project management integration for automatic progress reporting (Space ID: LTPknvYLuLH9)
 
 ### UI Component Libraries
 - **Radix UI**: Accessible, unstyled component primitives

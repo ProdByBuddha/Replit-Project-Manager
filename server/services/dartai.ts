@@ -54,6 +54,7 @@ interface DebouncedReport {
 
 export class DartAIService {
   private apiKey: string;
+  private workspaceId: string = 'LTPknvYLuLH9'; // Dart workspace/space ID
   private baseUrl = 'https://app.itsdart.com/api/v0';
   private axiosInstance: AxiosInstance;
   private debouncedReports: Map<string, DebouncedReport> = new Map();
@@ -62,10 +63,13 @@ export class DartAIService {
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.DART_API_KEY || '';
+    this.workspaceId = process.env.DART_WORKSPACE_ID || 'LTPknvYLuLH9';
     
     if (!this.apiKey) {
       console.warn('[DartAI] API key not configured. Service will be disabled.');
     }
+    
+    console.log(`[DartAI] Using workspace/space ID: ${this.workspaceId}`);
 
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
@@ -289,6 +293,7 @@ export class DartAIService {
         name,
         description: `Status correction tracking for family ${familyId}`,
         status: 'active',
+        spaceId: this.workspaceId, // Include workspace/space ID
       });
 
       const dartProject: DartProject = response.data;
@@ -523,6 +528,7 @@ Last Updated: ${report.lastUpdated.toLocaleString()}
         operation = 'create';
         const response = await this.axiosInstance.post('/tasks', {
           projectDartId: data.projectDartId,
+          spaceId: this.workspaceId, // Include workspace/space ID
           title: data.title,
           description: data.description,
           status: data.status || 'todo',
