@@ -460,6 +460,7 @@ export default function StatusCorrection() {
     error?: string;
   }>>([]);
 
+
   // Calculate progress from checklist data
   const allItems = useMemo(() => {
     return statusCorrectionData.flatMap(section => section.items);
@@ -749,6 +750,7 @@ export default function StatusCorrection() {
   const removeUploadingFile = (file: File) => {
     setUploadingFiles(prev => prev.filter(f => f.file !== file));
   };
+
 
   if (isLoading) {
     return (
@@ -1088,6 +1090,92 @@ export default function StatusCorrection() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* File Upload Section */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-card-foreground">Upload Documents</CardTitle>
+            <p className="text-sm text-muted-foreground">Upload supporting documents for status correction items</p>
+          </CardHeader>
+          <CardContent>
+            {user?.familyId && (
+              <div className="space-y-4">
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                  data-testid="input-file-upload"
+                />
+                
+                {/* Upload button */}
+                <Button
+                  onClick={handleClick}
+                  disabled={uploadingFiles.length >= 5}
+                  className="w-full"
+                  data-testid="button-upload-document"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Document
+                </Button>
+                
+                {/* File size and type restrictions */}
+                <p className="text-xs text-muted-foreground">
+                  Supported file types: PDF, DOC, DOCX, TXT. Maximum file size: 10MB each. Maximum 5 files total.
+                </p>
+                
+                {/* Upload progress display */}
+                {uploadingFiles.length > 0 && (
+                  <div className="space-y-3" data-testid="container-upload-progress">
+                    {uploadingFiles.map((upload, index) => (
+                      <div key={index} className="border rounded-lg p-3 bg-muted/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-card-foreground truncate" data-testid={`text-uploading-filename-${index}`}>
+                              {upload.file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(upload.file.size)}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeUploadingFile(upload.file)}
+                            className="h-8 w-8 p-0"
+                            data-testid={`button-remove-upload-${index}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        {upload.error ? (
+                          <div className="text-sm text-destructive" data-testid={`text-upload-error-${index}`}>
+                            Error: {upload.error}
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <Progress 
+                              value={upload.progress} 
+                              className="h-2" 
+                              data-testid={`progress-upload-${index}`}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {upload.progress === 100 ? 'Upload complete' : `Uploading... ${Math.round(upload.progress)}%`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </PortalLayout>
   );
@@ -1295,86 +1383,7 @@ function StatusCorrectionItemDetails({ item }: { item: StatusCorrectionItem }) {
         </AccordionItem>
       </Accordion>
 
-      {/* File Upload Section */}
-      <div className="border-t pt-6">
-        <h4 className="font-semibold text-card-foreground mb-3">Upload Documents</h4>
-        {user?.familyId && (
-          <div className="space-y-4">
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".pdf,.doc,.docx,.txt"
-              onChange={handleFileInputChange}
-              className="hidden"
-              data-testid="input-file-upload"
-            />
-            
-            {/* Upload button */}
-            <Button
-              onClick={handleClick}
-              disabled={uploadingFiles.length >= 5}
-              className="w-full"
-              data-testid="button-upload-document"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Document
-            </Button>
-            
-            {/* File size and type restrictions */}
-            <p className="text-xs text-muted-foreground">
-              Supported file types: PDF, DOC, DOCX, TXT. Maximum file size: 10MB each. Maximum 5 files total.
-            </p>
-            
-            {/* Upload progress display */}
-            {uploadingFiles.length > 0 && (
-              <div className="space-y-3" data-testid="container-upload-progress">
-                {uploadingFiles.map((upload, index) => (
-                  <div key={index} className="border rounded-lg p-3 bg-muted/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-card-foreground truncate" data-testid={`text-uploading-filename-${index}`}>
-                          {upload.file.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatFileSize(upload.file.size)}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeUploadingFile(upload.file)}
-                        className="h-8 w-8 p-0"
-                        data-testid={`button-remove-upload-${index}`}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    
-                    {upload.error ? (
-                      <div className="text-sm text-destructive" data-testid={`text-upload-error-${index}`}>
-                        Error: {upload.error}
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <Progress 
-                          value={upload.progress} 
-                          className="h-2" 
-                          data-testid={`progress-upload-${index}`}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {upload.progress === 100 ? 'Upload complete' : `Uploading... ${Math.round(upload.progress)}%`}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+
     </div>
   );
 }
