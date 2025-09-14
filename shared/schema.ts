@@ -1216,3 +1216,303 @@ export type DartTask = typeof dartTasks.$inferSelect;
 export type InsertDartTask = z.infer<typeof insertDartTaskSchema>;
 export type DartSyncLog = typeof dartSyncLogs.$inferSelect;
 export type InsertDartSyncLog = z.infer<typeof insertDartSyncLogSchema>;
+
+// ===== SAVINGS CALCULATION SYSTEM =====
+
+// Savings Analysis table - stores comprehensive savings calculations
+export const savingsAnalyses = pgTable(
+  "savings_analyses",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    familyId: varchar("family_id"),
+    projectId: varchar("project_id"), // Optional project identifier
+    calculatedAt: timestamp("calculated_at").defaultNow(),
+    analysisName: varchar("analysis_name").notNull(),
+    description: text("description"),
+    
+    // Analysis period
+    periodStartDate: timestamp("period_start_date").notNull(),
+    periodEndDate: timestamp("period_end_date").notNull(),
+    durationDays: integer("duration_days").notNull(),
+    
+    // Project parameters used
+    projectType: varchar("project_type").notNull(), // 'webApplication', 'mobileApplication', 'enterpriseSystem'
+    region: varchar("region").notNull(),
+    teamSize: integer("team_size").notNull(),
+    
+    // Calculation results
+    traditionalHours: integer("traditional_hours").notNull(),
+    traditionalCost: integer("traditional_cost").notNull(), // Stored as cents
+    actualHours: integer("actual_hours").notNull(),
+    actualCost: integer("actual_cost").notNull(), // Stored as cents
+    savingsHours: integer("savings_hours").notNull(),
+    savingsDollars: integer("savings_dollars").notNull(), // Stored as cents
+    savingsWeeks: integer("savings_weeks_decimal").notNull(), // Stored as decimal * 100
+    savingsPercentage: integer("savings_percentage_decimal").notNull(), // Stored as decimal * 100
+    roiMultiplier: integer("roi_multiplier_decimal").notNull(), // Stored as decimal * 100
+    
+    // Confidence metrics
+    traditionalConfidence: integer("traditional_confidence").notNull(), // 0-100
+    actualConfidence: integer("actual_confidence").notNull(), // 0-100
+    overallConfidence: integer("overall_confidence").notNull(), // 0-100
+    
+    // Efficiency metrics
+    productivityMultiplier: integer("productivity_multiplier_decimal").notNull(), // Stored as decimal * 100
+    costEfficiency: integer("cost_efficiency_decimal").notNull(), // Stored as decimal * 100
+    timeToMarket: integer("time_to_market_decimal").notNull(), // Stored as decimal * 100
+    
+    // Metadata
+    wcuEstimationData: jsonb("wcu_estimation_data"), // Full WCU estimation result
+    gitAnalysisData: jsonb("git_analysis_data"), // Git analysis metadata
+    configurationData: jsonb("configuration_data"), // Configuration used
+    calibrationFactors: jsonb("calibration_factors"), // Calibration factors applied
+    
+    // Status and versioning
+    status: varchar("status").notNull().default("completed"), // 'pending', 'completed', 'archived'
+    version: varchar("version").default("1.0"),
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints
+    foreignKey({ columns: [table.familyId], foreignColumns: [families.id] }),
+    // Indexes for performance
+    index("IDX_savings_analyses_family").on(table.familyId),
+    index("IDX_savings_analyses_project").on(table.projectId),
+    index("IDX_savings_analyses_period").on(table.periodStartDate, table.periodEndDate),
+    index("IDX_savings_analyses_calculated").on(table.calculatedAt),
+    index("IDX_savings_analyses_status").on(table.status),
+  ]
+);
+
+// Category Savings table - detailed savings breakdown by commit category
+export const categorySavings = pgTable(
+  "category_savings",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    savingsAnalysisId: varchar("savings_analysis_id").notNull(),
+    category: varchar("category").notNull(), // 'feature', 'bugfix', 'refactor', etc.
+    
+    // Category-specific metrics
+    commits: integer("commits").notNull(),
+    traditionalHours: integer("traditional_hours").notNull(),
+    traditionalCost: integer("traditional_cost").notNull(), // Stored as cents
+    actualHours: integer("actual_hours").notNull(),
+    actualCost: integer("actual_cost").notNull(), // Stored as cents
+    savingsHours: integer("savings_hours").notNull(),
+    savingsDollars: integer("savings_dollars").notNull(), // Stored as cents
+    savingsPercentage: integer("savings_percentage_decimal").notNull(), // Stored as decimal * 100
+    
+    // Category efficiency
+    hoursPerCommit: integer("hours_per_commit_decimal").notNull(), // Stored as decimal * 100
+    costPerCommit: integer("cost_per_commit").notNull(), // Stored as cents
+    wcuScore: integer("wcu_score").notNull(),
+    
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints
+    foreignKey({ columns: [table.savingsAnalysisId], foreignColumns: [savingsAnalyses.id] }),
+    // Indexes for performance
+    index("IDX_category_savings_analysis").on(table.savingsAnalysisId),
+    index("IDX_category_savings_category").on(table.category),
+  ]
+);
+
+// Feature Cluster Savings table - savings analysis for feature clusters
+export const featureClusterSavings = pgTable(
+  "feature_cluster_savings",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    savingsAnalysisId: varchar("savings_analysis_id").notNull(),
+    clusterId: varchar("cluster_id").notNull(),
+    clusterName: varchar("cluster_name").notNull(),
+    primaryCategory: varchar("primary_category").notNull(),
+    
+    // Cluster period
+    startDate: timestamp("start_date").notNull(),
+    endDate: timestamp("end_date").notNull(),
+    
+    // Cluster metrics
+    commits: integer("commits").notNull(),
+    traditionalHours: integer("traditional_hours").notNull(),
+    traditionalCost: integer("traditional_cost").notNull(), // Stored as cents
+    actualHours: integer("actual_hours").notNull(),
+    actualCost: integer("actual_cost").notNull(), // Stored as cents
+    savingsHours: integer("savings_hours").notNull(),
+    savingsDollars: integer("savings_dollars").notNull(), // Stored as cents
+    totalWCU: integer("total_wcu").notNull(),
+    
+    // Efficiency metrics
+    hoursPerCommit: integer("hours_per_commit_decimal").notNull(), // Stored as decimal * 100
+    costPerCommit: integer("cost_per_commit").notNull(), // Stored as cents
+    velocityScore: integer("velocity_score_decimal").notNull(), // Stored as decimal * 100
+    complexityEfficiency: integer("complexity_efficiency_decimal").notNull(), // Stored as decimal * 100
+    
+    // Rankings
+    savingsRank: integer("savings_rank").notNull(),
+    efficiencyRank: integer("efficiency_rank").notNull(),
+    
+    // Metadata
+    keywords: text("keywords").array(),
+    clusterData: jsonb("cluster_data"), // Full cluster data
+    
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints
+    foreignKey({ columns: [table.savingsAnalysisId], foreignColumns: [savingsAnalyses.id] }),
+    // Indexes for performance
+    index("IDX_feature_cluster_savings_analysis").on(table.savingsAnalysisId),
+    index("IDX_feature_cluster_savings_cluster").on(table.clusterId),
+    index("IDX_feature_cluster_savings_category").on(table.primaryCategory),
+    index("IDX_feature_cluster_savings_rankings").on(table.savingsRank, table.efficiencyRank),
+  ]
+);
+
+// Calibration Data table - stores calibration factors for improving accuracy
+export const calibrationData = pgTable(
+  "calibration_data",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    familyId: varchar("family_id"),
+    category: varchar("category").notNull(), // 'overall', 'feature', 'bugfix', etc.
+    projectType: varchar("project_type"), // Optional filter by project type
+    region: varchar("region"), // Optional filter by region
+    
+    // Accuracy metrics
+    samples: integer("samples").notNull(),
+    averageError: integer("average_error_decimal").notNull(), // Stored as decimal * 100
+    standardDeviation: integer("standard_deviation_decimal").notNull(), // Stored as decimal * 100
+    bias: varchar("bias").notNull(), // 'overestimate', 'underestimate', 'neutral'
+    
+    // Adjustment factors
+    traditionalMultiplier: integer("traditional_multiplier_decimal").notNull(), // Stored as decimal * 1000
+    actualMultiplier: integer("actual_multiplier_decimal").notNull(), // Stored as decimal * 1000
+    confidenceAdjustment: integer("confidence_adjustment").notNull(), // -100 to +100
+    
+    // Quality metrics
+    sampleAdequacy: integer("sample_adequacy").notNull(), // 0-100
+    recency: integer("recency").notNull(), // 0-100
+    consistency: integer("consistency").notNull(), // 0-100
+    
+    // Versioning and status
+    isActive: boolean("is_active").default(true),
+    version: varchar("version").default("1.0"),
+    
+    createdAt: timestamp("created_at").defaultNow(),
+    lastUpdated: timestamp("last_updated").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints
+    foreignKey({ columns: [table.familyId], foreignColumns: [families.id] }),
+    // Indexes for performance
+    index("IDX_calibration_data_family").on(table.familyId),
+    index("IDX_calibration_data_category").on(table.category),
+    index("IDX_calibration_data_type").on(table.projectType),
+    index("IDX_calibration_data_active").on(table.isActive),
+    // Unique constraint for category/family combinations
+    unique("UNQ_calibration_data_category").on(table.familyId, table.category, table.projectType),
+  ]
+);
+
+// Savings Recommendations table - stores actionable recommendations
+export const savingsRecommendations = pgTable(
+  "savings_recommendations",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    savingsAnalysisId: varchar("savings_analysis_id").notNull(),
+    type: varchar("type").notNull(), // 'process', 'tooling', 'training', 'methodology'
+    priority: varchar("priority").notNull(), // 'low', 'medium', 'high', 'critical'
+    
+    title: varchar("title").notNull(),
+    description: text("description").notNull(),
+    
+    // Expected impact
+    expectedSavings: integer("expected_savings").notNull(), // Stored as cents
+    expectedEfficiency: integer("expected_efficiency").notNull(), // Percentage 0-100
+    implementationEffort: varchar("implementation_effort").notNull(), // 'low', 'medium', 'high'
+    
+    // Status tracking
+    status: varchar("status").notNull().default("pending"), // 'pending', 'in_progress', 'completed', 'dismissed'
+    implementedAt: timestamp("implemented_at"),
+    actualSavings: integer("actual_savings"), // Stored as cents, populated after implementation
+    actualEfficiency: integer("actual_efficiency"), // Populated after implementation
+    
+    // Metadata
+    category: varchar("category"), // Related category if applicable
+    clusterId: varchar("cluster_id"), // Related cluster if applicable
+    
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints
+    foreignKey({ columns: [table.savingsAnalysisId], foreignColumns: [savingsAnalyses.id] }),
+    // Indexes for performance
+    index("IDX_savings_recommendations_analysis").on(table.savingsAnalysisId),
+    index("IDX_savings_recommendations_type").on(table.type),
+    index("IDX_savings_recommendations_priority").on(table.priority),
+    index("IDX_savings_recommendations_status").on(table.status),
+  ]
+);
+
+// Relations for savings tables
+export const savingsAnalysesRelations = relations(savingsAnalyses, ({ one, many }) => ({
+  family: one(families, {
+    fields: [savingsAnalyses.familyId],
+    references: [families.id],
+  }),
+  categorySavings: many(categorySavings),
+  clusterSavings: many(featureClusterSavings),
+  recommendations: many(savingsRecommendations),
+}));
+
+export const categorySavingsRelations = relations(categorySavings, ({ one }) => ({
+  analysis: one(savingsAnalyses, {
+    fields: [categorySavings.savingsAnalysisId],
+    references: [savingsAnalyses.id],
+  }),
+}));
+
+export const featureClusterSavingsRelations = relations(featureClusterSavings, ({ one }) => ({
+  analysis: one(savingsAnalyses, {
+    fields: [featureClusterSavings.savingsAnalysisId],
+    references: [savingsAnalyses.id],
+  }),
+}));
+
+export const calibrationDataRelations = relations(calibrationData, ({ one }) => ({
+  family: one(families, {
+    fields: [calibrationData.familyId],
+    references: [families.id],
+  }),
+}));
+
+export const savingsRecommendationsRelations = relations(savingsRecommendations, ({ one }) => ({
+  analysis: one(savingsAnalyses, {
+    fields: [savingsRecommendations.savingsAnalysisId],
+    references: [savingsAnalyses.id],
+  }),
+}));
+
+// Create insert schemas for savings tables
+export const insertSavingsAnalysisSchema = createInsertSchema(savingsAnalyses);
+export const insertCategorySavingsSchema = createInsertSchema(categorySavings);
+export const insertFeatureClusterSavingsSchema = createInsertSchema(featureClusterSavings);
+export const insertCalibrationDataSchema = createInsertSchema(calibrationData);
+export const insertSavingsRecommendationSchema = createInsertSchema(savingsRecommendations);
+
+// Savings types
+export type SavingsAnalysis = typeof savingsAnalyses.$inferSelect;
+export type InsertSavingsAnalysis = z.infer<typeof insertSavingsAnalysisSchema>;
+export type CategorySavings = typeof categorySavings.$inferSelect;
+export type InsertCategorySavings = z.infer<typeof insertCategorySavingsSchema>;
+export type FeatureClusterSavings = typeof featureClusterSavings.$inferSelect;
+export type InsertFeatureClusterSavings = z.infer<typeof insertFeatureClusterSavingsSchema>;
+export type CalibrationData = typeof calibrationData.$inferSelect;
+export type InsertCalibrationData = z.infer<typeof insertCalibrationDataSchema>;
+export type SavingsRecommendation = typeof savingsRecommendations.$inferSelect;
+export type InsertSavingsRecommendation = z.infer<typeof insertSavingsRecommendationSchema>;

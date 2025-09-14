@@ -2,6 +2,7 @@ import { TaskService, DocService } from 'dart-tools';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { SavingsCalculation, ExecutiveSummary, FeatureClusterSavings } from './estimation/savingsCalculator.js';
 
 /**
  * Developer Progress Service
@@ -18,6 +19,23 @@ interface ProgressUpdate {
   improved?: string[];
   nextSteps?: string[];
   metadata?: Record<string, any>;
+  /** Optional savings analysis data to showcase client value */
+  savings?: {
+    /** Overall savings calculation */
+    calculation: SavingsCalculation;
+    /** Executive summary with key metrics */
+    summary: ExecutiveSummary;
+    /** Top feature clusters by savings */
+    topFeatures?: FeatureClusterSavings[];
+    /** Confidence in savings calculation (0-100) */
+    confidence: number;
+    /** Whether calculation succeeded */
+    calculationSucceeded: boolean;
+    /** Error message if calculation failed */
+    errorMessage?: string;
+    /** Time period analyzed */
+    period?: string;
+  };
 }
 
 interface UpdateSection {
@@ -121,6 +139,114 @@ export class DevProgressService {
     }
   }
 
+  // Format savings data with compelling headlines for clients
+  private formatSavingsHeadline(savings: ProgressUpdate['savings']): string {
+    if (!savings || !savings.calculationSucceeded) {
+      return '';
+    }
+
+    const { calculation, confidence } = savings;
+    const totalSavings = calculation.savings.dollars;
+    const percentage = calculation.savings.percentage;
+    const weeks = calculation.savings.weeks;
+    const roi = calculation.savings.roiMultiplier;
+
+    // Create compelling headline based on savings magnitude
+    let headline = '';
+    let confidenceIndicator = confidence >= 80 ? '🎯' : confidence >= 60 ? '📊' : '📈';
+    
+    if (totalSavings >= 100000) {
+      headline = `💰 **MAJOR SAVINGS ACHIEVED: $${Math.round(totalSavings).toLocaleString()}** 🚀`;
+    } else if (totalSavings >= 10000) {
+      headline = `💰 **Significant Cost Savings: $${Math.round(totalSavings).toLocaleString()}** ✨`;
+    } else if (totalSavings >= 1000) {
+      headline = `💰 **Value Delivered: $${Math.round(totalSavings).toLocaleString()} Saved** 📈`;
+    } else {
+      headline = `💰 **Efficiency Gains: $${Math.round(totalSavings).toLocaleString()} Saved** ⚡`;
+    }
+
+    // Add efficiency metrics
+    let efficiencyText = '';
+    if (weeks >= 4) {
+      efficiencyText = ` (${weeks} weeks ahead of traditional schedule)`;
+    } else if (percentage >= 50) {
+      efficiencyText = ` (${Math.round(percentage)}% more efficient than industry standard)`;
+    } else if (roi >= 2) {
+      efficiencyText = ` (${roi.toFixed(1)}x ROI compared to traditional development)`;
+    }
+
+    return `${headline}${efficiencyText}\n${confidenceIndicator} *Confidence: ${confidence}%*\n\n`;
+  }
+
+  // Format detailed savings breakdown for clients
+  private formatSavingsBreakdown(savings: ProgressUpdate['savings']): string {
+    if (!savings || !savings.calculationSucceeded) {
+      return '';
+    }
+
+    const { calculation, summary } = savings;
+    let breakdown = `📊 **Value Analysis**\n`;
+    
+    // Traditional vs Actual comparison
+    breakdown += `• Traditional Estimate: ${calculation.traditional.hours} hours ($${Math.round(calculation.traditional.cost).toLocaleString()})\n`;
+    breakdown += `• Actual Development: ${calculation.actual.hours} hours ($${Math.round(calculation.actual.cost).toLocaleString()})\n`;
+    breakdown += `• **Net Savings: ${calculation.savings.hours} hours & $${Math.round(calculation.savings.dollars).toLocaleString()}**\n\n`;
+
+    // Efficiency metrics
+    if (summary && summary.efficiency) {
+      breakdown += `🚀 **Efficiency Metrics**\n`;
+      breakdown += `• Productivity Multiplier: ${summary.efficiency.productivityMultiplier.toFixed(1)}x industry standard\n`;
+      breakdown += `• Cost Efficiency Improvement: ${summary.efficiency.costEfficiency.toFixed(1)}%\n`;
+      if (summary.efficiency.timeToMarket) {
+        breakdown += `• Time-to-Market Improvement: ${summary.efficiency.timeToMarket.toFixed(1)}%\n`;
+      }
+      breakdown += '\n';
+    }
+
+    // Top opportunities
+    if (summary && summary.topOpportunities && summary.topOpportunities.length > 0) {
+      breakdown += `💡 **Top Value Areas**\n`;
+      summary.topOpportunities.slice(0, 3).forEach((opp, index) => {
+        breakdown += `${index + 1}. ${opp.name}: $${Math.round(opp.savings).toLocaleString()} saved\n`;
+      });
+      breakdown += '\n';
+    }
+
+    return breakdown;
+  }
+
+  // Generate compelling client messaging
+  private generateClientValueMessage(savings: ProgressUpdate['savings']): string {
+    if (!savings || !savings.calculationSucceeded) {
+      return '🔧 **Optimized Development Process** - Delivering efficient, high-quality solutions using modern methodologies.';
+    }
+
+    const { calculation, summary } = savings;
+    const dollarsSaved = Math.round(calculation.savings.dollars);
+    const percentage = Math.round(calculation.savings.percentage);
+    const roi = calculation.savings.roiMultiplier;
+
+    const messages = [
+      `📈 **Exceeding Expectations** - Delivered ${percentage}% more value than traditional development approaches would provide.`,
+      `⚡ **Accelerated Timeline** - Completed work ${calculation.savings.weeks} weeks faster than industry standard estimates.`,
+      `💡 **Smart Investment** - Every dollar invested generated ${roi.toFixed(1)}x return through optimized development practices.`,
+      `🎯 **Proven Results** - Demonstrated $${dollarsSaved.toLocaleString()} in measurable cost savings through efficient execution.`
+    ];
+
+    // Select message based on strongest metric
+    if (roi >= 3) return messages[2];
+    if (calculation.savings.weeks >= 4) return messages[1];
+    if (percentage >= 60) return messages[0];
+    return messages[3];
+  }
+
+  // Format fallback message when savings unavailable
+  private formatFallbackValueMessage(): string {
+    return `🔧 **Optimized Development Process**\n` +
+           `Delivering efficient, high-quality solutions using modern development methodologies and best practices. ` +
+           `Our streamlined approach ensures maximum value and minimal waste throughout the development cycle.\n\n`;
+  }
+
   // Format progress update for clients
   formatUpdate(update: ProgressUpdate): string {
     const sections: UpdateSection[] = [];
@@ -131,12 +257,25 @@ export class DevProgressService {
       day: 'numeric' 
     });
     
-    // Build the message with markdown formatting
+    // Build the message with markdown formatting, featuring savings prominently
     let message = `📊 Development Progress Update\n${date}\n\n`;
     
-    // Add executive summary
+    // Lead with compelling savings headline if available
+    const savingsHeadline = this.formatSavingsHeadline(update.savings);
+    if (savingsHeadline) {
+      message += savingsHeadline;
+    } else {
+      // Fallback value message when savings unavailable
+      message += this.formatFallbackValueMessage();
+    }
+    
+    // Add executive summary with enhanced value context
     if (update.summary) {
       message += `**Executive Summary**\n${update.summary}\n\n`;
+      
+      // Add client value message
+      const valueMessage = this.generateClientValueMessage(update.savings);
+      message += `${valueMessage}\n\n`;
     }
     
     // Add sections with appropriate icons
@@ -170,6 +309,20 @@ export class DevProgressService {
         message += `• ${item}\n`;
       });
       message += '\n';
+    }
+    
+    // Add detailed savings breakdown if available
+    const savingsBreakdown = this.formatSavingsBreakdown(update.savings);
+    if (savingsBreakdown) {
+      message += savingsBreakdown;
+    }
+    
+    // Add confidence and methodology note for savings
+    if (update.savings && update.savings.calculationSucceeded) {
+      message += `📋 **Analysis Note**\n`;
+      message += `Savings calculated using actual development time vs industry benchmarks `;
+      message += `(${update.savings.period || 'recent period'}). `;
+      message += `Methodology combines git analysis, work contribution units, and project benchmarks.\n\n`;
     }
     
     message += '---\n*This update was generated automatically from the development team.*';
@@ -254,18 +407,90 @@ export class DevProgressService {
     }
   }
 
-  // Send comprehensive update
-  async sendProgressUpdate(update: ProgressUpdate): Promise<boolean> {
+  // Fetch savings data from GitIntegratedProgressService
+  async fetchSavingsData(config?: {
+    sinceDate?: string;
+    confidenceThreshold?: number;
+    enableSavings?: boolean;
+  }): Promise<ProgressUpdate['savings'] | null> {
+    try {
+      // Dynamically import to avoid circular dependencies
+      const { GitIntegratedProgressService } = await import('./gitIntegratedProgress.js');
+      const gitService = GitIntegratedProgressService.getInstance();
+      
+      const analysisConfig = {
+        sinceDate: config?.sinceDate || '1 month ago',
+        enableSavings: config?.enableSavings !== false,
+        confidenceThreshold: config?.confidenceThreshold || 60,
+        sendToDart: false // We just want the data, not to send a separate report
+      };
+      
+      console.log('[DevProgress] Fetching savings analysis data...');
+      const analysis = await gitService.analyzeGitHistory(analysisConfig);
+      
+      if (analysis.savings && analysis.savings.calculationSucceeded) {
+        const savingsData: ProgressUpdate['savings'] = {
+          calculation: analysis.savings.calculation,
+          summary: analysis.savings.summary,
+          topFeatures: analysis.savings.topFeatures,
+          confidence: analysis.savings.confidence,
+          calculationSucceeded: true,
+          period: analysis.dateRange
+        };
+        
+        console.log(`[DevProgress] Savings data fetched successfully: $${Math.round(savingsData.calculation.savings.dollars).toLocaleString()} saved`);
+        return savingsData;
+      } else {
+        const errorMsg = analysis.savings?.errorMessage || 'Savings calculation disabled or failed';
+        console.log(`[DevProgress] Savings data unavailable: ${errorMsg}`);
+        return {
+          calculation: {} as any,
+          summary: {} as any,
+          confidence: 0,
+          calculationSucceeded: false,
+          errorMessage: errorMsg
+        };
+      }
+    } catch (error) {
+      console.warn('[DevProgress] Failed to fetch savings data:', error);
+      return null;
+    }
+  }
+
+  // Send comprehensive update with optional savings integration
+  async sendProgressUpdate(
+    update: ProgressUpdate, 
+    options?: {
+      includeSavings?: boolean;
+      savingsConfig?: {
+        sinceDate?: string;
+        confidenceThreshold?: number;
+      };
+    }
+  ): Promise<boolean> {
     const errors = this.validateUpdate(update);
     if (errors.length > 0) {
       console.error('[DevProgress] Validation errors:', errors);
       return false;
     }
     
-    const message = this.formatUpdate(update);
+    // Enhance update with savings data if requested and not already included
+    let enhancedUpdate = { ...update };
+    const includeSavings = options?.includeSavings !== false; // Default to true
     
-    // Save report
-    const filepath = await this.saveReport(update, message);
+    if (includeSavings && !enhancedUpdate.savings) {
+      console.log('[DevProgress] Fetching savings data to enhance progress report...');
+      const savingsData = await this.fetchSavingsData(options?.savingsConfig);
+      if (savingsData) {
+        enhancedUpdate.savings = savingsData;
+        console.log('[DevProgress] Enhanced progress report with savings analysis');
+      }
+    }
+    
+    const message = this.formatUpdate(enhancedUpdate);
+    
+    // Save report with enhanced data
+    const filepath = await this.saveReport(enhancedUpdate, message);
     console.log(`[DevProgress] Report saved to ${filepath}`);
     
     // Send to Dart
@@ -277,9 +502,50 @@ export class DevProgressService {
       report.sent = true;
       report.sentAt = new Date().toISOString();
       await fs.writeFile(filepath, JSON.stringify(report, null, 2));
+      
+      // Log success with savings info
+      if (enhancedUpdate.savings?.calculationSucceeded) {
+        const dollarsSaved = Math.round(enhancedUpdate.savings.calculation.savings.dollars);
+        console.log(`[DevProgress] Progress report sent successfully featuring $${dollarsSaved.toLocaleString()} in documented savings`);
+      } else {
+        console.log('[DevProgress] Progress report sent successfully with optimized development messaging');
+      }
     }
     
     return sent;
+  }
+
+  // Convenience method to send progress update with savings analysis enabled by default
+  async sendProgressUpdateWithSavings(
+    update: ProgressUpdate,
+    sinceDate: string = '1 month ago'
+  ): Promise<boolean> {
+    return this.sendProgressUpdate(update, {
+      includeSavings: true,
+      savingsConfig: {
+        sinceDate,
+        confidenceThreshold: 60
+      }
+    });
+  }
+
+  // Quick method to send a simple update with automatic savings integration
+  async sendQuickUpdate(
+    summary: string,
+    added?: string[],
+    improved?: string[],
+    fixed?: string[],
+    nextSteps?: string[]
+  ): Promise<boolean> {
+    const update: ProgressUpdate = {
+      summary,
+      added,
+      improved,
+      fixed,
+      nextSteps
+    };
+    
+    return this.sendProgressUpdateWithSavings(update);
   }
 }
 

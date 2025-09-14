@@ -26,7 +26,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /**
  * Git commit analysis data structure
  */
-interface CommitAnalysis {
+export interface CommitAnalysis {
   /** Unique commit hash */
   hash: string;
   /** Commit author */
@@ -50,14 +50,14 @@ interface CommitAnalysis {
 /**
  * Commit categories for effort weighting
  */
-type CommitCategory = 'feature' | 'bugfix' | 'refactor' | 'documentation' | 
+export type CommitCategory = 'feature' | 'bugfix' | 'refactor' | 'documentation' | 
                      'test' | 'maintenance' | 'infrastructure' | 'security' | 
                      'performance' | 'ui';
 
 /**
  * Commit complexity levels based on size and impact
  */
-type CommitComplexity = 'trivial' | 'small' | 'medium' | 'large' | 'huge';
+export type CommitComplexity = 'trivial' | 'small' | 'medium' | 'large' | 'huge';
 
 /**
  * Team member role definitions with standard hourly rates
@@ -78,7 +78,7 @@ interface TeamMember {
 /**
  * Project estimation parameters
  */
-interface ProjectParameters {
+export interface ProjectParameters {
   /** Project type affects team composition and risk factors */
   projectType: 'webApplication' | 'mobileApplication' | 'enterpriseSystem';
   /** Geographic region for cost adjustments */
@@ -406,7 +406,7 @@ export class IndustryBenchmarksService {
    * @param path Dot-notation path to benchmark value
    * @returns Benchmark value with project overrides applied
    */
-  private getBenchmarkValue(path: string): any {
+  public getBenchmarkValue(path: string): any {
     const pathParts = path.split('.');
     
     // Check project overrides first
