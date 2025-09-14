@@ -1,0 +1,716 @@
+{
+  "timestamp": "2025-09-14T22:39:00.267Z",
+  "summary": "Comprehensive development progress spanning 2025-09-10 to 2025-09-14 with 93 commits. Major development areas include: Dart AI Integration & Project Management, Document Management & File Uploads, Real-Time Communication & Chat. Primary contributor: ItsBuddha (93 commits).",
+  "analysis": {
+    "totalCommits": 93,
+    "dateRange": "2025-09-10 to 2025-09-14",
+    "categories": [
+      {
+        "name": "Dart AI Integration & Project Management",
+        "keywords": [
+          "dart",
+          "ai integration",
+          "progress report",
+          "task synchronization",
+          "project management"
+        ],
+        "commits": [
+          {
+            "hash": "72712c1",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Integrate Dart AI with new token-based authentication"
+          },
+          {
+            "hash": "7497df2",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Integrate Dart AI for progress reporting and task synchronization"
+          },
+          {
+            "hash": "992d868",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update development progress reporting to a natural language system"
+          },
+          {
+            "hash": "ee3bb31",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Configure Dart AI service with project IDs for task and document management"
+          },
+          {
+            "hash": "6c10a4e",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Integrate Dart AI with specific workspace for project management"
+          },
+          {
+            "hash": "60dbb9b",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add command line tools to report project progress to Dart AI"
+          },
+          {
+            "hash": "870d9ac",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add Dart AI integration for project and task management"
+          }
+        ]
+      },
+      {
+        "name": "Document Management & File Uploads",
+        "keywords": [
+          "document",
+          "upload",
+          "file",
+          "attachment",
+          "storage",
+          "document center"
+        ],
+        "commits": [
+          {
+            "hash": "3bd496f",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update JSON file to improve clarity of report summaries"
+          },
+          {
+            "hash": "3ca414d",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add document upload functionality to the status correction page"
+          },
+          {
+            "hash": "b7f0106",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add document upload functionality to the steps component"
+          },
+          {
+            "hash": "021d65b",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add functionality to upload documents within the status correction steps"
+          },
+          {
+            "hash": "e2bd7fb",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add a button to upload documents to the document center"
+          },
+          {
+            "hash": "f1717ae",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add file upload functionality with progress indicators and error handling"
+          },
+          {
+            "hash": "16cdcc7",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add ability to upload and manage documents within the family portal"
+          },
+          {
+            "hash": "1e2fe79",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add a profile settings page allowing users to manage their personal information"
+          },
+          {
+            "hash": "604d3f9",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Update header and user profiles for better usability and responsiveness"
+          },
+          {
+            "hash": "204ac51",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Update document center component to use default export"
+          },
+          {
+            "hash": "23e9fc2",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Update document management interface and file upload functionality"
+          },
+          {
+            "hash": "8785b9e",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve mobile layout for document uploads and login form"
+          },
+          {
+            "hash": "565a168",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve the appearance and usability of the document upload area on mobile devices"
+          },
+          {
+            "hash": "112947f",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve file upload interface and fix text overlap issues on mobile"
+          },
+          {
+            "hash": "2052ec3",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve file upload interface for better mobile viewing"
+          },
+          {
+            "hash": "af22f01",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve file upload interface for better user experience"
+          },
+          {
+            "hash": "e3efede",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve file upload process and add test file"
+          },
+          {
+            "hash": "b293cf9",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Add document upload functionality to the task checklist"
+          },
+          {
+            "hash": "18ffd0e",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve file uploader appearance on mobile devices"
+          },
+          {
+            "hash": "c8030db",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve layout and responsiveness of task and document management components"
+          },
+          {
+            "hash": "6e5057e",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Improve user profile page appearance and functionality"
+          },
+          {
+            "hash": "7544810",
+            "author": "ItsBuddha",
+            "date": "2025-09-10",
+            "message": "Update sample data and project documentation with first and last names"
+          }
+        ]
+      },
+      {
+        "name": "Real-Time Communication & Chat",
+        "keywords": [
+          "chat",
+          "messaging",
+          "real-time",
+          "communication",
+          "typing indicator",
+          "socket"
+        ],
+        "commits": [
+          {
+            "hash": "3838f5e",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve user experience with enhanced real-time communication features"
+          },
+          {
+            "hash": "2e0d8ea",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add real-time chat and typing indicators to family portal"
+          },
+          {
+            "hash": "cb2817c",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add chat functionality for family and inter-family communication"
+          },
+          {
+            "hash": "d02b90c",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add chatroom functionality for family communication and inter-family connections"
+          },
+          {
+            "hash": "4470f0a",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add chat widget to portal for improved user communication and accessibility"
+          },
+          {
+            "hash": "6c38eed",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add chat widget to the notifications page for easy access"
+          },
+          {
+            "hash": "c08ae77",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add an AI assistant chat widget to the portal's bottom right corner"
+          }
+        ]
+      },
+      {
+        "name": "Role-Based Access Control (RBAC)",
+        "keywords": [
+          "rbac",
+          "role",
+          "permission",
+          "access control",
+          "user management",
+          "authorization"
+        ],
+        "commits": [
+          {
+            "hash": "7bda4fd",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Address RBAC migration verification failure and unauthorized access"
+          },
+          {
+            "hash": "7a2f6fe",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Update user roles and clean up legacy admin data for improved system security"
+          },
+          {
+            "hash": "1af1fe8",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add user management page for administrators to oversee all users"
+          },
+          {
+            "hash": "6f336c7",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Implement user roles to restrict access to system features"
+          },
+          {
+            "hash": "eb2d031",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Introduce detailed user roles and permissions for enhanced system security"
+          }
+        ]
+      },
+      {
+        "name": "Legal Research & AI Assistant",
+        "keywords": [
+          "legal",
+          "ucc",
+          "uniform commercial code",
+          "us code",
+          "ai assistant",
+          "legal research"
+        ],
+        "commits": [
+          {
+            "hash": "3979742",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add comprehensive Uniform Commercial Code information to the agent's knowledge base"
+          },
+          {
+            "hash": "2550643",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add advanced search capabilities for Uniform Commercial Code information"
+          },
+          {
+            "hash": "e89ac37",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Expand understanding of legal topics to include uniform commercial code information"
+          },
+          {
+            "hash": "0b7667d",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add UCC scheduling and indexing capabilities to the system"
+          },
+          {
+            "hash": "ebb18f9",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add Uniform Commercial Code information retrieval and management"
+          },
+          {
+            "hash": "d7332ef",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add Uniform Commercial Code content and search capabilities"
+          },
+          {
+            "hash": "955347b",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add scheduled daily re-indexing for US Code data"
+          },
+          {
+            "hash": "0a0db6e",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Integrate US Code for the AI assistant to answer legal questions"
+          },
+          {
+            "hash": "b18b356",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Integrate AI assistant for user support and guidance"
+          }
+        ]
+      },
+      {
+        "name": "User Interface & Experience",
+        "keywords": [
+          "ui",
+          "ux",
+          "responsive",
+          "layout",
+          "mobile",
+          "design",
+          "interface",
+          "appearance"
+        ],
+        "commits": [
+          {
+            "hash": "87b0f19",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve layout and responsiveness for smaller screen sizes"
+          },
+          {
+            "hash": "6d25214",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve responsiveness and layout for smaller screens across the application"
+          },
+          {
+            "hash": "dd19975",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Refine homepage layout to showcase key portal features"
+          },
+          {
+            "hash": "911d3bb",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add an interactive onboarding guide for new users"
+          },
+          {
+            "hash": "1332681",
+            "author": "ItsBuddha",
+            "date": "2025-09-10",
+            "message": "Add core UI components and initial routing setup for the family portal"
+          }
+        ]
+      },
+      {
+        "name": "Authentication & Security",
+        "keywords": [
+          "auth",
+          "security",
+          "login",
+          "session",
+          "validation",
+          "authentication"
+        ],
+        "commits": [
+          {
+            "hash": "1d2abc0",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Improve security by adding robust input validation"
+          },
+          {
+            "hash": "acb0b0a",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Enhance security by updating dependencies and configuration settings"
+          },
+          {
+            "hash": "e9777bc",
+            "author": "ItsBuddha",
+            "date": "2025-09-10",
+            "message": "Improve the security of user sessions and data handling"
+          },
+          {
+            "hash": "906cb17",
+            "author": "ItsBuddha",
+            "date": "2025-09-10",
+            "message": "Refine user authentication process for enhanced security and reliability"
+          }
+        ]
+      },
+      {
+        "name": "System Configuration & Settings",
+        "keywords": [
+          "settings",
+          "configuration",
+          "system",
+          "admin",
+          "management",
+          "setup"
+        ],
+        "commits": [
+          {
+            "hash": "a41796d",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve project setup by ensuring data is correctly initialized"
+          },
+          {
+            "hash": "016998c",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve data initialization to prevent duplicate entries during setup"
+          },
+          {
+            "hash": "a64420b",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Improve email notification system to allow granular user preferences"
+          },
+          {
+            "hash": "29d1094",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add system settings page for managing application configurations"
+          },
+          {
+            "hash": "75be7be",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add system settings page for platform-wide configuration management"
+          },
+          {
+            "hash": "106cf01",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Create a page for managing users in the system"
+          },
+          {
+            "hash": "283c959",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add new administrative tools for managing task dependencies and workflow rules"
+          },
+          {
+            "hash": "0c2fc9d",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Improve email notification system for user preferences"
+          },
+          {
+            "hash": "b8e614f",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add task dependency and workflow rule management capabilities"
+          },
+          {
+            "hash": "6e1e624",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add system to manage task relationships and automate workflows"
+          },
+          {
+            "hash": "fba06e8",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add comprehensive notification system for family portal activities"
+          }
+        ]
+      },
+      {
+        "name": "Data Management & Database",
+        "keywords": [
+          "database",
+          "data",
+          "migration",
+          "schema",
+          "initialization",
+          "duplicate"
+        ],
+        "commits": [
+          {
+            "hash": "417d85b",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Prevent duplicate creation of sample family and user data"
+          },
+          {
+            "hash": "5cb7511",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Create a daily job to re-index data for improved performance"
+          },
+          {
+            "hash": "26dc26d",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add query client provider to ensure data fetching functionality"
+          },
+          {
+            "hash": "0c0660c",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Improve data integrity and relations between family tasks and users"
+          },
+          {
+            "hash": "3392c6d",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Enforce task status transition rules to maintain data integrity"
+          }
+        ]
+      },
+      {
+        "name": "Notifications & Email",
+        "keywords": [
+          "notification",
+          "email",
+          "alert",
+          "preferences",
+          "delivery"
+        ],
+        "commits": [
+          {
+            "hash": "16ccf10",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Update notification preferences for improved user experience"
+          },
+          {
+            "hash": "8282b7c",
+            "author": "ItsBuddha",
+            "date": "2025-09-12",
+            "message": "Improve email notification delivery reliability and efficiency"
+          }
+        ]
+      },
+      {
+        "name": "General Improvements",
+        "keywords": [],
+        "commits": [
+          {
+            "hash": "8730ade",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update reports to target Eric Parker's workspace"
+          },
+          {
+            "hash": "914abe1",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Update the tax code index for the agent"
+          },
+          {
+            "hash": "3043403",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add detailed status correction instructions with progress tracking"
+          },
+          {
+            "hash": "14ccfd8",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add agent functionality to assist users with questions and processes"
+          },
+          {
+            "hash": "76120c3",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Refine homepage content to avoid redundancy with status correction page"
+          },
+          {
+            "hash": "2f89fa5",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add new section for status correction and ministry legitimization links"
+          },
+          {
+            "hash": "fe35190",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add ministry legitimization page and link for status correction"
+          },
+          {
+            "hash": "58b5359",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add new pages for status correction and ministry legitimation"
+          },
+          {
+            "hash": "1f789f8",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Add sidebar navigation with links to key portal sections"
+          },
+          {
+            "hash": "9b02327",
+            "author": "ItsBuddha",
+            "date": "2025-09-13",
+            "message": "Saved your changes before starting work"
+          },
+          {
+            "hash": "67fa1dc",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add task dependency tracking and visualization to the family portal"
+          },
+          {
+            "hash": "2596bb1",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add workflow automation for task dependencies and rules"
+          },
+          {
+            "hash": "4da7426",
+            "author": "ItsBuddha",
+            "date": "2025-09-11",
+            "message": "Add functionality to invite new family members to the portal"
+          },
+          {
+            "hash": "e47a00b",
+            "author": "ItsBuddha",
+            "date": "2025-09-10",
+            "message": "Add modals for viewing family details and sending messages"
+          },
+          {
+            "hash": "45a68e2",
+            "author": "ItsBuddha",
+            "date": "2025-09-10",
+            "message": "Enable users to join existing families and set up new families"
+          },
+          {
+            "hash": "a8727c5",
+            "author": "ItsBuddha",
+            "date": "2025-09-10",
+            "message": "Initial commit"
+          }
+        ]
+      }
+    ],
+    "topContributors": [
+      {
+        "author": "ItsBuddha",
+        "commits": 93
+      }
+    ],
+    "fileStats": {
+      "filesChanged": 0,
+      "additions": 0,
+      "deletions": 0
+    }
+  },
+  "generatedBy": "GitIntegratedProgressService"
+}

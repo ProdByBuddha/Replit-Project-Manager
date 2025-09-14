@@ -20,5 +20,6 @@
     ]
   },
   "formatted": "📊 Development Progress Update\nSunday, September 14, 2025\n\n**Executive Summary**\nComprehensive development progress spanning 2025-09-10 to 2025-09-14 with 93 commits. Major development areas include: Dart AI Integration & Project Management, Document Management & File Uploads, Real-Time Communication & Chat. Primary contributor: ItsBuddha (93 commits).\n\n✨ **What's New**\n• Dart AI Integration & Project Management (7 commits)\n• Document Management & File Uploads (22 commits)\n• Real-Time Communication & Chat (7 commits)\n• Role-Based Access Control (RBAC) (5 commits)\n• Legal Research & AI Assistant (9 commits)\n• User Interface & Experience (5 commits)\n• Authentication & Security (4 commits)\n• System Configuration & Settings (11 commits)\n• Data Management & Database (5 commits)\n• General Improvements (16 commits)\n\n🚀 **Improvements**\n• Notifications & Email (2 commits)\n\n---\n*This update was generated automatically from the development team.*",
-  "sent": false
+  "sent": true,
+  "sentAt": "2025-09-14T22:39:01.297Z"
 }
