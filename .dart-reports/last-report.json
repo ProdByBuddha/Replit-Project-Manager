@@ -1,0 +1,17 @@
+{
+  "summary": "Redesigned Dart AI integration for developer progress reporting",
+  "added": [
+    "Developer Progress Service for natural language updates",
+    "CLI tool for composing and sending progress reports",
+    "Preview and send commands with structured formatting"
+  ],
+  "fixed": [
+    "Removed incorrect family task syncing functionality"
+  ],
+  "improved": [
+    "Simplified API for developer use"
+  ],
+  "nextSteps": [
+    "Test live reporting to Dart project"
+  ]
+}

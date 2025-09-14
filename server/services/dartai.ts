@@ -114,6 +114,14 @@ export class DartAIService {
 
   // Register event listeners for automatic task reporting
   private registerEventListeners(): void {
+    // DISABLED: Family task syncing functionality has been disabled.
+    // This service was mistakenly built for syncing family tasks, but should be used
+    // for developer progress reporting instead.
+    // Use the DevProgressService (server/services/devProgress.ts) for reporting
+    // development progress to clients via Dart.
+    //
+    // Original functionality preserved below but commented out:
+    /*
     if (!this.isConfigured()) {
       console.log('[DartAI] Service not configured, skipping event registration');
       return;
@@ -153,6 +161,9 @@ export class DartAIService {
         console.error('[DartAI] Error handling task status change:', error);
       }
     });
+    */
+    
+    console.log('[DartAI] Family task syncing disabled. Use DevProgressService for developer reporting.');
   }
 
   // Queue a debounced progress report
