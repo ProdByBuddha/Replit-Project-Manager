@@ -28,7 +28,7 @@ interface UpdateSection {
 export class DevProgressService {
   private static instance: DevProgressService;
   private dartToken: string;
-  private workspaceId = 'LTPknvYLuLH9'; // Your Dart workspace ID (Space ID)
+  private workspaceId = 'LTPknvYLuLH9'; // Your Dart workspace ID (Eric Parker)
   private reportsDir: string;
 
   private constructor() {
@@ -89,11 +89,13 @@ export class DevProgressService {
 
     try {
       // Create a task with the progress update using dart-tools
+      // Need to specify the dartboard to send to the correct workspace
       const task = await TaskService.createTask({
         item: {
           title: `Dev Progress - ${new Date().toLocaleDateString()}`,
           description: message,
           status: 'Done', // Mark as done since it's a completed progress update
+          dartboard: 'Eric Parker/Tasks', // Send to Eric Parker workspace
         }
       });
 
