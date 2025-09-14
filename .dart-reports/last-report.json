@@ -1,15 +1,12 @@
 {
-  "summary": "Main accomplishment",
+  "summary": "Dart AI integration successfully completed",
   "added": [
-    "New feature implemented"
+    "Natural language progress reporting for client communication"
   ],
   "fixed": [
-    "Bug that was resolved"
+    "API authentication with correct field names and headers"
   ],
   "improved": [
-    "Enhancement made"
-  ],
-  "nextSteps": [
-    "What's coming next"
+    "Developer CLI tools for easy progress updates"
   ]
 }

@@ -57,6 +57,7 @@ program
     console.log('📊 Dart Integration Status');
     console.log('─'.repeat(40));
     console.log(`✅ Configured: ${status.configured ? 'Yes' : 'No (Set DART_API_KEY)'}`);
+    console.log(`👤 User ID: ${status.userId}`);
     console.log(`📁 Workspace ID: ${status.workspaceId}`);
     console.log(`📋 Project ID: ${status.projectId}`);
     console.log(`🌐 API Endpoint: ${status.apiEndpoint}`);

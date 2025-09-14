@@ -24,14 +24,16 @@ interface UpdateSection {
 
 export class DevProgressService {
   private apiKey: string;
+  private userId: string = 'VYHg5vybmVQ3'; // Dart user ID
   private workspaceId: string = 'LTPknvYLuLH9'; // Dart workspace ID
   private projectId: string = 'UDY98NgvnZ4z'; // Dart project ID
-  private baseUrl = 'https://app.itsdart.com/api/v0';
+  private baseUrl = 'https://app.dartai.com/api/v0/public';
   private axiosInstance: AxiosInstance;
   private static instance: DevProgressService;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.DART_API_KEY || '';
+    this.userId = process.env.DART_USER_ID || 'VYHg5vybmVQ3';
     this.workspaceId = process.env.DART_WORKSPACE_ID || 'LTPknvYLuLH9';
     this.projectId = process.env.DART_PROJECT_ID || 'UDY98NgvnZ4z';
     
@@ -44,6 +46,9 @@ export class DevProgressService {
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
+        'X-User-Id': this.userId, // Include user ID in headers
+        'X-Workspace-ID': this.workspaceId, // Include workspace ID
+        'X-Project-ID': this.projectId, // Include project ID
       },
       timeout: 30000,
     });
@@ -83,14 +88,13 @@ export class DevProgressService {
     }
 
     try {
-      // Send update to Dart project
-      const response = await this.axiosInstance.post(`/projects/${this.projectId}/updates`, {
-        message,
-        metadata: {
-          type: 'development_progress',
-          timestamp: new Date().toISOString(),
-          ...metadata,
-        },
+      // Create a doc with the progress update using Dart public API
+      // Use wrapped format with correct field names: 'name' and 'content'
+      const response = await this.axiosInstance.post('/docs', {
+        doc: {
+          name: `Progress Update - ${new Date().toLocaleDateString()}`,
+          content: message, // Dart API uses 'content' not 'text'
+        }
       });
 
       console.log('[DevProgress] Update sent successfully');
@@ -194,12 +198,14 @@ export class DevProgressService {
    */
   async status(): Promise<{
     configured: boolean;
+    userId: string;
     workspaceId: string;
     projectId: string;
     apiEndpoint: string;
   }> {
     return {
       configured: this.isConfigured(),
+      userId: this.userId,
       workspaceId: this.workspaceId,
       projectId: this.projectId,
       apiEndpoint: this.baseUrl,
