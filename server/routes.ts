@@ -3335,6 +3335,354 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== CONNECTION MANAGEMENT API ENDPOINTS =====
+
+  // Generate a new connection code for a family
+  app.post('/api/chat/connections/codes', isAuthenticated, loadUserRole, authenticateFamily, async (req: AuthenticatedRequest, res) => {
+    try {
+      const familyId = req.user.familyId;
+      if (!familyId) {
+        return res.status(400).json({ message: "User must belong to a family" });
+      }
+
+      // Generate a unique connection code - 6 characters
+      const code = nanoid(6).toUpperCase();
+      
+      // Set expiration to 24 hours from now
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      
+      // Create the connection code in the database
+      const connectionCode = await storage.createConnectionCode(
+        familyId,
+        code,
+        expiresAt,
+        10 // Max uses
+      );
+
+      res.json({
+        success: true,
+        data: {
+          code: connectionCode.code,
+          expiresAt: connectionCode.expiresAt,
+          maxUses: connectionCode.maxUses,
+          usedCount: connectionCode.usedCount,
+        }
+      });
+    } catch (error) {
+      console.error("Error generating connection code:", error);
+      res.status(500).json({ message: "Failed to generate connection code" });
+    }
+  });
+
+  // List all connections for the family
+  app.get('/api/chat/connections', isAuthenticated, loadUserRole, authenticateFamily, async (req: AuthenticatedRequest, res) => {
+    try {
+      const familyId = req.user.familyId;
+      if (!familyId) {
+        return res.status(400).json({ message: "User must belong to a family" });
+      }
+
+      const connections = await storage.getFamilyConnections(familyId);
+      
+      // Enhance connections with family names
+      const enhancedConnections = await Promise.all(
+        connections.map(async (conn) => {
+          const inviterFamily = await storage.getFamily(conn.inviterFamilyId);
+          const inviteeFamily = await storage.getFamily(conn.inviteeFamilyId);
+          
+          return {
+            ...conn,
+            inviterFamilyName: inviterFamily?.name,
+            inviteeFamilyName: inviteeFamily?.name,
+            otherFamilyName: conn.inviterFamilyId === familyId 
+              ? inviteeFamily?.name 
+              : inviterFamily?.name,
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: enhancedConnections
+      });
+    } catch (error) {
+      console.error("Error fetching connections:", error);
+      res.status(500).json({ message: "Failed to fetch connections" });
+    }
+  });
+
+  // Accept a connection using a code
+  app.post('/api/chat/connections/accept', isAuthenticated, loadUserRole, authenticateFamily, async (req: AuthenticatedRequest, res) => {
+    try {
+      const familyId = req.user.familyId;
+      if (!familyId) {
+        return res.status(400).json({ message: "User must belong to a family" });
+      }
+
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: "Connection code is required" });
+      }
+
+      // Validate the connection code
+      const connectionCode = await storage.getConnectionCodeByCode(code);
+      if (!connectionCode) {
+        return res.status(404).json({ message: "Invalid connection code" });
+      }
+
+      // Check if code is expired
+      if (new Date() > connectionCode.expiresAt) {
+        return res.status(400).json({ message: "Connection code has expired" });
+      }
+
+      // Check if code has uses remaining
+      if (connectionCode.maxUses !== null && connectionCode.usedCount >= connectionCode.maxUses) {
+        return res.status(400).json({ message: "Connection code has reached maximum uses" });
+      }
+
+      // Check if trying to connect to own family
+      if (connectionCode.familyId === familyId) {
+        return res.status(400).json({ message: "Cannot connect to your own family" });
+      }
+
+      // Check if connection already exists
+      const existingConnections = await storage.getFamilyConnections(familyId);
+      const alreadyConnected = existingConnections.some(
+        conn => 
+          (conn.inviterFamilyId === connectionCode.familyId && conn.inviteeFamilyId === familyId) ||
+          (conn.inviterFamilyId === familyId && conn.inviteeFamilyId === connectionCode.familyId)
+      );
+
+      if (alreadyConnected) {
+        return res.status(400).json({ message: "Families are already connected" });
+      }
+
+      // Create the connection
+      const connection = await storage.createFamilyConnection(
+        connectionCode.familyId, // inviter family
+        familyId // invitee family
+      );
+
+      // Use the connection code (increment usage count)
+      await storage.useConnectionCode(code);
+
+      // Create an inter-family chat room
+      const userId = req.user.claims.sub;
+      const inviterFamily = await storage.getFamily(connectionCode.familyId);
+      const inviteeFamily = await storage.getFamily(familyId);
+      
+      const roomTitle = `${inviterFamily?.name || 'Unknown'} - ${inviteeFamily?.name || 'Unknown'}`;
+      const chatRoom = await storage.createInterfamilyRoom(
+        connection.id,
+        roomTitle,
+        userId
+      );
+
+      // Auto-accept the connection
+      await storage.acceptConnection(connection.id);
+
+      res.json({
+        success: true,
+        data: {
+          connection,
+          chatRoom,
+        }
+      });
+    } catch (error) {
+      console.error("Error accepting connection:", error);
+      res.status(500).json({ message: "Failed to accept connection" });
+    }
+  });
+
+  // Revoke a connection
+  app.delete('/api/chat/connections/:id', isAuthenticated, loadUserRole, authenticateFamily, async (req: AuthenticatedRequest, res) => {
+    try {
+      const familyId = req.user.familyId;
+      if (!familyId) {
+        return res.status(400).json({ message: "User must belong to a family" });
+      }
+
+      const { id: connectionId } = req.params;
+
+      // Verify the connection belongs to this family
+      const connection = await storage.getConnectionById(connectionId);
+      if (!connection) {
+        return res.status(404).json({ message: "Connection not found" });
+      }
+
+      if (connection.inviterFamilyId !== familyId && connection.inviteeFamilyId !== familyId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Revoke the connection
+      await storage.revokeConnection(connectionId);
+
+      res.json({
+        success: true,
+        message: "Connection revoked successfully"
+      });
+    } catch (error) {
+      console.error("Error revoking connection:", error);
+      res.status(500).json({ message: "Failed to revoke connection" });
+    }
+  });
+
+  // ===== CHAT ROOM API ENDPOINTS =====
+
+  // List all accessible rooms for user's family
+  app.get('/api/chat/rooms', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const familyId = req.user.familyId;
+      if (!familyId) {
+        return res.status(400).json({ message: "User must belong to a family" });
+      }
+
+      const rooms = await storage.getRoomsForFamily(familyId);
+      
+      // Enhance rooms with additional info
+      const enhancedRooms = await Promise.all(
+        rooms.map(async (room) => {
+          // Get last message for each room
+          const lastMessages = await storage.getLatestMessages(room.id, 1);
+          const lastMessage = lastMessages[0] || null;
+          
+          // Get connection info for inter-family rooms
+          let connectionInfo = null;
+          if (room.connectionId) {
+            const connection = await storage.getConnectionById(room.connectionId);
+            if (connection) {
+              const otherFamilyId = connection.inviterFamilyId === familyId 
+                ? connection.inviteeFamilyId 
+                : connection.inviterFamilyId;
+              const otherFamily = await storage.getFamily(otherFamilyId);
+              connectionInfo = {
+                otherFamilyId,
+                otherFamilyName: otherFamily?.name,
+              };
+            }
+          }
+          
+          return {
+            ...room,
+            lastMessage,
+            connectionInfo,
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: enhancedRooms
+      });
+    } catch (error) {
+      console.error("Error fetching chat rooms:", error);
+      res.status(500).json({ message: "Failed to fetch chat rooms" });
+    }
+  });
+
+  // Get paginated message history for a room
+  app.get('/api/chat/rooms/:roomId/messages', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { roomId } = req.params;
+      const { cursor, limit = '50' } = req.query;
+
+      // Validate room access
+      const canAccess = await storage.canAccessRoom(userId, roomId);
+      if (!canAccess) {
+        return res.status(403).json({ message: "Access denied to this room" });
+      }
+
+      // Get messages
+      const messages = await storage.getMessagesByRoom(
+        roomId,
+        parseInt(limit as string, 10),
+        cursor as string | undefined
+      );
+
+      // Enhance messages with sender info
+      const enhancedMessages = await Promise.all(
+        messages.map(async (msg) => {
+          const sender = await storage.getUser(msg.senderUserId);
+          return {
+            ...msg,
+            sender: sender ? {
+              id: sender.id,
+              firstName: sender.firstName,
+              lastName: sender.lastName,
+              email: sender.email,
+              profileImageUrl: sender.profileImageUrl,
+            } : null,
+          };
+        })
+      );
+
+      // Get next cursor (the ID of the oldest message if we have a full page)
+      const nextCursor = messages.length === parseInt(limit as string, 10) 
+        ? messages[messages.length - 1].id 
+        : null;
+
+      res.json({
+        success: true,
+        data: {
+          messages: enhancedMessages,
+          nextCursor,
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  // Send message (fallback for non-WebSocket)
+  app.post('/api/chat/rooms/:roomId/messages', isAuthenticated, loadUserRole, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { roomId } = req.params;
+      const { content } = req.body;
+
+      if (!content?.trim()) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+
+      // Validate room access
+      const canAccess = await storage.canAccessRoom(userId, roomId);
+      if (!canAccess) {
+        return res.status(403).json({ message: "Access denied to this room" });
+      }
+
+      // Save message to database
+      const message = await storage.createMessage(roomId, userId, content.trim());
+
+      // Get sender info
+      const sender = await storage.getUser(userId);
+      const messageWithSender = {
+        ...message,
+        sender: sender ? {
+          id: sender.id,
+          firstName: sender.firstName,
+          lastName: sender.lastName,
+          email: sender.email,
+          profileImageUrl: sender.profileImageUrl,
+        } : null,
+      };
+
+      // Broadcast via Socket.IO if available
+      const { emitToRoom } = await import("./websocket");
+      emitToRoom(roomId, "chat:message", messageWithSender);
+
+      res.json({
+        success: true,
+        data: messageWithSender
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Initialize sample data and default tasks

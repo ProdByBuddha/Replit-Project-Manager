@@ -15,6 +15,7 @@ import InvitationAccept from "@/pages/InvitationAccept";
 import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/not-found";
 import ProfileSettings from "@/pages/ProfileSettings";
+import ChatPage from "@/pages/ChatPage";
 
 function Router() {
   const { isAuthenticated, isLoading, user, canAccessAdmin } = useAuth();
@@ -28,6 +29,7 @@ function Router() {
         <>
           <Route path="/profile" component={ProfileSettings} />
           <Route path="/notifications" component={Notifications} />
+          <Route path="/chat" component={ChatPage} />
           <Route path="/status-correction" component={StatusCorrection} />
           <Route path="/ministry-legitimation" component={MinistryLegitimation} />
           {canAccessAdmin() ? (

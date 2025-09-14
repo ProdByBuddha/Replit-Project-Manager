@@ -11,6 +11,10 @@ import {
   taskDependencies,
   workflowRules,
   systemSettings,
+  familyConnections,
+  connectionCodes,
+  chatRooms,
+  chatMessages,
   usCodeTitles,
   usCodeChapters,
   usCodeSections,
@@ -49,6 +53,14 @@ import {
   type InsertWorkflowRule,
   type SystemSettings,
   type InsertSystemSettings,
+  type FamilyConnection,
+  type InsertFamilyConnection,
+  type ConnectionCode,
+  type InsertConnectionCode,
+  type ChatRoom,
+  type InsertChatRoom,
+  type ChatMessage,
+  type InsertChatMessage,
   type UsCodeTitle,
   type InsertUsCodeTitle,
   type UsCodeChapter,
@@ -186,6 +198,31 @@ export interface IStorage {
   setSystemSetting(key: string, value: any): Promise<SystemSettings>;
   updateSystemSetting(key: string, value: any): Promise<SystemSettings>;
   deleteSystemSetting(key: string): Promise<void>;
+  
+  // ===== FAMILY CONNECTION AND CHAT OPERATIONS =====
+  
+  // Connection Management
+  createConnectionCode(familyId: string, code: string, expiresAt: Date, maxUses?: number): Promise<ConnectionCode>;
+  getConnectionCodeByCode(code: string): Promise<ConnectionCode | undefined>;
+  useConnectionCode(code: string): Promise<ConnectionCode>;
+  expireConnectionCode(codeId: string): Promise<void>;
+  createFamilyConnection(inviterFamilyId: string, inviteeFamilyId: string): Promise<FamilyConnection>;
+  acceptConnection(connectionId: string): Promise<FamilyConnection>;
+  revokeConnection(connectionId: string): Promise<FamilyConnection>;
+  getFamilyConnections(familyId: string): Promise<FamilyConnection[]>;
+  getConnectionById(connectionId: string): Promise<FamilyConnection | undefined>;
+  
+  // Chat Room Management
+  createFamilyRoom(familyId: string, title: string, createdBy: string): Promise<ChatRoom>;
+  createInterfamilyRoom(connectionId: string, title: string, createdBy: string): Promise<ChatRoom>;
+  getRoomById(roomId: string): Promise<ChatRoom | undefined>;
+  getRoomsForFamily(familyId: string): Promise<ChatRoom[]>;
+  canAccessRoom(userId: string, roomId: string): Promise<boolean>;
+  
+  // Message Management
+  createMessage(roomId: string, senderUserId: string, content: string): Promise<ChatMessage>;
+  getMessagesByRoom(roomId: string, limit?: number, cursor?: string): Promise<ChatMessage[]>;
+  getLatestMessages(roomId: string, limit?: number): Promise<ChatMessage[]>;
   
   // ===== US CODE INDEXING OPERATIONS =====
   
@@ -1371,6 +1408,220 @@ export class DatabaseStorage implements IStorage {
       };
       return this.upsertSystemSetting(setting);
     }
+  }
+
+  // ===== FAMILY CONNECTION AND CHAT IMPLEMENTATIONS =====
+
+  // Connection Management
+  async createConnectionCode(familyId: string, code: string, expiresAt: Date, maxUses?: number): Promise<ConnectionCode> {
+    const [connectionCode] = await db.insert(connectionCodes).values({
+      familyId,
+      code,
+      expiresAt,
+      maxUses: maxUses || 1,
+      status: 'active'
+    }).returning();
+    return connectionCode;
+  }
+
+  async getConnectionCodeByCode(code: string): Promise<ConnectionCode | undefined> {
+    const [connectionCode] = await db
+      .select()
+      .from(connectionCodes)
+      .where(eq(connectionCodes.code, code));
+    return connectionCode;
+  }
+
+  async useConnectionCode(code: string): Promise<ConnectionCode> {
+    const [connectionCode] = await db
+      .update(connectionCodes)
+      .set({ 
+        usedCount: sql`${connectionCodes.usedCount} + 1` 
+      })
+      .where(eq(connectionCodes.code, code))
+      .returning();
+    return connectionCode;
+  }
+
+  async expireConnectionCode(codeId: string): Promise<void> {
+    await db
+      .update(connectionCodes)
+      .set({ status: 'expired' })
+      .where(eq(connectionCodes.id, codeId));
+  }
+
+  async createFamilyConnection(inviterFamilyId: string, inviteeFamilyId: string): Promise<FamilyConnection> {
+    const [connection] = await db.insert(familyConnections).values({
+      inviterFamilyId,
+      inviteeFamilyId,
+      status: 'pending'
+    }).returning();
+    return connection;
+  }
+
+  async acceptConnection(connectionId: string): Promise<FamilyConnection> {
+    const [connection] = await db
+      .update(familyConnections)
+      .set({ 
+        status: 'accepted',
+        acceptedAt: new Date()
+      })
+      .where(eq(familyConnections.id, connectionId))
+      .returning();
+    return connection;
+  }
+
+  async revokeConnection(connectionId: string): Promise<FamilyConnection> {
+    const [connection] = await db
+      .update(familyConnections)
+      .set({ status: 'revoked' })
+      .where(eq(familyConnections.id, connectionId))
+      .returning();
+    return connection;
+  }
+
+  async getFamilyConnections(familyId: string): Promise<FamilyConnection[]> {
+    const connections = await db
+      .select()
+      .from(familyConnections)
+      .where(
+        sql`${familyConnections.inviterFamilyId} = ${familyId} OR ${familyConnections.inviteeFamilyId} = ${familyId}`
+      );
+    return connections;
+  }
+
+  async getConnectionById(connectionId: string): Promise<FamilyConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(familyConnections)
+      .where(eq(familyConnections.id, connectionId));
+    return connection;
+  }
+
+  // Chat Room Management
+  async createFamilyRoom(familyId: string, title: string, createdBy: string): Promise<ChatRoom> {
+    const [room] = await db.insert(chatRooms).values({
+      type: 'family',
+      familyId,
+      title,
+      createdBy
+    }).returning();
+    return room;
+  }
+
+  async createInterfamilyRoom(connectionId: string, title: string, createdBy: string): Promise<ChatRoom> {
+    const [room] = await db.insert(chatRooms).values({
+      type: 'interfamily',
+      connectionId,
+      title,
+      createdBy
+    }).returning();
+    return room;
+  }
+
+  async getRoomById(roomId: string): Promise<ChatRoom | undefined> {
+    const [room] = await db
+      .select()
+      .from(chatRooms)
+      .where(eq(chatRooms.id, roomId));
+    return room;
+  }
+
+  async getRoomsForFamily(familyId: string): Promise<ChatRoom[]> {
+    // Get family room and interfamily rooms via connections
+    const familyRooms = await db
+      .select()
+      .from(chatRooms)
+      .where(
+        and(
+          eq(chatRooms.type, 'family'),
+          eq(chatRooms.familyId, familyId)
+        )
+      );
+
+    const connections = await this.getFamilyConnections(familyId);
+    const connectionIds = connections
+      .filter(c => c.status === 'accepted')
+      .map(c => c.id);
+
+    let interfamilyRooms: ChatRoom[] = [];
+    if (connectionIds.length > 0) {
+      interfamilyRooms = await db
+        .select()
+        .from(chatRooms)
+        .where(
+          and(
+            eq(chatRooms.type, 'interfamily'),
+            inArray(chatRooms.connectionId, connectionIds)
+          )
+        );
+    }
+
+    return [...familyRooms, ...interfamilyRooms];
+  }
+
+  async canAccessRoom(userId: string, roomId: string): Promise<boolean> {
+    // Get user and room details
+    const user = await this.getUser(userId);
+    if (!user || !user.familyId) return false;
+
+    const room = await this.getRoomById(roomId);
+    if (!room) return false;
+
+    // Check family room access
+    if (room.type === 'family') {
+      return room.familyId === user.familyId;
+    }
+
+    // Check interfamily room access
+    if (room.type === 'interfamily' && room.connectionId) {
+      const connection = await this.getConnectionById(room.connectionId);
+      if (!connection || connection.status !== 'accepted') return false;
+      
+      return connection.inviterFamilyId === user.familyId || 
+             connection.inviteeFamilyId === user.familyId;
+    }
+
+    return false;
+  }
+
+  // Message Management
+  async createMessage(roomId: string, senderUserId: string, content: string): Promise<ChatMessage> {
+    const [message] = await db.insert(chatMessages).values({
+      roomId,
+      senderUserId,
+      content
+    }).returning();
+    return message;
+  }
+
+  async getMessagesByRoom(roomId: string, limit: number = 50, cursor?: string): Promise<ChatMessage[]> {
+    const conditions = cursor 
+      ? and(
+          eq(chatMessages.roomId, roomId),
+          lt(chatMessages.createdAt, new Date(cursor))
+        )
+      : eq(chatMessages.roomId, roomId);
+
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .where(conditions)
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+
+    return messages.reverse(); // Return in chronological order
+  }
+
+  async getLatestMessages(roomId: string, limit: number = 20): Promise<ChatMessage[]> {
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.roomId, roomId))
+      .orderBy(desc(chatMessages.createdAt))
+      .limit(limit);
+    
+    return messages.reverse(); // Return in chronological order
   }
 
   // ===== US CODE STORAGE IMPLEMENTATIONS =====

@@ -402,6 +402,151 @@ export const systemSettings = pgTable("system_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ===== FAMILY CONNECTION AND CHAT SYSTEM =====
+
+// Family Connections table - manages connections between families
+export const familyConnections = pgTable(
+  "family_connections",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    inviterFamilyId: varchar("inviter_family_id").notNull(),
+    inviteeFamilyId: varchar("invitee_family_id").notNull(),
+    status: varchar("status").notNull().default("pending"), // 'pending', 'accepted', 'revoked'
+    createdAt: timestamp("created_at").defaultNow(),
+    acceptedAt: timestamp("accepted_at"),
+  },
+  (table) => [
+    // Foreign key constraints for referential integrity
+    foreignKey({ columns: [table.inviterFamilyId], foreignColumns: [families.id] }),
+    foreignKey({ columns: [table.inviteeFamilyId], foreignColumns: [families.id] }),
+    // Indexes for performance
+    index("IDX_family_connections_inviter_invitee").on(table.inviterFamilyId, table.inviteeFamilyId),
+    index("IDX_family_connections_status").on(table.status),
+    // Prevent duplicate connections
+    unique("UNQ_family_connections").on(table.inviterFamilyId, table.inviteeFamilyId),
+  ]
+);
+
+// Connection Codes table - manages connection codes for families
+export const connectionCodes = pgTable(
+  "connection_codes",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    familyId: varchar("family_id").notNull(), // The owner family
+    code: varchar("code").notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    maxUses: integer("max_uses").default(1),
+    usedCount: integer("used_count").default(0),
+    status: varchar("status").notNull().default("active"), // 'active', 'expired', 'revoked'
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraint for referential integrity
+    foreignKey({ columns: [table.familyId], foreignColumns: [families.id] }),
+    // Indexes for performance
+    index("IDX_connection_codes_family").on(table.familyId),
+    index("IDX_connection_codes_status").on(table.status),
+  ]
+);
+
+// Chat Rooms table - manages both family and inter-family chat rooms
+export const chatRooms = pgTable(
+  "chat_rooms",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    type: varchar("type").notNull(), // 'family' or 'interfamily'
+    familyId: varchar("family_id"), // For family rooms
+    connectionId: varchar("connection_id"), // For interfamily rooms
+    title: varchar("title").notNull(),
+    createdBy: varchar("created_by").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints for referential integrity
+    foreignKey({ columns: [table.familyId], foreignColumns: [families.id] }),
+    foreignKey({ columns: [table.connectionId], foreignColumns: [familyConnections.id] }),
+    foreignKey({ columns: [table.createdBy], foreignColumns: [users.id] }),
+    // Unique constraints - ensure only one room per family/connection
+    unique("UNQ_chat_rooms_family").on(table.familyId),
+    unique("UNQ_chat_rooms_connection").on(table.connectionId),
+    // Indexes for performance
+    index("IDX_chat_rooms_type").on(table.type),
+    index("IDX_chat_rooms_family").on(table.familyId),
+    index("IDX_chat_rooms_connection").on(table.connectionId),
+  ]
+);
+
+// Chat Messages table - stores messages for all chat rooms
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    roomId: varchar("room_id").notNull(),
+    senderUserId: varchar("sender_user_id").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    // Foreign key constraints for referential integrity
+    foreignKey({ columns: [table.roomId], foreignColumns: [chatRooms.id] }),
+    foreignKey({ columns: [table.senderUserId], foreignColumns: [users.id] }),
+    // Index for efficient message retrieval
+    index("IDX_chat_messages_room_created").on(table.roomId, table.createdAt),
+  ]
+);
+
+// Family Connections Relations
+export const familyConnectionsRelations = relations(familyConnections, ({ one, many }) => ({
+  inviterFamily: one(families, {
+    fields: [familyConnections.inviterFamilyId],
+    references: [families.id],
+    relationName: "inviterFamily",
+  }),
+  inviteeFamily: one(families, {
+    fields: [familyConnections.inviteeFamilyId],
+    references: [families.id],
+    relationName: "inviteeFamily",
+  }),
+  chatRooms: many(chatRooms),
+}));
+
+// Connection Codes Relations
+export const connectionCodesRelations = relations(connectionCodes, ({ one }) => ({
+  family: one(families, {
+    fields: [connectionCodes.familyId],
+    references: [families.id],
+  }),
+}));
+
+// Chat Rooms Relations
+export const chatRoomsRelations = relations(chatRooms, ({ one, many }) => ({
+  family: one(families, {
+    fields: [chatRooms.familyId],
+    references: [families.id],
+  }),
+  connection: one(familyConnections, {
+    fields: [chatRooms.connectionId],
+    references: [familyConnections.id],
+  }),
+  creator: one(users, {
+    fields: [chatRooms.createdBy],
+    references: [users.id],
+  }),
+  messages: many(chatMessages),
+}));
+
+// Chat Messages Relations
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  room: one(chatRooms, {
+    fields: [chatMessages.roomId],
+    references: [chatRooms.id],
+  }),
+  sender: one(users, {
+    fields: [chatMessages.senderUserId],
+    references: [users.id],
+  }),
+}));
+
 // ===== US CODE INDEXING SYSTEM =====
 
 // US Code Titles table - represents the 54 titles of the US Code
@@ -713,9 +858,20 @@ export const updateProfileSchema = z.object({
 });
 
 // Profile types
-export type User = typeof users.$inferSelect;
 export type ProfileUpdate = z.infer<typeof updateProfileSchema>;
-export type ProfileResponse = User & {
+export type ProfileResponse = {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  phone: string | null;
+  emailNotifications: boolean;
+  darkMode: boolean;
+  role: "family" | "executor" | "elder" | "legislator" | "ministry_admin" | "platform_admin";
+  familyId: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
   familyCode?: string;
 };
 
@@ -775,6 +931,28 @@ export const insertSystemSettingsSchema = createInsertSchema(systemSettings).omi
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+// Family Connection and Chat insert schemas
+export const insertFamilyConnectionSchema = createInsertSchema(familyConnections).omit({
+  id: true,
+  createdAt: true,
+  acceptedAt: true,
+});
+
+export const insertConnectionCodeSchema = createInsertSchema(connectionCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChatRoomSchema = createInsertSchema(chatRooms).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
 });
 
 // US Code insert schemas
@@ -884,6 +1062,16 @@ export type WorkflowRule = typeof workflowRules.$inferSelect;
 export type InsertWorkflowRule = z.infer<typeof insertWorkflowRuleSchema>;
 export type SystemSettings = typeof systemSettings.$inferSelect;
 export type InsertSystemSettings = z.infer<typeof insertSystemSettingsSchema>;
+
+// Family Connection and Chat types
+export type FamilyConnection = typeof familyConnections.$inferSelect;
+export type InsertFamilyConnection = z.infer<typeof insertFamilyConnectionSchema>;
+export type ConnectionCode = typeof connectionCodes.$inferSelect;
+export type InsertConnectionCode = z.infer<typeof insertConnectionCodeSchema>;
+export type ChatRoom = typeof chatRooms.$inferSelect;
+export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 
 // US Code types
 export type UsCodeTitle = typeof usCodeTitles.$inferSelect;

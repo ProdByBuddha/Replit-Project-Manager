@@ -17,7 +17,8 @@ import {
   ChevronDown,
   CreditCard,
   UserCircle,
-  HelpCircle
+  HelpCircle,
+  MessageSquare
 } from "lucide-react";
 import { Permission } from "@shared/permissions";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,13 @@ const allNavigationItems: NavigationItem[] = [
     icon: HomeIcon,
     label: "Home",
     testId: "nav-home",
+    permission: Permission.VIEW_FAMILY_TASKS
+  },
+  {
+    href: "/chat",
+    icon: MessageSquare,
+    label: "Chat",
+    testId: "nav-chat",
     permission: Permission.VIEW_FAMILY_TASKS
   },
   {
