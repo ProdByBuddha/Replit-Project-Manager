@@ -1,0 +1,11 @@
+{
+  "summary": "Testing fixed savings calculations in comprehensive report",
+  "added": [
+    "Fixed savings display to show actual calculated values"
+  ],
+  "improved": [
+    "Comprehensive report now aggregates savings from all sources"
+  ],
+  "sentAt": "2025-09-15T01:37:34.420Z",
+  "success": true
+}

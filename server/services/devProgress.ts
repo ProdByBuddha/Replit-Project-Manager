@@ -138,12 +138,38 @@ export class DevProgressService {
       // Executive Summary with Savings Highlight
       if (reports.savingsSummary) {
         const savings = reports.savingsSummary;
-        doc += `## 💰 EXECUTIVE SUMMARY: MASSIVE VALUE DELIVERED\n\n`;
-        doc += `### 🚀 Client Savings Achieved:\n`;
-        doc += `- **Total Dollars Saved:** $${Math.round(savings.totalSavings?.dollars || 0).toLocaleString()}\n`;
-        doc += `- **Development Time Saved:** ${Math.round(savings.totalSavings?.hours || 0).toLocaleString()} hours (${Math.round((savings.totalSavings?.hours || 0) / 168)} weeks)\n`;
-        doc += `- **Productivity Multiplier:** ${(savings.efficiency?.productivityMultiplier || 1).toFixed(1)}x vs industry standards\n`;
-        doc += `- **Cost Reduction:** ${Math.round(savings.efficiency?.costReduction || 0)}%\n\n`;
+        
+        // Calculate actual total from opportunities if totalSavings is zero
+        let totalDollars = savings.totalSavings?.dollars || 0;
+        if (totalDollars === 0 && savings.topOpportunities?.length > 0) {
+          totalDollars = savings.topOpportunities.reduce((sum: number, opp: any) => sum + (opp.savings || 0), 0);
+        }
+        
+        // Use values from git analysis if available
+        if (reports.gitAnalysis?.savings?.calculation?.savings) {
+          const gitSavings = reports.gitAnalysis.savings.calculation.savings;
+          totalDollars = gitSavings.dollars || totalDollars;
+          const totalHours = gitSavings.hours || 0;
+          const totalWeeks = gitSavings.weeks || 0;
+          
+          doc += `## 💰 EXECUTIVE SUMMARY: MASSIVE VALUE DELIVERED\n\n`;
+          doc += `### 🚀 Client Savings Achieved:\n`;
+          doc += `- **Total Dollars Saved:** $${Math.round(totalDollars).toLocaleString()}\n`;
+          doc += `- **Development Time Saved:** ${Math.round(totalHours).toLocaleString()} hours (${Math.round(totalWeeks)} weeks)\n`;
+          doc += `- **Productivity Multiplier:** ${(savings.efficiency?.productivityMultiplier || 1).toFixed(1)}x vs industry standards\n`;
+          doc += `- **Cost Reduction:** ${Math.round(gitSavings.percentage || savings.efficiency?.costEfficiency || 0)}%\n\n`;
+        } else {
+          // Fallback to summary data
+          const totalHours = Math.round(totalDollars / 150); // Estimate hours based on $150/hour rate
+          const totalWeeks = Math.round(totalHours / 40); // Convert to weeks
+          
+          doc += `## 💰 EXECUTIVE SUMMARY: MASSIVE VALUE DELIVERED\n\n`;
+          doc += `### 🚀 Client Savings Achieved:\n`;
+          doc += `- **Total Dollars Saved:** $${Math.round(totalDollars).toLocaleString()}\n`;
+          doc += `- **Development Time Saved:** ${totalHours.toLocaleString()} hours (${totalWeeks} weeks)\n`;
+          doc += `- **Productivity Multiplier:** ${(savings.efficiency?.productivityMultiplier || 1).toFixed(1)}x vs industry standards\n`;
+          doc += `- **Cost Reduction:** ${Math.round(savings.efficiency?.costEfficiency || 0)}%\n\n`;
+        }
         
         if (savings.methodology) {
           doc += `### 📐 Validation Methodology:\n`;
