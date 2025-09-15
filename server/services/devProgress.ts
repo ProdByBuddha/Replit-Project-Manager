@@ -274,33 +274,31 @@ export class DevProgressService {
       // Create comprehensive report by combining all latest reports
       const comprehensiveReport = await this.createComprehensiveReport(message);
       
-      // Create a task with the progress update using dart-tools  
-      // Send comprehensive report to document ID 3VJqaEIFAlYs
-      const task = await TaskService.createTask({
+      // Create a document (not a task) in Eric Parker/Docs folder
+      const doc = await DocService.createDoc({
         item: {
-          title: `Dev Progress Report - ${new Date().toLocaleDateString()} [Doc: 3VJqaEIFAlYs]`,
-          description: comprehensiveReport,
-          status: 'Done', // Mark as done since it's a completed progress update
-          dartboard: 'Eric Parker/Tasks', // Send to Eric Parker Tasks workspace
+          title: `Dev Progress Report - ${new Date().toLocaleDateString()}`,
+          text: comprehensiveReport,
+          folder: 'Eric Parker/Docs' // Send to Eric Parker Docs folder
         }
       });
 
-      console.log('[DevProgress] Progress update sent successfully as task');
+      console.log('[DevProgress] Progress report sent successfully as document to Eric Parker/Docs');
       return true;
     } catch (error: any) {
-      console.error('[DevProgress] Failed to send update as task:', error.message);
+      console.error('[DevProgress] Failed to send document to Eric Parker/Docs:', error.message);
       
-      // Try sending as a doc if task creation fails
+      // Try sending to General/Docs as fallback
       try {
         const comprehensiveReport = await this.createComprehensiveReport(message);
         const doc = await DocService.createDoc({
           item: {
-            title: `Dev Progress - ${new Date().toLocaleDateString()} [Doc: 3VJqaEIFAlYs]`,
+            title: `Dev Progress Report - ${new Date().toLocaleDateString()}`,
             text: comprehensiveReport,
-            // Note: dartboard parameter doesn't work for docs, will go to default location
+            folder: 'General/Docs' // Fallback to General/Docs
           }
         });
-        console.log('[DevProgress] Progress update sent successfully as doc');
+        console.log('[DevProgress] Progress report sent to General/Docs as fallback');
         return true;
       } catch (docError: any) {
         console.error('[DevProgress] Failed to send as doc:', docError.message);
