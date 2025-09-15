@@ -1,0 +1,48 @@
+{
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Implement user authentication",
+      "description": "Add OAuth2 authentication with Google and GitHub providers",
+      "status": "completed",
+      "createdAt": "2025-09-15T02:49:43.269Z",
+      "updatedAt": "2025-09-15T02:49:48.163Z",
+      "architect_reviewed": "yes",
+      "architect_reviewed_reason": "Code review passed, good implementation"
+    },
+    {
+      "id": "task-2",
+      "title": "Add database migration for user roles",
+      "description": "Create migration to add RBAC tables and relationships",
+      "status": "completed",
+      "createdAt": "2025-09-15T02:49:43.269Z",
+      "updatedAt": "2025-09-15T02:49:43.269Z",
+      "architect_reviewed": "yes"
+    },
+    {
+      "id": "task-3",
+      "title": "Fix bug in file upload handler",
+      "description": "Files over 10MB are failing to upload to cloud storage",
+      "status": "pending",
+      "createdAt": "2025-09-15T02:49:43.269Z",
+      "updatedAt": "2025-09-15T02:49:43.269Z"
+    },
+    {
+      "id": "task-4",
+      "title": "Optimize database queries",
+      "description": "Add indexes and optimize slow queries identified in performance testing",
+      "status": "completed_pending_review",
+      "createdAt": "2025-09-15T02:49:43.269Z",
+      "updatedAt": "2025-09-15T02:49:43.269Z"
+    },
+    {
+      "id": "task-5",
+      "title": "Implement real-time notifications",
+      "description": "Add WebSocket-based notifications for task updates and messages",
+      "status": "pending",
+      "createdAt": "2025-09-15T02:49:51.049Z",
+      "updatedAt": "2025-09-15T02:49:51.049Z"
+    }
+  ],
+  "lastUpdated": "2025-09-15T02:49:51.049Z"
+}

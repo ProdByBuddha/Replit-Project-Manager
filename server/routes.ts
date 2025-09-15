@@ -34,9 +34,13 @@ import { dartService } from "./services/dartai";
 // Initialize Dart AI service (registers event listeners automatically)
 console.log('[Server] Initializing Dart AI service for automatic progress reporting...');
 
-// Initialize Task Sync service for Eric Parker/Tasks synchronization
+// Initialize Task Sync service for Eric Parker/Tasks synchronization (family tasks)
 import { taskSyncService } from "./services/taskSync";
 console.log('[Server] Task synchronization service initialized for Eric Parker/Tasks');
+
+// Initialize Development Task Sync service for agent development tasks
+import { agentTaskHook } from "./services/agentTaskHook";
+console.log('[Server] Development task synchronization initialized for Eric Parker/Tasks');
 
 // TypeScript interfaces for AI chat service
 interface ChatRequest {
