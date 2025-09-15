@@ -1,9 +1,0 @@
-{
-  "summary": "Final test of cumulative document system - overwrites instead of duplicates",
-  "added": [
-    "Single cumulative document that gets updated in place",
-    "No more duplicate documents in Eric Parker/Docs"
-  ],
-  "sentAt": "2025-09-15T02:18:21.490Z",
-  "success": true
-}
