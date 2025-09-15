@@ -1,0 +1,16 @@
+{
+  "summary": "Fixed Dart AI comprehensive reporting with proper workspace and data formatting",
+  "added": [
+    "Comprehensive styled document generation",
+    "Eric Parker/Docs workspace integration"
+  ],
+  "fixed": [
+    "Undefined values in category counts",
+    "Document ID workspace mapping"
+  ],
+  "improved": [
+    "Report formatting with all metrics"
+  ],
+  "sentAt": "2025-09-15T01:24:51.603Z",
+  "success": true
+}

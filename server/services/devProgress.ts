@@ -172,7 +172,9 @@ export class DevProgressService {
         if (analysis.categories && analysis.categories.length > 0) {
           doc += `### 🏗️ Development Focus Areas:\n`;
           analysis.categories.forEach((cat: any) => {
-            doc += `- **${cat.name}:** ${cat.count} commits (${cat.percentage}%)\n`;
+            const commitCount = cat.commits ? cat.commits.length : (cat.count || 0);
+            const percentage = cat.percentage || Math.round(commitCount / analysis.totalCommits * 100);
+            doc += `- **${cat.name}:** ${commitCount} commits (${percentage}%)\n`;
           });
           doc += '\n';
         }
@@ -250,7 +252,7 @@ export class DevProgressService {
       
       doc += `---\n`;
       doc += `*Report Generated: ${new Date().toISOString()}*\n`;
-      doc += `*Document ID: 3VJqaEIFAlYs*\n`;
+      doc += `*Document ID: Eric Parker/Docs*\n`;
       
       return doc;
       
@@ -279,7 +281,7 @@ export class DevProgressService {
           title: `Dev Progress Report - ${new Date().toLocaleDateString()} [Doc: 3VJqaEIFAlYs]`,
           description: comprehensiveReport,
           status: 'Done', // Mark as done since it's a completed progress update
-          dartboard: 'Eric Parker/Tasks', // Send to Eric Parker workspace
+          dartboard: 'Eric Parker/Docs', // Send to Eric Parker Docs workspace
         }
       });
 

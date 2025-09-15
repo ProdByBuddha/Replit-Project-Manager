@@ -1,6 +1,6 @@
 {
-  "timestamp": "2025-09-15T01:24:50.996Z",
-  "summary": "Git analysis for 1 month ago",
+  "timestamp": "2025-09-15T01:24:29.338Z",
+  "summary": "Git analysis for 1 week ago",
   "analysis": {
     "totalCommits": 105,
     "dateRange": "2025-09-10 to 2025-09-15",
@@ -6073,7 +6073,7 @@
           }
         ],
         "metadata": {
-          "calculatedAt": "2025-09-15T01:24:50.995Z",
+          "calculatedAt": "2025-09-15T01:24:29.335Z",
           "dataSources": [
             "git-history",
             "wcu-estimation",
@@ -6085,12 +6085,12 @@
             "wcu-calculation"
           ],
           "config": {
-            "sinceDate": "1 month ago",
+            "sinceDate": "1 week ago",
             "enableHistoricalTracking": true,
             "enableFeatureClustering": true,
             "enableExecutiveSummary": true,
             "includeConfidenceMetrics": true,
-            "confidenceThreshold": 60
+            "confidenceThreshold": 50
           }
         }
       },

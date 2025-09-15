@@ -1,6 +1,6 @@
 {
-  "timestamp": "2025-09-15T01:24:50.996Z",
-  "summary": "Git analysis for 1 month ago",
+  "timestamp": "2025-09-15T01:24:29.364Z",
+  "summary": "Comprehensive development progress spanning 2025-09-10 to 2025-09-15 with 105 commits. Major development areas include: Dart AI Integration & Project Management, Document Management & File Uploads, Real-Time Communication & Chat. Code changes: 248 files modified, 165222 additions, 5260 deletions. Primary contributor: ItsBuddha (105 commits).",
   "analysis": {
     "totalCommits": 105,
     "dateRange": "2025-09-10 to 2025-09-15",
@@ -6073,7 +6073,7 @@
           }
         ],
         "metadata": {
-          "calculatedAt": "2025-09-15T01:24:50.995Z",
+          "calculatedAt": "2025-09-15T01:24:29.335Z",
           "dataSources": [
             "git-history",
             "wcu-estimation",
@@ -6085,12 +6085,12 @@
             "wcu-calculation"
           ],
           "config": {
-            "sinceDate": "1 month ago",
+            "sinceDate": "1 week ago",
             "enableHistoricalTracking": true,
             "enableFeatureClustering": true,
             "enableExecutiveSummary": true,
             "includeConfidenceMetrics": true,
-            "confidenceThreshold": 60
+            "confidenceThreshold": 50
           }
         }
       },
