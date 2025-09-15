@@ -588,18 +588,18 @@ export class GitIntegratedProgressService {
         savingsCalculationSucceeded: analysis.savings?.calculationSucceeded || false
       },
       // Executive summary for quick access
-      executiveSummary: analysis.savings?.calculationSucceeded ? {
+      executiveSummary: analysis.savings?.calculationSucceeded && analysis.savings?.calculation ? {
         totalSavings: {
-          dollars: Math.round(analysis.savings.calculation.savings.dollars),
-          hours: Math.round(analysis.savings.calculation.savings.hours),
-          weeks: Math.round(analysis.savings.calculation.savings.weeks),
-          percentage: Math.round(analysis.savings.calculation.savings.percentage)
+          dollars: Math.round(analysis.savings.calculation.savings?.dollars || 0),
+          hours: Math.round(analysis.savings.calculation.savings?.hours || 0),
+          weeks: Math.round(analysis.savings.calculation.savings?.weeks || 0),
+          percentage: Math.round(analysis.savings.calculation.savings?.percentage || 0)
         },
         efficiency: {
-          productivityMultiplier: analysis.savings.summary.efficiency.productivityMultiplier,
-          costEfficiency: analysis.savings.summary.efficiency.costEfficiency
+          productivityMultiplier: analysis.savings.summary?.efficiency?.productivityMultiplier || 1,
+          costEfficiency: analysis.savings.summary?.efficiency?.costEfficiency || 0
         },
-        confidence: analysis.savings.confidence
+        confidence: analysis.savings.confidence || 0
       } : null
     };
     
@@ -607,15 +607,15 @@ export class GitIntegratedProgressService {
     console.log(`[GitProgress] Comprehensive report saved to ${reportPath}`);
     
     // Also save a simplified savings summary file if analysis succeeded
-    if (analysis.savings?.calculationSucceeded) {
+    if (analysis.savings?.calculationSucceeded && analysis.savings?.summary) {
       const savingsPath = path.join(reportsDir, `savings-summary-${timestamp}.json`);
       const savingsSummary = {
         timestamp: new Date().toISOString(),
         dateRange: analysis.dateRange,
         totalSavings: report.executiveSummary?.totalSavings,
-        topOpportunities: analysis.savings.summary.topOpportunities.slice(0, 5),
+        topOpportunities: analysis.savings.summary?.topOpportunities?.slice(0, 5) || [],
         efficiency: report.executiveSummary?.efficiency,
-        confidence: analysis.savings.confidence
+        confidence: analysis.savings.confidence || 0
       };
       
       await fs.writeFile(savingsPath, JSON.stringify(savingsSummary, null, 2));

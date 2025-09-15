@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-09-15T00:51:20.818Z",
+  "dateRange": "2025-09-14 to 2025-09-15",
+  "totalSavings": {
+    "dollars": 0,
+    "hours": 0,
+    "weeks": 0,
+    "percentage": 0
+  },
+  "topOpportunities": [
+    {
+      "name": "Process Optimization",
+      "type": "practice",
+      "savings": 294333.95455200004,
+      "potential": 147166.97727600002,
+      "recommendation": "Implement automated testing and CI/CD pipeline improvements"
+    }
+  ],
+  "efficiency": {
+    "productivityMultiplier": 354.9369342857143,
+    "costEfficiency": 99.66871304982126
+  },
+  "confidence": 52
+}
