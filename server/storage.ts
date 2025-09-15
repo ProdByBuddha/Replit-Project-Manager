@@ -668,7 +668,18 @@ export class DatabaseStorage implements IStorage {
       }));
     
     if (familyTasksData.length > 0) {
-      await db.insert(familyTasks).values(familyTasksData);
+      const insertedTasks = await db.insert(familyTasks).values(familyTasksData).returning();
+      
+      // Sync new tasks to Eric Parker/Tasks
+      try {
+        const { taskSyncService } = await import('./services/taskSync');
+        for (const familyTask of insertedTasks) {
+          await taskSyncService.syncTask(familyTask.id);
+        }
+        console.log(`[Storage] Synced ${insertedTasks.length} tasks to Eric Parker/Tasks for family ${familyId}`);
+      } catch (error) {
+        console.error('[Storage] Failed to sync tasks to Dart AI:', error);
+      }
     }
   }
 

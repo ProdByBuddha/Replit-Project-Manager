@@ -34,6 +34,10 @@ import { dartService } from "./services/dartai";
 // Initialize Dart AI service (registers event listeners automatically)
 console.log('[Server] Initializing Dart AI service for automatic progress reporting...');
 
+// Initialize Task Sync service for Eric Parker/Tasks synchronization
+import { taskSyncService } from "./services/taskSync";
+console.log('[Server] Task synchronization service initialized for Eric Parker/Tasks');
+
 // TypeScript interfaces for AI chat service
 interface ChatRequest {
   message: string;
@@ -895,6 +899,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedTask = await storage.updateFamilyTaskStatus(taskId, status, notes);
+      
+      // Sync with Dart AI
+      const { taskSyncService } = await import('./services/taskSync');
+      await taskSyncService.syncTask(taskId);
       
       // Emit automation event if status changed
       if (oldStatus !== status) {
