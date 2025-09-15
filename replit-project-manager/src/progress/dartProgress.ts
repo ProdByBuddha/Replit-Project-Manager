@@ -361,9 +361,13 @@ export class DevProgressService {
       
       await fs.writeFile(reportPath, JSON.stringify(update, null, 2));
       
-      // Also save as "last report"
+      // Save as "last-report.json" for easy access
       const lastReportPath = path.join(this.reportsDir, 'last-report.json');
       await fs.writeFile(lastReportPath, JSON.stringify(update, null, 2));
+      
+      // Also save as "last-progress.json" for consistency
+      const lastProgressPath = path.join(this.reportsDir, 'last-progress.json');
+      await fs.writeFile(lastProgressPath, JSON.stringify(update, null, 2));
       
       console.log(`[DevProgress] Report saved to ${reportPath}`);
     } catch (error) {

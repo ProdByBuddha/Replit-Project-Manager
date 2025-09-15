@@ -86,13 +86,13 @@ export class GitIntegratedProgressService {
         author: commit.author_name,
         date: commit.date,
         message: commit.message,
-        filesChanged: 1, // Default, could be enhanced with file stats
-        linesAdded: 0,
-        linesDeleted: 0
+        filesChanged: 0, // Will be calculated if needed
+        linesAdded: 0,   // Will be calculated if needed
+        linesDeleted: 0  // Will be calculated if needed
       }));
 
-      // Get file statistics
-      const fileStats = await this.getFileStatistics(safeSinceDate);
+      // Get file stats
+      const fileStats = await this.calculateFileStats(commits);
 
       // Categorize commits
       const categories = await this.categorizeCommits(commits);
@@ -170,61 +170,41 @@ export class GitIntegratedProgressService {
           await this.initializeSavingsCalculator();
           console.log('[GitProgress] Calculating project savings...');
           
-          // Convert commits to CommitAnalysis format for savings calculation
-          const commitAnalyses = commits.map(commit => ({
-            hash: commit.hash,
-            author: commit.author,
-            date: commit.date,
-            message: commit.message,
-            filesChanged: commit.filesChanged || 1,
-            linesAdded: commit.linesAdded || 0,
-            linesDeleted: commit.linesDeleted || 0,
-            category: this.categorizeCommitMessage(commit.message),
-            complexity: 'medium' as any
-          }));
-
-          const savingsResult = await this.savingsCalculator.calculateProjectSavings({
-            commits: commitAnalyses,
-            sinceDate: safeSinceDate,
-            projectType: validatedConfig.projectParameters?.projectType || 'webApplication',
-            region: validatedConfig.projectParameters?.region || 'northAmerica',
-            teamSize: validatedConfig.projectParameters?.teamSize || 5,
-            confidenceThreshold: validatedConfig.confidenceThreshold || 70
-          });
-
-          if (savingsResult.confidence.overall >= (validatedConfig.confidenceThreshold || 70)) {
+          const savingsResult = await this.savingsCalculator.calculateSavingsFromGitHistory(
+            commits,
+            validatedConfig.projectParameters
+          );
+          
+          if (savingsResult.calculationSucceeded) {
             result.savings = {
               calculation: savingsResult.calculation,
-              summary: savingsResult.executiveSummary,
-              topFeatures: savingsResult.featureClusterSavings,
-              confidence: savingsResult.confidence.overall,
-              calculationSucceeded: true
+              summary: savingsResult.summary,
+              topFeatures: savingsResult.topFeatures,
+              confidence: savingsResult.confidence,
+              calculationSucceeded: true,
+              period: safeSinceDate
             };
           } else {
             result.savings = {
-              calculation: {} as any,
-              summary: {} as any,
-              topFeatures: [],
-              confidence: savingsResult.confidence.overall,
+              calculation: savingsResult.calculation,
+              summary: savingsResult.summary,
+              confidence: savingsResult.confidence,
               calculationSucceeded: false,
-              errorMessage: `Confidence ${Math.round(savingsResult.confidence.overall)}% below threshold ${validatedConfig.confidenceThreshold}%`
+              errorMessage: savingsResult.errorMessage,
+              period: safeSinceDate
             };
           }
         } catch (error) {
-          console.error('[GitProgress] Savings calculation failed:', error);
-          result.savings = {
-            calculation: {} as any,
-            summary: {} as any,
-            topFeatures: [],
-            confidence: 0,
-            calculationSucceeded: false,
-            errorMessage: error instanceof Error ? error.message : 'Unknown error'
-          };
+          console.error('[GitProgress] Failed to calculate savings:', error);
         }
       }
 
-      return result;
+      // Save the analysis results if requested
+      if (config.sendToDart) {
+        await this.saveAnalysisResults(result);
+      }
 
+      return result;
     } catch (error) {
       console.error('[GitProgress] Error analyzing git history:', error);
       throw error;
@@ -232,139 +212,69 @@ export class GitIntegratedProgressService {
   }
 
   /**
-   * Get file change statistics from git
+   * Save analysis results to files for easy access
    */
-  private async getFileStatistics(sinceDate: string): Promise<FileStats> {
+  private async saveAnalysisResults(analysis: GitAnalysisResult): Promise<void> {
     try {
-      // Use simple-git to get diff stats
-      const diffSummary = await this.git.diffSummary(['HEAD~100', 'HEAD']);
+      const reportsDir = path.join(process.cwd(), '.dart-reports');
+      await fs.mkdir(reportsDir, { recursive: true });
       
-      return {
-        filesChanged: diffSummary.files.length,
-        additions: diffSummary.insertions,
-        deletions: diffSummary.deletions
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      
+      // Save full git analysis
+      const analysisPath = path.join(reportsDir, `git-analysis-${timestamp}.json`);
+      const analysisReport = {
+        timestamp: new Date().toISOString(),
+        analysis,
+        metadata: {
+          generatedBy: 'GitIntegratedProgressService',
+          version: '2.0.0',
+          includesSavingsAnalysis: !!analysis.savings,
+          includesAgentMetrics: !!analysis.agentMetrics,
+          savingsConfidence: analysis.savings?.confidence || 0,
+          savingsCalculationSucceeded: analysis.savings?.calculationSucceeded || false
+        }
       };
+      
+      await fs.writeFile(analysisPath, JSON.stringify(analysisReport, null, 2));
+      console.log(`[GitProgress] Analysis saved to ${analysisPath}`);
+      
+      // Save as last-git-analysis.json for easy access
+      const lastAnalysisPath = path.join(reportsDir, 'last-git-analysis.json');
+      await fs.writeFile(lastAnalysisPath, JSON.stringify(analysisReport, null, 2));
+      console.log(`[GitProgress] Latest analysis saved to ${lastAnalysisPath}`);
+      
+      // Save savings summary if available
+      if (analysis.savings?.calculationSucceeded && analysis.savings?.summary) {
+        const savingsPath = path.join(reportsDir, `savings-summary-${timestamp}.json`);
+        const savingsSummary = {
+          timestamp: new Date().toISOString(),
+          dateRange: analysis.dateRange,
+          totalSavings: {
+            dollars: Math.round(analysis.savings.calculation?.savings?.dollars || 0),
+            hours: Math.round(analysis.savings.calculation?.savings?.hours || 0),
+            weeks: Math.round(analysis.savings.calculation?.savings?.weeks || 0),
+            percentage: Math.round(analysis.savings.calculation?.savings?.percentage || 0)
+          },
+          topOpportunities: analysis.savings.summary?.topOpportunities?.slice(0, 5) || [],
+          efficiency: {
+            productivityMultiplier: analysis.savings.summary?.efficiency?.productivityMultiplier || 1,
+            costEfficiency: analysis.savings.summary?.efficiency?.costEfficiency || 0
+          },
+          confidence: analysis.savings.confidence || 0
+        };
+        
+        await fs.writeFile(savingsPath, JSON.stringify(savingsSummary, null, 2));
+        console.log(`[GitProgress] Savings summary saved to ${savingsPath}`);
+        
+        // Save as last-savings-summary.json for easy access
+        const lastSavingsPath = path.join(reportsDir, 'last-savings-summary.json');
+        await fs.writeFile(lastSavingsPath, JSON.stringify(savingsSummary, null, 2));
+        console.log(`[GitProgress] Latest savings summary saved to ${lastSavingsPath}`);
+      }
     } catch (error) {
-      console.warn('[GitProgress] Could not get file statistics:', error);
-      return { additions: 0, deletions: 0, filesChanged: 0 };
+      console.error('[GitProgress] Failed to save analysis results:', error);
     }
-  }
-
-  /**
-   * Categorize commits by functionality based on commit messages
-   */
-  private async categorizeCommits(commits: GitCommit[]): Promise<CategoryMapping[]> {
-    const categories: CategoryMapping[] = [
-      {
-        name: 'Dart AI Integration & Project Management',
-        keywords: ['dart', 'ai integration', 'progress report', 'task synchronization', 'project management'],
-        commits: []
-      },
-      {
-        name: 'Document Management & File Uploads',
-        keywords: ['document', 'upload', 'file', 'attachment', 'storage', 'document center'],
-        commits: []
-      },
-      {
-        name: 'Real-Time Communication & Chat',
-        keywords: ['chat', 'messaging', 'real-time', 'communication', 'typing indicator', 'socket'],
-        commits: []
-      },
-      {
-        name: 'Role-Based Access Control (RBAC)',
-        keywords: ['rbac', 'role', 'permission', 'access control', 'user management', 'authorization'],
-        commits: []
-      },
-      {
-        name: 'Legal Research & AI Assistant',
-        keywords: ['legal', 'ucc', 'uniform commercial code', 'us code', 'ai assistant', 'legal research'],
-        commits: []
-      },
-      {
-        name: 'User Interface & Experience',
-        keywords: ['ui', 'ux', 'responsive', 'layout', 'mobile', 'design', 'interface', 'appearance'],
-        commits: []
-      },
-      {
-        name: 'Authentication & Security',
-        keywords: ['auth', 'security', 'login', 'session', 'validation', 'authentication'],
-        commits: []
-      },
-      {
-        name: 'System Configuration & Settings',
-        keywords: ['settings', 'configuration', 'system', 'admin', 'management', 'setup'],
-        commits: []
-      },
-      {
-        name: 'Data Management & Database',
-        keywords: ['database', 'data', 'migration', 'schema', 'initialization', 'duplicate'],
-        commits: []
-      },
-      {
-        name: 'Notifications & Email',
-        keywords: ['notification', 'email', 'alert', 'preferences', 'delivery'],
-        commits: []
-      }
-    ];
-
-    // Categorize each commit
-    commits.forEach(commit => {
-      const message = commit.message.toLowerCase();
-      let categorized = false;
-
-      for (const category of categories) {
-        if (category.keywords.some(keyword => message.includes(keyword.toLowerCase()))) {
-          category.commits.push(commit);
-          categorized = true;
-          break;
-        }
-      }
-
-      // If not categorized, add to a miscellaneous category
-      if (!categorized) {
-        let miscCategory = categories.find(c => c.name === 'General Improvements');
-        if (!miscCategory) {
-          miscCategory = {
-            name: 'General Improvements',
-            keywords: [],
-            commits: []
-          };
-          categories.push(miscCategory);
-        }
-        miscCategory.commits.push(commit);
-      }
-    });
-
-    // Filter out empty categories
-    return categories.filter(category => category.commits.length > 0);
-  }
-
-  /**
-   * Categorize a single commit message
-   */
-  private categorizeCommitMessage(message: string): any {
-    const lowerMessage = message.toLowerCase();
-    
-    const categoryKeywords = {
-      feature: ['add', 'implement', 'create', 'new', 'feature', 'introduce'],
-      bugfix: ['fix', 'bug', 'issue', 'resolve', 'correct', 'patch'],
-      refactor: ['refactor', 'restructure', 'reorganize', 'cleanup', 'improve'],
-      documentation: ['doc', 'readme', 'comment', 'documentation'],
-      test: ['test', 'spec', 'testing', 'unit test', 'integration test'],
-      maintenance: ['update', 'upgrade', 'dependency', 'version', 'merge'],
-      infrastructure: ['deploy', 'config', 'build', 'ci', 'docker'],
-      security: ['security', 'auth', 'permission', 'vulnerability'],
-      performance: ['performance', 'optimize', 'cache', 'speed'],
-      ui: ['ui', 'style', 'css', 'design', 'layout', 'responsive']
-    };
-
-    for (const [category, keywords] of Object.entries(categoryKeywords)) {
-      if (keywords.some(keyword => lowerMessage.includes(keyword))) {
-        return category;
-      }
-    }
-
-    return 'maintenance'; // default
   }
 
   /**
@@ -372,26 +282,165 @@ export class GitIntegratedProgressService {
    */
   private parseDateToMs(dateStr: string): number {
     const match = dateStr.match(/^(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago$/);
-    if (match) {
-      const [, amount, unit] = match;
-      const multipliers: Record<string, number> = {
-        second: 1000,
-        minute: 60 * 1000,
-        hour: 60 * 60 * 1000,
-        day: 24 * 60 * 60 * 1000,
-        week: 7 * 24 * 60 * 60 * 1000,
-        month: 30 * 24 * 60 * 60 * 1000,
-        year: 365 * 24 * 60 * 60 * 1000
-      };
-      return parseInt(amount) * (multipliers[unit] || multipliers.day);
-    }
+    if (!match) return 0;
     
-    // Default to 30 days
-    return 30 * 24 * 60 * 60 * 1000;
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    
+    const multipliers: Record<string, number> = {
+      second: 1000,
+      minute: 60 * 1000,
+      hour: 60 * 60 * 1000,
+      day: 24 * 60 * 60 * 1000,
+      week: 7 * 24 * 60 * 60 * 1000,
+      month: 30 * 24 * 60 * 60 * 1000,
+      year: 365 * 24 * 60 * 60 * 1000
+    };
+    
+    return value * multipliers[unit];
   }
 
   /**
-   * Get git repository status
+   * Calculate file statistics from commits
+   */
+  private async calculateFileStats(commits: GitCommit[]): Promise<FileStats> {
+    let additions = 0;
+    let deletions = 0;
+    const filesSet = new Set<string>();
+
+    for (const commit of commits) {
+      try {
+        const stats = await this.git.show([commit.hash, '--stat', '--format=']);
+        const lines = stats.split('\n');
+        
+        for (const line of lines) {
+          if (line.includes('|')) {
+            const parts = line.split('|');
+            if (parts.length === 2) {
+              const fileName = parts[0].trim();
+              filesSet.add(fileName);
+              
+              const changes = parts[1].trim();
+              const addMatch = changes.match(/(\d+)\s*\+/);
+              const delMatch = changes.match(/(\d+)\s*-/);
+              
+              if (addMatch) additions += parseInt(addMatch[1]);
+              if (delMatch) deletions += parseInt(delMatch[1]);
+            }
+          }
+        }
+      } catch (error) {
+        // Skip commits that can't be accessed
+        continue;
+      }
+    }
+
+    return {
+      additions,
+      deletions,
+      filesChanged: filesSet.size
+    };
+  }
+
+  /**
+   * Categorize commits by their functionality
+   */
+  private async categorizeCommits(commits: GitCommit[]): Promise<CommitCategory[]> {
+    const categoryMappings: CategoryMapping[] = [
+      {
+        name: 'Dart AI Integration',
+        commits: [],
+        keywords: ['dart', 'dart ai', 'progress report', 'client report', 'dart integration']
+      },
+      {
+        name: 'Document Management',
+        commits: [],
+        keywords: ['document', 'file', 'upload', 'storage', 'pdf', 'attachment']
+      },
+      {
+        name: 'Real-Time Communication',
+        commits: [],
+        keywords: ['chat', 'message', 'realtime', 'real-time', 'socket', 'websocket', 'notification']
+      },
+      {
+        name: 'Role-Based Access Control',
+        commits: [],
+        keywords: ['rbac', 'role', 'permission', 'access', 'auth', 'authorization', 'admin', 'user management']
+      },
+      {
+        name: 'Legal Research Integration',
+        commits: [],
+        keywords: ['legal', 'law', 'research', 'parlant', 'case', 'statute', 'regulation']
+      },
+      {
+        name: 'UI/UX Improvements',
+        commits: [],
+        keywords: ['ui', 'ux', 'style', 'css', 'design', 'layout', 'component', 'frontend', 'interface']
+      },
+      {
+        name: 'Authentication System',
+        commits: [],
+        keywords: ['login', 'logout', 'session', 'password', 'security', 'oauth', 'jwt']
+      },
+      {
+        name: 'System Configuration',
+        commits: [],
+        keywords: ['config', 'setup', 'environment', 'deploy', 'build', 'install', 'package']
+      },
+      {
+        name: 'Data Management',
+        commits: [],
+        keywords: ['database', 'schema', 'migration', 'model', 'query', 'sql', 'drizzle', 'postgres']
+      },
+      {
+        name: 'Notifications & Alerts',
+        commits: [],
+        keywords: ['notify', 'alert', 'email', 'sms', 'push', 'reminder', 'notification']
+      },
+      {
+        name: 'General Improvements',
+        commits: [],
+        keywords: ['fix', 'update', 'improve', 'refactor', 'cleanup', 'optimize', 'bug', 'error']
+      }
+    ];
+
+    // Categorize each commit
+    for (const commit of commits) {
+      const messageLower = commit.message.toLowerCase();
+      let categorized = false;
+
+      for (const category of categoryMappings) {
+        for (const keyword of category.keywords) {
+          if (messageLower.includes(keyword)) {
+            category.commits.push(commit);
+            categorized = true;
+            break;
+          }
+        }
+        if (categorized) break;
+      }
+
+      // If not categorized, add to general improvements
+      if (!categorized) {
+        const generalCategory = categoryMappings.find(c => c.name === 'General Improvements');
+        if (generalCategory) {
+          generalCategory.commits.push(commit);
+        }
+      }
+    }
+
+    // Convert to CommitCategory format and filter out empty categories
+    return categoryMappings
+      .filter(category => category.commits.length > 0)
+      .map(category => ({
+        name: category.name,
+        commits: category.commits,
+        keywords: category.keywords
+      }));
+  }
+
+  /**
+   * Get current git status
    */
   public async getGitStatus(): Promise<string> {
     try {
@@ -406,14 +455,14 @@ export class GitIntegratedProgressService {
   }
 
   /**
-   * Get current branch information
+   * Get current branch
    */
   public async getCurrentBranch(): Promise<string> {
     try {
-      const status = await this.git.status();
-      return status.current || 'Unknown branch';
+      const branch = await this.git.branch();
+      return branch.current;
     } catch (error) {
-      return 'Unknown branch';
+      return 'unknown';
     }
   }
 }

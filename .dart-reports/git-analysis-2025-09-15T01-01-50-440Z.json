@@ -1,0 +1,2754 @@
+{
+  "timestamp": "2025-09-15T01:01:50.440Z",
+  "summary": "Git analysis for 6 hours ago",
+  "analysis": {
+    "totalCommits": 16,
+    "dateRange": "2025-09-14 to 2025-09-15",
+    "categories": [
+      {
+        "name": "Dart AI Integration & Project Management",
+        "keywords": [
+          "dart",
+          "ai integration",
+          "progress report",
+          "task synchronization",
+          "project management"
+        ],
+        "commits": [
+          {
+            "hash": "9270e1c",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Update development progress report with AI integration and file uploads"
+          },
+          {
+            "hash": "21f1069",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve project tracking with automated git progress reporting"
+          },
+          {
+            "hash": "72712c1",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Integrate Dart AI with new token-based authentication"
+          },
+          {
+            "hash": "7497df2",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Integrate Dart AI for progress reporting and task synchronization"
+          },
+          {
+            "hash": "992d868",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update development progress reporting to a natural language system"
+          },
+          {
+            "hash": "ee3bb31",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Configure Dart AI service with project IDs for task and document management"
+          }
+        ]
+      },
+      {
+        "name": "Document Management & File Uploads",
+        "keywords": [
+          "document",
+          "upload",
+          "file",
+          "attachment",
+          "storage",
+          "document center"
+        ],
+        "commits": [
+          {
+            "hash": "4f7d50d",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Add a visual asset to the project documentation"
+          },
+          {
+            "hash": "3bd496f",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update JSON file to improve clarity of report summaries"
+          }
+        ]
+      },
+      {
+        "name": "System Configuration & Settings",
+        "keywords": [
+          "settings",
+          "configuration",
+          "system",
+          "admin",
+          "management",
+          "setup"
+        ],
+        "commits": [
+          {
+            "hash": "16aace7",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add system to demonstrate client savings through historical data analysis"
+          },
+          {
+            "hash": "a55f003",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add system for analyzing and reporting development progress using git history"
+          },
+          {
+            "hash": "a41796d",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve project setup by ensuring data is correctly initialized"
+          }
+        ]
+      },
+      {
+        "name": "General Improvements",
+        "keywords": [],
+        "commits": [
+          {
+            "hash": "6711b0c",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Add detailed agent metrics to track development progress and efficiency"
+          },
+          {
+            "hash": "248edd7",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Introduce tool for analyzing development progress and calculating cost savings"
+          },
+          {
+            "hash": "8fa2c9a",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add client-facing savings analysis and reporting features"
+          },
+          {
+            "hash": "ce92034",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add industry and project benchmarks for cost estimation"
+          },
+          {
+            "hash": "8730ade",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update reports to target Eric Parker's workspace"
+          }
+        ]
+      }
+    ],
+    "topContributors": [
+      {
+        "author": "ItsBuddha",
+        "commits": 16
+      }
+    ],
+    "fileStats": {
+      "filesChanged": 54,
+      "additions": 20928,
+      "deletions": 733
+    },
+    "savings": {
+      "calculation": {
+        "summary": {},
+        "totalSavings": {
+          "traditional": {
+            "hours": 15666.630210000001,
+            "cost": 1584251.78076,
+            "methodology": "Traditional-WCU-Industry-Benchmarks",
+            "confidence": 60,
+            "categoryBreakdown": {
+              "feature": {
+                "hours": 14601.30516,
+                "cost": 1314117.4644,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "bugfix": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "refactor": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "documentation": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "test": {
+                "hours": 1095.1919999999998,
+                "cost": 98567.27999999998,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "maintenance": {
+                "hours": 306.04607999999996,
+                "cost": 27544.147199999996,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "infrastructure": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "security": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "performance": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              },
+              "ui": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Industry-Standard-WCU-Traditional"
+              }
+            }
+          },
+          "actual": {
+            "hours": 49,
+            "cost": 4410,
+            "methodology": "Git-Commit-Analysis-Actual",
+            "confidence": 45,
+            "categoryBreakdown": {
+              "feature": {
+                "hours": 33.6,
+                "cost": 3024,
+                "commits": 8
+              },
+              "bugfix": {
+                "hours": 0,
+                "cost": 0,
+                "commits": 0
+              },
+              "refactor": {
+                "hours": 0,
+                "cost": 0,
+                "commits": 0
+              },
+              "documentation": {
+                "hours": 0,
+                "cost": 0,
+                "commits": 0
+              },
+              "test": {
+                "hours": 2.8,
+                "cost": 251.99999999999997,
+                "commits": 1
+              },
+              "maintenance": {
+                "hours": 12.6,
+                "cost": 1134,
+                "commits": 7
+              },
+              "infrastructure": {
+                "hours": 0,
+                "cost": 0,
+                "commits": 0
+              },
+              "security": {
+                "hours": 0,
+                "cost": 0,
+                "commits": 0
+              },
+              "performance": {
+                "hours": 0,
+                "cost": 0,
+                "commits": 0
+              },
+              "ui": {
+                "hours": 0,
+                "cost": 0,
+                "commits": 0
+              }
+            }
+          },
+          "savings": {
+            "hours": 15617.630210000001,
+            "dollars": 1579841.78076,
+            "weeks": 78.08815105000001,
+            "percentage": 99.68723331473845,
+            "roiMultiplier": 359.2407666122449
+          }
+        },
+        "categoryAnalysis": {
+          "feature": {
+            "traditional": {
+              "hours": 13384.529730000002,
+              "cost": 1445529.21084,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "feature": {
+                  "hours": 14601.30516,
+                  "cost": 1314117.4644,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 33.6,
+              "cost": 3024,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 58.49999999999999,
+              "categoryBreakdown": {
+                "feature": {
+                  "hours": 33.6,
+                  "cost": 3024,
+                  "commits": 8
+                }
+              }
+            },
+            "savings": {
+              "hours": 13350.929730000002,
+              "dollars": 1442505.21084,
+              "weeks": 66.75464865000001,
+              "percentage": 99.74896391074026,
+              "roiMultiplier": 478.01891892857145
+            }
+          },
+          "bugfix": {
+            "traditional": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "bugfix": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "bugfix": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 0,
+              "dollars": 0,
+              "weeks": 0,
+              "percentage": 0,
+              "roiMultiplier": 1
+            }
+          },
+          "refactor": {
+            "traditional": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "refactor": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "refactor": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 0,
+              "dollars": 0,
+              "weeks": 0,
+              "percentage": 0,
+              "roiMultiplier": 1
+            }
+          },
+          "documentation": {
+            "traditional": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "documentation": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "documentation": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 0,
+              "dollars": 0,
+              "weeks": 0,
+              "percentage": 0,
+              "roiMultiplier": 1
+            }
+          },
+          "test": {
+            "traditional": {
+              "hours": 1721.0159999999998,
+              "cost": 108424.00799999999,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "test": {
+                  "hours": 1095.1919999999998,
+                  "cost": 98567.27999999998,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 2.8,
+              "cost": 251.99999999999997,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "test": {
+                  "hours": 2.8,
+                  "cost": 251.99999999999997,
+                  "commits": 1
+                }
+              }
+            },
+            "savings": {
+              "hours": 1718.216,
+              "dollars": 108172.00799999999,
+              "weeks": 8.59108,
+              "percentage": 99.8373054056441,
+              "roiMultiplier": 430.254
+            }
+          },
+          "maintenance": {
+            "traditional": {
+              "hours": 561.08448,
+              "cost": 30298.561919999996,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "maintenance": {
+                  "hours": 306.04607999999996,
+                  "cost": 27544.147199999996,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 12.6,
+              "cost": 1134,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 62.357142857142854,
+              "categoryBreakdown": {
+                "maintenance": {
+                  "hours": 12.6,
+                  "cost": 1134,
+                  "commits": 7
+                }
+              }
+            },
+            "savings": {
+              "hours": 548.48448,
+              "dollars": 29164.561919999996,
+              "weeks": 2.7424223999999997,
+              "percentage": 97.75434886382884,
+              "roiMultiplier": 26.71830857142857
+            }
+          },
+          "infrastructure": {
+            "traditional": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "infrastructure": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "infrastructure": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 0,
+              "dollars": 0,
+              "weeks": 0,
+              "percentage": 0,
+              "roiMultiplier": 1
+            }
+          },
+          "security": {
+            "traditional": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "security": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "security": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 0,
+              "dollars": 0,
+              "weeks": 0,
+              "percentage": 0,
+              "roiMultiplier": 1
+            }
+          },
+          "performance": {
+            "traditional": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "performance": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "performance": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 0,
+              "dollars": 0,
+              "weeks": 0,
+              "percentage": 0,
+              "roiMultiplier": 1
+            }
+          },
+          "ui": {
+            "traditional": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "ui": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 0,
+              "cost": 0,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 100,
+              "categoryBreakdown": {
+                "ui": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 0,
+              "dollars": 0,
+              "weeks": 0,
+              "percentage": 0,
+              "roiMultiplier": 1
+            }
+          }
+        },
+        "clusterAnalysis": [
+          {
+            "cluster": {
+              "id": "cluster-1",
+              "name": "development feature",
+              "primaryCategory": "feature",
+              "startDate": "2025-09-14 22:23:46 +0000",
+              "endDate": "2025-09-15 00:41:38 +0000",
+              "commits": [
+                {
+                  "hash": "6711b0cfc57ef069886df0ff57a336a70cc579f4",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-15 00:41:38 +0000",
+                  "message": "Add detailed agent metrics to track development progress and efficiency",
+                  "filesChanged": 9,
+                  "linesAdded": 575,
+                  "linesDeleted": 8,
+                  "category": "feature",
+                  "complexity": "large",
+                  "rawWCU": 85.98,
+                  "adjustedWCU": 134.1288,
+                  "keywordBoost": 1.2,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.16916666666666666,
+                  "clusterId": "cluster-1"
+                },
+                {
+                  "hash": "4f7d50dc00182f3a65beacf397a74cb09890152c",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-15 00:33:25 +0000",
+                  "message": "Add a visual asset to the project documentation",
+                  "filesChanged": 1,
+                  "linesAdded": 0,
+                  "linesDeleted": 4,
+                  "category": "feature",
+                  "complexity": "trivial",
+                  "rawWCU": 3.1399999999999997,
+                  "adjustedWCU": 4.8984,
+                  "keywordBoost": 1.2,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.13694444444444445,
+                  "clusterId": "cluster-1"
+                },
+                {
+                  "hash": "248edd7098c96e2f8b26e92a9cb579b07543b21f",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-15 00:06:25 +0000",
+                  "message": "Introduce tool for analyzing development progress and calculating cost savings",
+                  "filesChanged": 18,
+                  "linesAdded": 3977,
+                  "linesDeleted": 0,
+                  "category": "feature",
+                  "complexity": "huge",
+                  "rawWCU": 509.04,
+                  "adjustedWCU": 794.1024000000001,
+                  "keywordBoost": 1.2,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.45,
+                  "clusterId": "cluster-1"
+                },
+                {
+                  "hash": "16aace7c961a1b87925103558e9824f780cc3a01",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 23:50:04 +0000",
+                  "message": "Add system to demonstrate client savings through historical data analysis",
+                  "filesChanged": 5,
+                  "linesAdded": 99,
+                  "linesDeleted": 27,
+                  "category": "feature",
+                  "complexity": "medium",
+                  "rawWCU": 23.2,
+                  "adjustedWCU": 36.192,
+                  "keywordBoost": 1.2,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.2725,
+                  "clusterId": "cluster-1"
+                },
+                {
+                  "hash": "8fa2c9a81849ede2550f4b9168e3023e0d527bd6",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 23:45:19 +0000",
+                  "message": "Add client-facing savings analysis and reporting features",
+                  "filesChanged": 14,
+                  "linesAdded": 9248,
+                  "linesDeleted": 432,
+                  "category": "feature",
+                  "complexity": "huge",
+                  "rawWCU": 650.92,
+                  "adjustedWCU": 1015.4352,
+                  "keywordBoost": 1.2,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.07916666666666666,
+                  "clusterId": "cluster-1"
+                },
+                {
+                  "hash": "ce92034b52ff57b9a7cdf18c2f327ea8ef140352",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 22:53:35 +0000",
+                  "message": "Add industry and project benchmarks for cost estimation",
+                  "filesChanged": 4,
+                  "linesAdded": 1777,
+                  "linesDeleted": 0,
+                  "category": "feature",
+                  "complexity": "huge",
+                  "rawWCU": 221.23999999999998,
+                  "adjustedWCU": 345.13439999999997,
+                  "keywordBoost": 1.2,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.8622222222222222,
+                  "clusterId": "cluster-1"
+                },
+                {
+                  "hash": "a55f003612b83d35a6ff023cb6b282f4988bab8e",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 22:39:22 +0000",
+                  "message": "Add system for analyzing and reporting development progress using git history",
+                  "filesChanged": 5,
+                  "linesAdded": 1376,
+                  "linesDeleted": 4,
+                  "category": "feature",
+                  "complexity": "huge",
+                  "rawWCU": 175.06,
+                  "adjustedWCU": 273.0936,
+                  "keywordBoost": 1.2,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.058888888888888886,
+                  "clusterId": "cluster-1"
+                },
+                {
+                  "hash": "72712c1889658a7e72a689ae0cd6b099a9d13bc0",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 22:23:46 +0000",
+                  "message": "Integrate Dart AI with new token-based authentication",
+                  "filesChanged": 8,
+                  "linesAdded": 289,
+                  "linesDeleted": 171,
+                  "category": "feature",
+                  "complexity": "large",
+                  "rawWCU": 59.739999999999995,
+                  "adjustedWCU": 100.9606,
+                  "keywordBoost": 1.3,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.18555555555555556,
+                  "clusterId": "cluster-1"
+                }
+              ],
+              "totalWCU": 2703.9454,
+              "estimatedHours": 11248.412864,
+              "confidence": 1,
+              "keywords": [
+                "development",
+                "progress",
+                "savings",
+                "project",
+                "analyzing"
+              ]
+            },
+            "savings": {
+              "traditional": {
+                "hours": 13384.529730000002,
+                "cost": 1584251.78076,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 60,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 14601.30516,
+                    "cost": 1314117.4644,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 1095.1919999999998,
+                    "cost": 98567.27999999998,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 306.04607999999996,
+                    "cost": 27544.147199999996,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 49,
+                "cost": 4410,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": 45,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 33.6,
+                    "cost": 3024,
+                    "commits": 8
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "test": {
+                    "hours": 2.8,
+                    "cost": 251.99999999999997,
+                    "commits": 1
+                  },
+                  "maintenance": {
+                    "hours": 12.6,
+                    "cost": 1134,
+                    "commits": 7
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  }
+                }
+              },
+              "savings": {
+                "hours": 13335.529730000002,
+                "dollars": 1579841.78076,
+                "weeks": 66.67764865000001,
+                "percentage": 99.63390570316287,
+                "roiMultiplier": 359.2407666122449
+              }
+            },
+            "efficiency": {
+              "hoursPerCommit": 6.125,
+              "costPerCommit": 551.25,
+              "velocityScore": 337.993175,
+              "complexityEfficiency": 2265.0720983722576
+            },
+            "savingsRank": 1,
+            "efficiencyRank": 1
+          },
+          {
+            "cluster": {
+              "id": "cluster-2",
+              "name": "improve maintenance",
+              "primaryCategory": "maintenance",
+              "startDate": "2025-09-14 19:16:32 +0000",
+              "endDate": "2025-09-14 22:42:54 +0000",
+              "commits": [
+                {
+                  "hash": "21f1069f63643d7948b0d24819a49ba6d1ca3461",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 22:42:54 +0000",
+                  "message": "Improve project tracking with automated git progress reporting",
+                  "filesChanged": 1,
+                  "linesAdded": 42,
+                  "linesDeleted": 2,
+                  "category": "maintenance",
+                  "complexity": "small",
+                  "rawWCU": 8.059999999999999,
+                  "adjustedWCU": 7.0928,
+                  "keywordBoost": 1.1,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.17805555555555555,
+                  "clusterId": "cluster-2"
+                },
+                {
+                  "hash": "8730ade3f6e91d2320315dee76ed57abf1d4ad3e",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 22:34:54 +0000",
+                  "message": "Update reports to target Eric Parker's workspace",
+                  "filesChanged": 7,
+                  "linesAdded": 53,
+                  "linesDeleted": 15,
+                  "category": "maintenance",
+                  "complexity": "medium",
+                  "rawWCU": 20.36,
+                  "adjustedWCU": 16.288,
+                  "keywordBoost": 1,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.07444444444444444,
+                  "clusterId": "cluster-2"
+                },
+                {
+                  "hash": "7497df2a2e52347e8c51c24adaf72b49dccb33e1",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 21:47:56 +0000",
+                  "message": "Integrate Dart AI for progress reporting and task synchronization",
+                  "filesChanged": 3,
+                  "linesAdded": 20,
+                  "linesDeleted": 16,
+                  "category": "maintenance",
+                  "complexity": "small",
+                  "rawWCU": 9.66,
+                  "adjustedWCU": 7.728000000000001,
+                  "keywordBoost": 1,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.5972222222222222,
+                  "clusterId": "cluster-2"
+                },
+                {
+                  "hash": "3bd496f7638a83fcda233a5bd4920e3025c30d74",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 21:35:04 +0000",
+                  "message": "Update JSON file to improve clarity of report summaries",
+                  "filesChanged": 2,
+                  "linesAdded": 12,
+                  "linesDeleted": 13,
+                  "category": "maintenance",
+                  "complexity": "small",
+                  "rawWCU": 6.819999999999999,
+                  "adjustedWCU": 6.0016,
+                  "keywordBoost": 1.1,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.21444444444444444,
+                  "clusterId": "cluster-2"
+                },
+                {
+                  "hash": "a41796d9163e5d96a0ca80792fdddab32584f72d",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 20:54:19 +0000",
+                  "message": "Improve project setup by ensuring data is correctly initialized",
+                  "filesChanged": 0,
+                  "linesAdded": 0,
+                  "linesDeleted": 0,
+                  "category": "maintenance",
+                  "complexity": "trivial",
+                  "rawWCU": 1.2,
+                  "adjustedWCU": 1.056,
+                  "keywordBoost": 1.1,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.6791666666666667,
+                  "clusterId": "cluster-2"
+                },
+                {
+                  "hash": "992d868a2fbe9cfc9757cba2dc443d0a4b7b16c9",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 20:53:56 +0000",
+                  "message": "Update development progress reporting to a natural language system",
+                  "filesChanged": 5,
+                  "linesAdded": 624,
+                  "linesDeleted": 0,
+                  "category": "maintenance",
+                  "complexity": "large",
+                  "rawWCU": 84.58,
+                  "adjustedWCU": 67.664,
+                  "keywordBoost": 1,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -0.006388888888888889,
+                  "clusterId": "cluster-2"
+                },
+                {
+                  "hash": "ee3bb315c83347d08d1e4bf23a2f33a10325dbd8",
+                  "author": "ItsBuddha",
+                  "date": "2025-09-14 19:16:32 +0000",
+                  "message": "Configure Dart AI service with project IDs for task and document management",
+                  "filesChanged": 2,
+                  "linesAdded": 29,
+                  "linesDeleted": 22,
+                  "category": "maintenance",
+                  "complexity": "medium",
+                  "rawWCU": 9.4,
+                  "adjustedWCU": 7.5200000000000005,
+                  "keywordBoost": 1,
+                  "velocityScore": 0.8,
+                  "timeSincePrevious": -1.6233333333333333,
+                  "clusterId": "cluster-2"
+                }
+              ],
+              "totalWCU": 113.3504,
+              "estimatedHours": 290.177024,
+              "confidence": 1,
+              "keywords": [
+                "improve",
+                "project",
+                "progress",
+                "reporting",
+                "update"
+              ]
+            },
+            "savings": {
+              "traditional": {
+                "hours": 561.08448,
+                "cost": 1584251.78076,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 60,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 14601.30516,
+                    "cost": 1314117.4644,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 1095.1919999999998,
+                    "cost": 98567.27999999998,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 306.04607999999996,
+                    "cost": 27544.147199999996,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 49,
+                "cost": 4410,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": 45,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 33.6,
+                    "cost": 3024,
+                    "commits": 8
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "test": {
+                    "hours": 2.8,
+                    "cost": 251.99999999999997,
+                    "commits": 1
+                  },
+                  "maintenance": {
+                    "hours": 12.6,
+                    "cost": 1134,
+                    "commits": 7
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  }
+                }
+              },
+              "savings": {
+                "hours": 512.08448,
+                "dollars": 1579841.78076,
+                "weeks": 2.5604223999999998,
+                "percentage": 91.26691224822329,
+                "roiMultiplier": 359.2407666122449
+              }
+            },
+            "efficiency": {
+              "hoursPerCommit": 7,
+              "costPerCommit": 630,
+              "velocityScore": 16.192914285714284,
+              "complexityEfficiency": 1060.3648216636368
+            },
+            "savingsRank": 2,
+            "efficiencyRank": 2
+          }
+        ],
+        "trendAnalysis": [
+          {
+            "period": "2025-04",
+            "startDate": "2025-04-01",
+            "endDate": "2025-04-30",
+            "savings": {
+              "traditional": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 60,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": null,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  }
+                }
+              },
+              "savings": {
+                "hours": 0,
+                "dollars": 0,
+                "weeks": 0,
+                "percentage": 0,
+                "roiMultiplier": 1
+              }
+            },
+            "velocity": {
+              "commitsPerDay": 0,
+              "wcuPerDay": 0,
+              "featuresPerWeek": 0
+            },
+            "trend": {
+              "efficiencyChange": 0,
+              "savingsChange": 0,
+              "velocityChange": 0,
+              "direction": "stable"
+            }
+          },
+          {
+            "period": "2025-05",
+            "startDate": "2025-05-01",
+            "endDate": "2025-05-31",
+            "savings": {
+              "traditional": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 60,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": null,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  }
+                }
+              },
+              "savings": {
+                "hours": 0,
+                "dollars": 0,
+                "weeks": 0,
+                "percentage": 0,
+                "roiMultiplier": 1
+              }
+            },
+            "velocity": {
+              "commitsPerDay": 0,
+              "wcuPerDay": 0,
+              "featuresPerWeek": 0
+            },
+            "trend": {
+              "efficiencyChange": null,
+              "savingsChange": null,
+              "velocityChange": null,
+              "direction": "stable"
+            }
+          },
+          {
+            "period": "2025-06",
+            "startDate": "2025-06-01",
+            "endDate": "2025-06-30",
+            "savings": {
+              "traditional": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 60,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": null,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  }
+                }
+              },
+              "savings": {
+                "hours": 0,
+                "dollars": 0,
+                "weeks": 0,
+                "percentage": 0,
+                "roiMultiplier": 1
+              }
+            },
+            "velocity": {
+              "commitsPerDay": 0,
+              "wcuPerDay": 0,
+              "featuresPerWeek": 0
+            },
+            "trend": {
+              "efficiencyChange": null,
+              "savingsChange": null,
+              "velocityChange": null,
+              "direction": "stable"
+            }
+          },
+          {
+            "period": "2025-07",
+            "startDate": "2025-07-01",
+            "endDate": "2025-07-31",
+            "savings": {
+              "traditional": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 60,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": null,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  }
+                }
+              },
+              "savings": {
+                "hours": 0,
+                "dollars": 0,
+                "weeks": 0,
+                "percentage": 0,
+                "roiMultiplier": 1
+              }
+            },
+            "velocity": {
+              "commitsPerDay": 0,
+              "wcuPerDay": 0,
+              "featuresPerWeek": 0
+            },
+            "trend": {
+              "efficiencyChange": null,
+              "savingsChange": null,
+              "velocityChange": null,
+              "direction": "stable"
+            }
+          },
+          {
+            "period": "2025-08",
+            "startDate": "2025-08-01",
+            "endDate": "2025-08-31",
+            "savings": {
+              "traditional": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 60,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 0,
+                "cost": 0,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": null,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "bugfix": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "refactor": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "documentation": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "test": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "maintenance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "infrastructure": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "security": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  }
+                }
+              },
+              "savings": {
+                "hours": 0,
+                "dollars": 0,
+                "weeks": 0,
+                "percentage": 0,
+                "roiMultiplier": 1
+              }
+            },
+            "velocity": {
+              "commitsPerDay": 0,
+              "wcuPerDay": 0,
+              "featuresPerWeek": 0
+            },
+            "trend": {
+              "efficiencyChange": null,
+              "savingsChange": null,
+              "velocityChange": null,
+              "direction": "stable"
+            }
+          },
+          {
+            "period": "2025-09",
+            "startDate": "2025-09-01",
+            "endDate": "2025-09-30",
+            "savings": {
+              "traditional": {
+                "hours": 65107.88063999999,
+                "cost": 6729178.438619999,
+                "methodology": "Traditional-WCU-Industry-Benchmarks",
+                "confidence": 80,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 64138.84776,
+                    "cost": 5772496.2984,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "bugfix": {
+                    "hours": 43.49952,
+                    "cost": 3914.9568,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "refactor": {
+                    "hours": 65.36376000000001,
+                    "cost": 5882.738400000001,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "documentation": {
+                    "hours": 26.932499999999994,
+                    "cost": 2423.9249999999993,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "test": {
+                    "hours": 1095.1919999999998,
+                    "cost": 98567.27999999998,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "maintenance": {
+                    "hours": 2160.5400000000004,
+                    "cost": 194448.60000000003,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "infrastructure": {
+                    "hours": 13.7592,
+                    "cost": 1238.328,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "security": {
+                    "hours": 108.94463999999999,
+                    "cost": 9805.0176,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  },
+                  "ui": {
+                    "hours": 318.41999999999996,
+                    "cost": 28657.799999999996,
+                    "methodology": "Industry-Standard-WCU-Traditional"
+                  }
+                }
+              },
+              "actual": {
+                "hours": 341.79999999999995,
+                "cost": 30762,
+                "methodology": "Git-Commit-Analysis-Actual",
+                "confidence": 50,
+                "categoryBreakdown": {
+                  "feature": {
+                    "hours": 235.20000000000002,
+                    "cost": 21168,
+                    "commits": 56
+                  },
+                  "bugfix": {
+                    "hours": 4.2,
+                    "cost": 378,
+                    "commits": 2
+                  },
+                  "refactor": {
+                    "hours": 3.5,
+                    "cost": 315,
+                    "commits": 1
+                  },
+                  "documentation": {
+                    "hours": 1.5,
+                    "cost": 135,
+                    "commits": 1
+                  },
+                  "test": {
+                    "hours": 2.8,
+                    "cost": 251.99999999999997,
+                    "commits": 1
+                  },
+                  "maintenance": {
+                    "hours": 55.800000000000004,
+                    "cost": 5022,
+                    "commits": 31
+                  },
+                  "infrastructure": {
+                    "hours": 5.2,
+                    "cost": 468,
+                    "commits": 1
+                  },
+                  "security": {
+                    "hours": 14.399999999999999,
+                    "cost": 1295.9999999999998,
+                    "commits": 3
+                  },
+                  "performance": {
+                    "hours": 0,
+                    "cost": 0,
+                    "commits": 0
+                  },
+                  "ui": {
+                    "hours": 19.200000000000003,
+                    "cost": 1728.0000000000002,
+                    "commits": 6
+                  }
+                }
+              },
+              "savings": {
+                "hours": 64766.080639999986,
+                "dollars": 6698416.438619999,
+                "weeks": 323.8304031999999,
+                "percentage": 99.47502514804634,
+                "roiMultiplier": 218.7497054359274
+              }
+            },
+            "velocity": {
+              "commitsPerDay": 24.672721368019083,
+              "wcuPerDay": 3181.5975398949568,
+              "featuresPerWeek": 1.689655172413793
+            },
+            "trend": {
+              "efficiencyChange": null,
+              "savingsChange": null,
+              "velocityChange": null,
+              "direction": "improving"
+            }
+          }
+        ],
+        "efficiencyMetrics": {
+          "productivity": {
+            "wcuPerHour": 64.59134285714286,
+            "featuresPerWeek": 2,
+            "commitsPerDay": 2.2857142857142856,
+            "locPerHour": 442.0612244897959
+          },
+          "costEffectiveness": {
+            "costPerFeature": 2205,
+            "costPerWCU": 1.3933755828401595,
+            "costReduction": 99.68723331473845
+          },
+          "timeEffectiveness": {
+            "timeToMarket": 78.08815105000001,
+            "cycleTimeReduction": 25,
+            "leadTimeImprovement": 30
+          }
+        },
+        "confidence": {
+          "overall": 58.75,
+          "breakdown": {
+            "traditional": 60,
+            "actual": 45,
+            "savings": 45,
+            "methodology": 85
+          },
+          "risks": [
+            {
+              "description": "Limited commit data may affect accuracy",
+              "impact": "medium",
+              "mitigation": "Collect more historical data or use industry benchmarks"
+            },
+            {
+              "description": "Savings percentage appears unusually high",
+              "impact": "high",
+              "mitigation": "Validate calculations and consider conservative estimates"
+            },
+            {
+              "description": "Calculations not calibrated with historical data",
+              "impact": "low",
+              "mitigation": "Enable calibration for improved accuracy"
+            }
+          ]
+        },
+        "recommendations": [
+          {
+            "type": "methodology",
+            "priority": "medium",
+            "description": "Improve commit message standards and data collection practices",
+            "expectedImpact": {
+              "savings": 0,
+              "efficiency": 10,
+              "effort": "low"
+            }
+          }
+        ],
+        "metadata": {
+          "calculatedAt": "2025-09-15T01:01:50.439Z",
+          "dataSources": [
+            "git-history",
+            "wcu-estimation",
+            "industry-benchmarks"
+          ],
+          "methodologies": [
+            "traditional-estimation",
+            "git-analysis",
+            "wcu-calculation"
+          ],
+          "config": {
+            "sinceDate": "6 hours ago",
+            "enableHistoricalTracking": true,
+            "enableFeatureClustering": true,
+            "enableExecutiveSummary": true,
+            "includeConfidenceMetrics": true,
+            "confidenceThreshold": 50
+          }
+        }
+      },
+      "summary": {
+        "totalSavings": {
+          "dollars": 1579841.78076,
+          "hours": 15617.630210000001,
+          "weeks": 78.08815105000001,
+          "percentage": 99.68723331473845,
+          "roi": 359.2407666122449
+        },
+        "topOpportunities": [
+          {
+            "name": "Process Optimization",
+            "type": "practice",
+            "savings": 315968.356152,
+            "potential": 157984.178076,
+            "recommendation": "Implement automated testing and CI/CD pipeline improvements"
+          }
+        ],
+        "efficiency": {
+          "productivityMultiplier": 359.2407666122449,
+          "costEfficiency": 99.68723331473845,
+          "timeToMarket": 546.6170573500001,
+          "quality": {
+            "defectRate": 0.03127666852615363,
+            "reworkPercentage": 0,
+            "testCoverage": 89.90616999442153
+          }
+        },
+        "confidence": {
+          "overall": 52.5,
+          "dataQuality": 45,
+          "methodology": 60,
+          "sampleSize": 62.45
+        }
+      },
+      "topFeatures": [
+        {
+          "cluster": {
+            "id": "cluster-1",
+            "name": "development feature",
+            "primaryCategory": "feature",
+            "startDate": "2025-09-14 22:23:46 +0000",
+            "endDate": "2025-09-15 00:41:38 +0000",
+            "commits": [
+              {
+                "hash": "6711b0cfc57ef069886df0ff57a336a70cc579f4",
+                "author": "ItsBuddha",
+                "date": "2025-09-15 00:41:38 +0000",
+                "message": "Add detailed agent metrics to track development progress and efficiency",
+                "filesChanged": 9,
+                "linesAdded": 575,
+                "linesDeleted": 8,
+                "category": "feature",
+                "complexity": "large",
+                "rawWCU": 85.98,
+                "adjustedWCU": 134.1288,
+                "keywordBoost": 1.2,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.16916666666666666,
+                "clusterId": "cluster-1"
+              },
+              {
+                "hash": "4f7d50dc00182f3a65beacf397a74cb09890152c",
+                "author": "ItsBuddha",
+                "date": "2025-09-15 00:33:25 +0000",
+                "message": "Add a visual asset to the project documentation",
+                "filesChanged": 1,
+                "linesAdded": 0,
+                "linesDeleted": 4,
+                "category": "feature",
+                "complexity": "trivial",
+                "rawWCU": 3.1399999999999997,
+                "adjustedWCU": 4.8984,
+                "keywordBoost": 1.2,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.13694444444444445,
+                "clusterId": "cluster-1"
+              },
+              {
+                "hash": "248edd7098c96e2f8b26e92a9cb579b07543b21f",
+                "author": "ItsBuddha",
+                "date": "2025-09-15 00:06:25 +0000",
+                "message": "Introduce tool for analyzing development progress and calculating cost savings",
+                "filesChanged": 18,
+                "linesAdded": 3977,
+                "linesDeleted": 0,
+                "category": "feature",
+                "complexity": "huge",
+                "rawWCU": 509.04,
+                "adjustedWCU": 794.1024000000001,
+                "keywordBoost": 1.2,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.45,
+                "clusterId": "cluster-1"
+              },
+              {
+                "hash": "16aace7c961a1b87925103558e9824f780cc3a01",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 23:50:04 +0000",
+                "message": "Add system to demonstrate client savings through historical data analysis",
+                "filesChanged": 5,
+                "linesAdded": 99,
+                "linesDeleted": 27,
+                "category": "feature",
+                "complexity": "medium",
+                "rawWCU": 23.2,
+                "adjustedWCU": 36.192,
+                "keywordBoost": 1.2,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.2725,
+                "clusterId": "cluster-1"
+              },
+              {
+                "hash": "8fa2c9a81849ede2550f4b9168e3023e0d527bd6",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 23:45:19 +0000",
+                "message": "Add client-facing savings analysis and reporting features",
+                "filesChanged": 14,
+                "linesAdded": 9248,
+                "linesDeleted": 432,
+                "category": "feature",
+                "complexity": "huge",
+                "rawWCU": 650.92,
+                "adjustedWCU": 1015.4352,
+                "keywordBoost": 1.2,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.07916666666666666,
+                "clusterId": "cluster-1"
+              },
+              {
+                "hash": "ce92034b52ff57b9a7cdf18c2f327ea8ef140352",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 22:53:35 +0000",
+                "message": "Add industry and project benchmarks for cost estimation",
+                "filesChanged": 4,
+                "linesAdded": 1777,
+                "linesDeleted": 0,
+                "category": "feature",
+                "complexity": "huge",
+                "rawWCU": 221.23999999999998,
+                "adjustedWCU": 345.13439999999997,
+                "keywordBoost": 1.2,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.8622222222222222,
+                "clusterId": "cluster-1"
+              },
+              {
+                "hash": "a55f003612b83d35a6ff023cb6b282f4988bab8e",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 22:39:22 +0000",
+                "message": "Add system for analyzing and reporting development progress using git history",
+                "filesChanged": 5,
+                "linesAdded": 1376,
+                "linesDeleted": 4,
+                "category": "feature",
+                "complexity": "huge",
+                "rawWCU": 175.06,
+                "adjustedWCU": 273.0936,
+                "keywordBoost": 1.2,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.058888888888888886,
+                "clusterId": "cluster-1"
+              },
+              {
+                "hash": "72712c1889658a7e72a689ae0cd6b099a9d13bc0",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 22:23:46 +0000",
+                "message": "Integrate Dart AI with new token-based authentication",
+                "filesChanged": 8,
+                "linesAdded": 289,
+                "linesDeleted": 171,
+                "category": "feature",
+                "complexity": "large",
+                "rawWCU": 59.739999999999995,
+                "adjustedWCU": 100.9606,
+                "keywordBoost": 1.3,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.18555555555555556,
+                "clusterId": "cluster-1"
+              }
+            ],
+            "totalWCU": 2703.9454,
+            "estimatedHours": 11248.412864,
+            "confidence": 1,
+            "keywords": [
+              "development",
+              "progress",
+              "savings",
+              "project",
+              "analyzing"
+            ]
+          },
+          "savings": {
+            "traditional": {
+              "hours": 13384.529730000002,
+              "cost": 1584251.78076,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "feature": {
+                  "hours": 14601.30516,
+                  "cost": 1314117.4644,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "bugfix": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "refactor": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "documentation": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "test": {
+                  "hours": 1095.1919999999998,
+                  "cost": 98567.27999999998,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "maintenance": {
+                  "hours": 306.04607999999996,
+                  "cost": 27544.147199999996,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "infrastructure": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "security": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "performance": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "ui": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 49,
+              "cost": 4410,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 45,
+              "categoryBreakdown": {
+                "feature": {
+                  "hours": 33.6,
+                  "cost": 3024,
+                  "commits": 8
+                },
+                "bugfix": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "refactor": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "documentation": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "test": {
+                  "hours": 2.8,
+                  "cost": 251.99999999999997,
+                  "commits": 1
+                },
+                "maintenance": {
+                  "hours": 12.6,
+                  "cost": 1134,
+                  "commits": 7
+                },
+                "infrastructure": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "security": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "performance": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "ui": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 13335.529730000002,
+              "dollars": 1579841.78076,
+              "weeks": 66.67764865000001,
+              "percentage": 99.63390570316287,
+              "roiMultiplier": 359.2407666122449
+            }
+          },
+          "efficiency": {
+            "hoursPerCommit": 6.125,
+            "costPerCommit": 551.25,
+            "velocityScore": 337.993175,
+            "complexityEfficiency": 2265.0720983722576
+          },
+          "savingsRank": 1,
+          "efficiencyRank": 1
+        },
+        {
+          "cluster": {
+            "id": "cluster-2",
+            "name": "improve maintenance",
+            "primaryCategory": "maintenance",
+            "startDate": "2025-09-14 19:16:32 +0000",
+            "endDate": "2025-09-14 22:42:54 +0000",
+            "commits": [
+              {
+                "hash": "21f1069f63643d7948b0d24819a49ba6d1ca3461",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 22:42:54 +0000",
+                "message": "Improve project tracking with automated git progress reporting",
+                "filesChanged": 1,
+                "linesAdded": 42,
+                "linesDeleted": 2,
+                "category": "maintenance",
+                "complexity": "small",
+                "rawWCU": 8.059999999999999,
+                "adjustedWCU": 7.0928,
+                "keywordBoost": 1.1,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.17805555555555555,
+                "clusterId": "cluster-2"
+              },
+              {
+                "hash": "8730ade3f6e91d2320315dee76ed57abf1d4ad3e",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 22:34:54 +0000",
+                "message": "Update reports to target Eric Parker's workspace",
+                "filesChanged": 7,
+                "linesAdded": 53,
+                "linesDeleted": 15,
+                "category": "maintenance",
+                "complexity": "medium",
+                "rawWCU": 20.36,
+                "adjustedWCU": 16.288,
+                "keywordBoost": 1,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.07444444444444444,
+                "clusterId": "cluster-2"
+              },
+              {
+                "hash": "7497df2a2e52347e8c51c24adaf72b49dccb33e1",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 21:47:56 +0000",
+                "message": "Integrate Dart AI for progress reporting and task synchronization",
+                "filesChanged": 3,
+                "linesAdded": 20,
+                "linesDeleted": 16,
+                "category": "maintenance",
+                "complexity": "small",
+                "rawWCU": 9.66,
+                "adjustedWCU": 7.728000000000001,
+                "keywordBoost": 1,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.5972222222222222,
+                "clusterId": "cluster-2"
+              },
+              {
+                "hash": "3bd496f7638a83fcda233a5bd4920e3025c30d74",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 21:35:04 +0000",
+                "message": "Update JSON file to improve clarity of report summaries",
+                "filesChanged": 2,
+                "linesAdded": 12,
+                "linesDeleted": 13,
+                "category": "maintenance",
+                "complexity": "small",
+                "rawWCU": 6.819999999999999,
+                "adjustedWCU": 6.0016,
+                "keywordBoost": 1.1,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.21444444444444444,
+                "clusterId": "cluster-2"
+              },
+              {
+                "hash": "a41796d9163e5d96a0ca80792fdddab32584f72d",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 20:54:19 +0000",
+                "message": "Improve project setup by ensuring data is correctly initialized",
+                "filesChanged": 0,
+                "linesAdded": 0,
+                "linesDeleted": 0,
+                "category": "maintenance",
+                "complexity": "trivial",
+                "rawWCU": 1.2,
+                "adjustedWCU": 1.056,
+                "keywordBoost": 1.1,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.6791666666666667,
+                "clusterId": "cluster-2"
+              },
+              {
+                "hash": "992d868a2fbe9cfc9757cba2dc443d0a4b7b16c9",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 20:53:56 +0000",
+                "message": "Update development progress reporting to a natural language system",
+                "filesChanged": 5,
+                "linesAdded": 624,
+                "linesDeleted": 0,
+                "category": "maintenance",
+                "complexity": "large",
+                "rawWCU": 84.58,
+                "adjustedWCU": 67.664,
+                "keywordBoost": 1,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -0.006388888888888889,
+                "clusterId": "cluster-2"
+              },
+              {
+                "hash": "ee3bb315c83347d08d1e4bf23a2f33a10325dbd8",
+                "author": "ItsBuddha",
+                "date": "2025-09-14 19:16:32 +0000",
+                "message": "Configure Dart AI service with project IDs for task and document management",
+                "filesChanged": 2,
+                "linesAdded": 29,
+                "linesDeleted": 22,
+                "category": "maintenance",
+                "complexity": "medium",
+                "rawWCU": 9.4,
+                "adjustedWCU": 7.5200000000000005,
+                "keywordBoost": 1,
+                "velocityScore": 0.8,
+                "timeSincePrevious": -1.6233333333333333,
+                "clusterId": "cluster-2"
+              }
+            ],
+            "totalWCU": 113.3504,
+            "estimatedHours": 290.177024,
+            "confidence": 1,
+            "keywords": [
+              "improve",
+              "project",
+              "progress",
+              "reporting",
+              "update"
+            ]
+          },
+          "savings": {
+            "traditional": {
+              "hours": 561.08448,
+              "cost": 1584251.78076,
+              "methodology": "Traditional-WCU-Industry-Benchmarks",
+              "confidence": 60,
+              "categoryBreakdown": {
+                "feature": {
+                  "hours": 14601.30516,
+                  "cost": 1314117.4644,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "bugfix": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "refactor": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "documentation": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "test": {
+                  "hours": 1095.1919999999998,
+                  "cost": 98567.27999999998,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "maintenance": {
+                  "hours": 306.04607999999996,
+                  "cost": 27544.147199999996,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "infrastructure": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "security": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "performance": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                },
+                "ui": {
+                  "hours": 0,
+                  "cost": 0,
+                  "methodology": "Industry-Standard-WCU-Traditional"
+                }
+              }
+            },
+            "actual": {
+              "hours": 49,
+              "cost": 4410,
+              "methodology": "Git-Commit-Analysis-Actual",
+              "confidence": 45,
+              "categoryBreakdown": {
+                "feature": {
+                  "hours": 33.6,
+                  "cost": 3024,
+                  "commits": 8
+                },
+                "bugfix": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "refactor": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "documentation": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "test": {
+                  "hours": 2.8,
+                  "cost": 251.99999999999997,
+                  "commits": 1
+                },
+                "maintenance": {
+                  "hours": 12.6,
+                  "cost": 1134,
+                  "commits": 7
+                },
+                "infrastructure": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "security": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "performance": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                },
+                "ui": {
+                  "hours": 0,
+                  "cost": 0,
+                  "commits": 0
+                }
+              }
+            },
+            "savings": {
+              "hours": 512.08448,
+              "dollars": 1579841.78076,
+              "weeks": 2.5604223999999998,
+              "percentage": 91.26691224822329,
+              "roiMultiplier": 359.2407666122449
+            }
+          },
+          "efficiency": {
+            "hoursPerCommit": 7,
+            "costPerCommit": 630,
+            "velocityScore": 16.192914285714284,
+            "complexityEfficiency": 1060.3648216636368
+          },
+          "savingsRank": 2,
+          "efficiencyRank": 2
+        }
+      ],
+      "confidence": 52.5,
+      "calculationSucceeded": true
+    }
+  },
+  "metadata": {
+    "generatedBy": "GitIntegratedProgressService",
+    "version": "2.0.0",
+    "includesSavingsAnalysis": true,
+    "savingsConfidence": 52.5,
+    "savingsCalculationSucceeded": true
+  },
+  "executiveSummary": {
+    "totalSavings": {
+      "dollars": 0,
+      "hours": 0,
+      "weeks": 0,
+      "percentage": 0
+    },
+    "efficiency": {
+      "productivityMultiplier": 359.2407666122449,
+      "costEfficiency": 99.68723331473845
+    },
+    "confidence": 52.5
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "timestamp": "2025-09-15T01:01:37.233Z",
+  "summary": "Git analysis for 6 hours ago",
+  "analysis": {
+    "totalCommits": 16,
+    "dateRange": "2025-09-14 to 2025-09-15",
+    "categories": [
+      {
+        "name": "Dart AI Integration & Project Management",
+        "keywords": [
+          "dart",
+          "ai integration",
+          "progress report",
+          "task synchronization",
+          "project management"
+        ],
+        "commits": [
+          {
+            "hash": "9270e1c",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Update development progress report with AI integration and file uploads"
+          },
+          {
+            "hash": "21f1069",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve project tracking with automated git progress reporting"
+          },
+          {
+            "hash": "72712c1",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Integrate Dart AI with new token-based authentication"
+          },
+          {
+            "hash": "7497df2",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Integrate Dart AI for progress reporting and task synchronization"
+          },
+          {
+            "hash": "992d868",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update development progress reporting to a natural language system"
+          },
+          {
+            "hash": "ee3bb31",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Configure Dart AI service with project IDs for task and document management"
+          }
+        ]
+      },
+      {
+        "name": "Document Management & File Uploads",
+        "keywords": [
+          "document",
+          "upload",
+          "file",
+          "attachment",
+          "storage",
+          "document center"
+        ],
+        "commits": [
+          {
+            "hash": "4f7d50d",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Add a visual asset to the project documentation"
+          },
+          {
+            "hash": "3bd496f",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update JSON file to improve clarity of report summaries"
+          }
+        ]
+      },
+      {
+        "name": "System Configuration & Settings",
+        "keywords": [
+          "settings",
+          "configuration",
+          "system",
+          "admin",
+          "management",
+          "setup"
+        ],
+        "commits": [
+          {
+            "hash": "16aace7",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add system to demonstrate client savings through historical data analysis"
+          },
+          {
+            "hash": "a55f003",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add system for analyzing and reporting development progress using git history"
+          },
+          {
+            "hash": "a41796d",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Improve project setup by ensuring data is correctly initialized"
+          }
+        ]
+      },
+      {
+        "name": "General Improvements",
+        "keywords": [],
+        "commits": [
+          {
+            "hash": "6711b0c",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Add detailed agent metrics to track development progress and efficiency"
+          },
+          {
+            "hash": "248edd7",
+            "author": "ItsBuddha",
+            "date": "2025-09-15",
+            "message": "Introduce tool for analyzing development progress and calculating cost savings"
+          },
+          {
+            "hash": "8fa2c9a",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add client-facing savings analysis and reporting features"
+          },
+          {
+            "hash": "ce92034",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Add industry and project benchmarks for cost estimation"
+          },
+          {
+            "hash": "8730ade",
+            "author": "ItsBuddha",
+            "date": "2025-09-14",
+            "message": "Update reports to target Eric Parker's workspace"
+          }
+        ]
+      }
+    ],
+    "topContributors": [
+      {
+        "author": "ItsBuddha",
+        "commits": 16
+      }
+    ],
+    "fileStats": {
+      "filesChanged": 54,
+      "additions": 20928,
+      "deletions": 733
+    }
+  },
+  "metadata": {
+    "generatedBy": "GitIntegratedProgressService",
+    "version": "2.0.0",
+    "includesSavingsAnalysis": false,
+    "savingsConfidence": 0,
+    "savingsCalculationSucceeded": false
+  },
+  "executiveSummary": null
+}

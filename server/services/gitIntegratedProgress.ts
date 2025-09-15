@@ -169,6 +169,9 @@ export class GitIntegratedProgressService {
         result.savings = await this.calculateSavings(sinceDate, config);
       }
 
+      // Always save the comprehensive report for easy access
+      await this.saveComprehensiveReport(result, `Git analysis for ${sinceDate}`);
+
       return result;
 
     } catch (error) {
@@ -606,6 +609,11 @@ export class GitIntegratedProgressService {
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
     console.log(`[GitProgress] Comprehensive report saved to ${reportPath}`);
     
+    // Save as last-git-analysis.json for easy access
+    const lastAnalysisPath = path.join(reportsDir, 'last-git-analysis.json');
+    await fs.writeFile(lastAnalysisPath, JSON.stringify(report, null, 2));
+    console.log(`[GitProgress] Latest analysis saved to ${lastAnalysisPath}`);
+    
     // Also save a simplified savings summary file if analysis succeeded
     if (analysis.savings?.calculationSucceeded && analysis.savings?.summary) {
       const savingsPath = path.join(reportsDir, `savings-summary-${timestamp}.json`);
@@ -620,6 +628,11 @@ export class GitIntegratedProgressService {
       
       await fs.writeFile(savingsPath, JSON.stringify(savingsSummary, null, 2));
       console.log(`[GitProgress] Savings summary saved to ${savingsPath}`);
+      
+      // Save as last-savings-summary.json for easy access
+      const lastSavingsPath = path.join(reportsDir, 'last-savings-summary.json');
+      await fs.writeFile(lastSavingsPath, JSON.stringify(savingsSummary, null, 2));
+      console.log(`[GitProgress] Latest savings summary saved to ${lastSavingsPath}`);
     }
   }
 

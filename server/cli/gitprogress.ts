@@ -47,12 +47,12 @@ const displaySavingsSummary = (savings: any, showDetails: boolean = true): void 
   console.log(`${colors.green}${'='.repeat(50)}${colors.reset}`);
   
   // Main savings metrics
-  console.log(`${colors.bold}💵 Total Savings:${colors.reset} ${colors.green}${formatCurrency(calculation.savings.dollars)}${colors.reset}`);
-  console.log(`${colors.bold}⏰ Time Saved:${colors.reset} ${colors.cyan}${Math.round(calculation.savings.hours)} hours (${Math.round(calculation.savings.weeks)} weeks)${colors.reset}`);
-  console.log(`${colors.bold}📊 Cost Reduction:${colors.reset} ${colors.yellow}${Math.round(calculation.savings.percentage)}%${colors.reset}`);
-  console.log(`${colors.bold}🚀 Productivity Gain:${colors.reset} ${colors.magenta}${summary.efficiency.productivityMultiplier}x${colors.reset} vs traditional`);
-  console.log(`${colors.bold}📈 ROI:${colors.reset} ${colors.green}${summary.totalSavings.roi}x${colors.reset}`);
-  console.log(`${colors.bold}🎯 Confidence:${colors.reset} ${confidence >= 70 ? colors.green : confidence >= 50 ? colors.yellow : colors.red}${Math.round(confidence)}%${colors.reset}`);
+  console.log(`${colors.bold}💵 Total Savings:${colors.reset} ${colors.green}${formatCurrency(calculation?.savings?.dollars || 0)}${colors.reset}`);
+  console.log(`${colors.bold}⏰ Time Saved:${colors.reset} ${colors.cyan}${Math.round(calculation?.savings?.hours || 0)} hours (${Math.round(calculation?.savings?.weeks || 0)} weeks)${colors.reset}`);
+  console.log(`${colors.bold}📊 Cost Reduction:${colors.reset} ${colors.yellow}${Math.round(calculation?.savings?.percentage || 0)}%${colors.reset}`);
+  console.log(`${colors.bold}🚀 Productivity Gain:${colors.reset} ${colors.magenta}${summary?.efficiency?.productivityMultiplier || 1}x${colors.reset} vs traditional`);
+  console.log(`${colors.bold}📈 ROI:${colors.reset} ${colors.green}${summary?.totalSavings?.roi || 1}x${colors.reset}`);
+  console.log(`${colors.bold}🎯 Confidence:${colors.reset} ${confidence >= 70 ? colors.green : confidence >= 50 ? colors.yellow : colors.red}${Math.round(confidence || 0)}%${colors.reset}`);
   
   if (showDetails && summary.topOpportunities.length > 0) {
     console.log(`\n${colors.bold}🏆 TOP SAVINGS OPPORTUNITIES:${colors.reset}`);

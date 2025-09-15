@@ -377,9 +377,13 @@ export class DevProgressService {
     
     await fs.writeFile(filepath, JSON.stringify(report, null, 2));
     
-    // Also save as "last-report.json" for easy access
+    // Save as "last-report.json" for easy access
     const lastReportPath = path.join(this.reportsDir, 'last-report.json');
     await fs.writeFile(lastReportPath, JSON.stringify(report, null, 2));
+    
+    // Also save as "last-progress.json" for consistency
+    const lastProgressPath = path.join(this.reportsDir, 'last-progress.json');
+    await fs.writeFile(lastProgressPath, JSON.stringify(report, null, 2));
     
     return filepath;
   }
