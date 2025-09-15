@@ -654,15 +654,15 @@ export class GitIntegratedProgressService {
       console.log('\n' + '💰'.repeat(40));
       console.log('💰 SAVINGS ANALYSIS HIGHLIGHTS');
       console.log('💰'.repeat(40));
-      console.log(`💵 Total Savings: $${Math.round(analysis.savings.calculation.savings.dollars).toLocaleString()}`);
-      console.log(`⏰ Time Saved: ${Math.round(analysis.savings.calculation.savings.hours)} hours (${Math.round(analysis.savings.calculation.savings.weeks)} weeks)`);
-      console.log(`📊 Cost Reduction: ${Math.round(analysis.savings.calculation.savings.percentage)}%`);
-      console.log(`🚀 Productivity Gain: ${analysis.savings.summary.efficiency.productivityMultiplier}x vs traditional`);
-      console.log(`📈 ROI: ${analysis.savings.summary.totalSavings.roi}x`);
+      console.log(`💵 Total Savings: $${Math.round(analysis.savings.calculation?.savings?.dollars || 0).toLocaleString()}`);
+      console.log(`⏰ Time Saved: ${Math.round(analysis.savings.calculation?.savings?.hours || 0)} hours (${Math.round(analysis.savings.calculation?.savings?.weeks || 0)} weeks)`);
+      console.log(`📊 Cost Reduction: ${Math.round(analysis.savings.calculation?.savings?.percentage || 0)}%`);
+      console.log(`🚀 Productivity Gain: ${analysis.savings.summary?.efficiency?.productivityMultiplier || 'N/A'}x vs traditional`);
+      console.log(`📈 ROI: ${analysis.savings.summary?.totalSavings?.roi || 'N/A'}x`);
       console.log(`🎯 Confidence: ${Math.round(analysis.savings.confidence)}%`);
       
       // Show top savings opportunities
-      if (analysis.savings.summary.topOpportunities.length > 0) {
+      if (analysis.savings.summary?.topOpportunities?.length > 0) {
         console.log('\n🏆 TOP SAVINGS OPPORTUNITIES:');
         analysis.savings.summary.topOpportunities.slice(0, 3).forEach((opportunity, index) => {
           console.log(`  ${index + 1}. ${opportunity.name}: $${Math.round(opportunity.savings).toLocaleString()} saved`);
@@ -670,11 +670,11 @@ export class GitIntegratedProgressService {
       }
       
       // Show top efficient feature clusters
-      if (analysis.savings.topFeatures.length > 0) {
+      if (analysis.savings.topFeatures?.length > 0) {
         console.log('\n⚡ MOST EFFICIENT FEATURES:');
         analysis.savings.topFeatures.slice(0, 3).forEach((feature, index) => {
-          const efficiency = Math.round(feature.efficiency.velocityScore * 100);
-          console.log(`  ${index + 1}. ${feature.cluster.name}: ${efficiency}% efficiency score`);
+          const efficiency = Math.round(feature.efficiency?.velocityScore * 100 || 0);
+          console.log(`  ${index + 1}. ${feature.cluster?.name || 'Feature'}: ${efficiency}% efficiency score`);
         });
       }
     } else if (analysis.savings?.calculationSucceeded === false) {
