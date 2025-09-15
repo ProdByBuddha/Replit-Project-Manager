@@ -12,6 +12,7 @@ export { SavingsCalculator } from './estimation/savingsCalculator.js';
 export { GitIntegratedProgressService } from './git/gitIntegration.js';
 export { DevProgressService } from './progress/dartProgress.js';
 export { AgentMetricsService } from './metrics/agentMetrics.js';
+export { DevTaskSyncService, type DevTask } from './tasks/devTaskSync.js';
 
 // Types and interfaces
 export type * from './types.js';
@@ -31,11 +32,12 @@ export {
 // Main class for easy initialization
 export class ReplitProjectManager {
   private static instance: ReplitProjectManager;
-  private gitService: GitIntegratedProgressService;
-  private progressService: DevProgressService;
-  private savingsCalculator: SavingsCalculator;
-  private benchmarksService: IndustryBenchmarksService;
-  private estimator: WorkContributionEstimator;
+  private gitService: any;
+  private progressService: any;
+  private savingsCalculator: any;
+  private benchmarksService: any;
+  private estimator: any;
+  private taskSyncService: any;
   
   private constructor() {
     this.gitService = GitIntegratedProgressService.getInstance();
@@ -43,6 +45,7 @@ export class ReplitProjectManager {
     this.savingsCalculator = SavingsCalculator.getInstance();
     this.benchmarksService = IndustryBenchmarksService.getInstance();
     this.estimator = WorkContributionEstimator.getInstance();
+    this.taskSyncService = DevTaskSyncService.getInstance();
   }
   
   public static getInstance(): ReplitProjectManager {
@@ -60,9 +63,10 @@ export class ReplitProjectManager {
     workspaceId?: string;
     dartboard?: string;
   }): Promise<void> {
-    // Configure progress service
+    // Configure services
     if (config) {
       this.progressService.configure(config);
+      this.taskSyncService.configure(config);
     }
     
     // Set up git integration
@@ -95,22 +99,29 @@ export class ReplitProjectManager {
   /**
    * Get savings calculator
    */
-  public getSavingsCalculator(): SavingsCalculator {
+  public getSavingsCalculator(): any {
     return this.savingsCalculator;
   }
   
   /**
    * Get benchmarks service
    */
-  public getBenchmarksService(): IndustryBenchmarksService {
+  public getBenchmarksService(): any {
     return this.benchmarksService;
   }
   
   /**
    * Get estimator service
    */
-  public getEstimator(): WorkContributionEstimator {
+  public getEstimator(): any {
     return this.estimator;
+  }
+  
+  /**
+   * Get development task sync service
+   */
+  public getTaskSyncService(): any {
+    return this.taskSyncService;
   }
   
   /**
