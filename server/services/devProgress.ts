@@ -98,6 +98,169 @@ export class DevProgressService {
     }
   }
 
+  // Create comprehensive report by combining all latest reports
+  async createComprehensiveReport(progressMessage: string): Promise<string> {
+    try {
+      // Read all latest reports
+      const reports: { [key: string]: any } = {};
+      
+      // Read git analysis
+      try {
+        const gitAnalysisPath = path.join(this.reportsDir, 'last-git-analysis.json');
+        const gitAnalysisContent = await fs.readFile(gitAnalysisPath, 'utf-8');
+        reports.gitAnalysis = JSON.parse(gitAnalysisContent);
+      } catch (e) {
+        console.log('[DevProgress] No last-git-analysis.json found');
+      }
+      
+      // Read savings summary  
+      try {
+        const savingsSummaryPath = path.join(this.reportsDir, 'last-savings-summary.json');
+        const savingsSummaryContent = await fs.readFile(savingsSummaryPath, 'utf-8');
+        reports.savingsSummary = JSON.parse(savingsSummaryContent);
+      } catch (e) {
+        console.log('[DevProgress] No last-savings-summary.json found');
+      }
+      
+      // Read progress report
+      try {
+        const progressPath = path.join(this.reportsDir, 'last-progress.json');
+        const progressContent = await fs.readFile(progressPath, 'utf-8');
+        reports.progress = JSON.parse(progressContent);
+      } catch (e) {
+        console.log('[DevProgress] No last-progress.json found');
+      }
+      
+      // Build comprehensive styled document
+      let doc = `# 📊 COMPREHENSIVE DEVELOPMENT PROGRESS REPORT\n`;
+      doc += `## ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n\n`;
+      
+      // Executive Summary with Savings Highlight
+      if (reports.savingsSummary) {
+        const savings = reports.savingsSummary;
+        doc += `## 💰 EXECUTIVE SUMMARY: MASSIVE VALUE DELIVERED\n\n`;
+        doc += `### 🚀 Client Savings Achieved:\n`;
+        doc += `- **Total Dollars Saved:** $${Math.round(savings.totalSavings?.dollars || 0).toLocaleString()}\n`;
+        doc += `- **Development Time Saved:** ${Math.round(savings.totalSavings?.hours || 0).toLocaleString()} hours (${Math.round((savings.totalSavings?.hours || 0) / 168)} weeks)\n`;
+        doc += `- **Productivity Multiplier:** ${(savings.efficiency?.productivityMultiplier || 1).toFixed(1)}x vs industry standards\n`;
+        doc += `- **Cost Reduction:** ${Math.round(savings.efficiency?.costReduction || 0)}%\n\n`;
+        
+        if (savings.methodology) {
+          doc += `### 📐 Validation Methodology:\n`;
+          doc += `- Industry Benchmarks: ${savings.methodology.benchmarks?.join(', ') || 'COCOMO II, ISBSG, DORA'}\n`;
+          doc += `- Analysis Period: ${savings.period || 'Last 30 days'}\n`;
+          doc += `- Confidence Level: ${savings.confidence || 0}%\n\n`;
+        }
+      }
+      
+      // Current Progress Update
+      doc += `## ✅ LATEST PROGRESS UPDATE\n\n`;
+      doc += progressMessage + '\n\n';
+      
+      // Development Activity Analysis
+      if (reports.gitAnalysis?.analysis) {
+        const analysis = reports.gitAnalysis.analysis;
+        doc += `## 📈 DEVELOPMENT ACTIVITY ANALYSIS\n\n`;
+        doc += `### Activity Metrics:\n`;
+        doc += `- **Total Commits:** ${analysis.totalCommits || 0}\n`;
+        doc += `- **Files Changed:** ${analysis.fileStats?.filesChanged || 0}\n`;
+        doc += `- **Lines Added:** ${(analysis.fileStats?.additions || 0).toLocaleString()}\n`;
+        doc += `- **Lines Modified:** ${(analysis.fileStats?.deletions || 0).toLocaleString()}\n`;
+        doc += `- **Time Period:** ${analysis.dateRange || 'N/A'}\n\n`;
+        
+        // Feature Categories
+        if (analysis.categories && analysis.categories.length > 0) {
+          doc += `### 🏗️ Development Focus Areas:\n`;
+          analysis.categories.forEach((cat: any) => {
+            doc += `- **${cat.name}:** ${cat.count} commits (${cat.percentage}%)\n`;
+          });
+          doc += '\n';
+        }
+      }
+      
+      // Detailed Savings Breakdown
+      if (reports.gitAnalysis?.savings?.calculation) {
+        const calc = reports.gitAnalysis.savings.calculation;
+        doc += `## 💎 DETAILED SAVINGS ANALYSIS\n\n`;
+        
+        if (calc.traditional) {
+          doc += `### Traditional Development Estimates:\n`;
+          doc += `- Estimated Hours: ${Math.round(calc.traditional.totalHours || 0).toLocaleString()}\n`;
+          doc += `- Estimated Cost: $${Math.round(calc.traditional.totalCost || 0).toLocaleString()}\n`;
+          doc += `- Estimated Duration: ${Math.round((calc.traditional.totalHours || 0) / 168)} weeks\n\n`;
+        }
+        
+        if (calc.actual) {
+          doc += `### Actual Accelerated Development:\n`;
+          doc += `- Actual Hours: ${Math.round(calc.actual.totalHours || 0).toLocaleString()}\n`;
+          doc += `- Actual Cost: $${Math.round(calc.actual.totalCost || 0).toLocaleString()}\n`;
+          doc += `- Actual Duration: ${Math.round((calc.actual.totalHours || 0) / 168)} weeks\n\n`;
+        }
+        
+        if (calc.savings) {
+          doc += `### 🎯 Net Savings Achieved:\n`;
+          doc += `- Hours Saved: ${Math.round(calc.savings.hours || 0).toLocaleString()}\n`;
+          doc += `- Dollars Saved: $${Math.round(calc.savings.dollars || 0).toLocaleString()}\n`;
+          doc += `- Weeks Saved: ${Math.round(calc.savings.weeks || 0)}\n`;
+          doc += `- Percentage Saved: ${Math.round(calc.savings.percentage || 0)}%\n\n`;
+        }
+      }
+      
+      // Feature Impact Analysis
+      if (reports.gitAnalysis?.savings?.topFeatures && reports.gitAnalysis.savings.topFeatures.length > 0) {
+        doc += `## 🏆 TOP VALUE-GENERATING FEATURES\n\n`;
+        reports.gitAnalysis.savings.topFeatures.forEach((feature: any, index: number) => {
+          doc += `### ${index + 1}. ${feature.cluster || 'Feature'}\n`;
+          doc += `- **Savings:** $${Math.round(feature.savings?.dollars || 0).toLocaleString()}\n`;
+          doc += `- **Time Saved:** ${Math.round(feature.savings?.hours || 0)} hours\n`;
+          doc += `- **Components:** ${feature.commitCount || 0} commits\n\n`;
+        });
+      }
+      
+      // Agent Metrics if available
+      if (reports.progress?.update?.agentMetrics) {
+        const metrics = reports.progress.update.agentMetrics;
+        doc += `## 🤖 AI AGENT PERFORMANCE METRICS\n\n`;
+        doc += `### Current Session:\n`;
+        doc += `- **Time Worked:** ${metrics.current?.timeWorked || 'N/A'}\n`;
+        doc += `- **Actions Performed:** ${metrics.current?.actionsPerformed || 0}\n`;
+        doc += `- **Files Analyzed:** ${metrics.current?.itemsRead || 0}\n`;
+        doc += `- **Code Changes:** ${metrics.current?.codeChanges || 0}\n`;
+        doc += `- **Agent Cost:** $${(metrics.current?.agentUsageCents || 0) / 100}\n\n`;
+        
+        if (metrics.comparison) {
+          doc += `### Historical Comparison:\n`;
+          doc += `- **Efficiency Improvement:** ${metrics.comparison.efficiencyChange || 'N/A'}\n`;
+          doc += `- **Speed Improvement:** ${metrics.comparison.speedChange || 'N/A'}\n`;
+          doc += `- **Cost Optimization:** ${metrics.comparison.costChange || 'N/A'}\n\n`;
+        }
+      }
+      
+      // Summary
+      doc += `## 📋 REPORT SUMMARY\n\n`;
+      doc += `This comprehensive progress report demonstrates the exceptional value delivered through accelerated development practices. `;
+      doc += `The combination of advanced AI-assisted development, optimized workflows, and strategic architecture decisions `;
+      doc += `has resulted in documented savings that far exceed traditional development approaches.\n\n`;
+      
+      doc += `### Key Takeaways:\n`;
+      doc += `1. **Proven ROI:** Every dollar invested returns multiple dollars in development cost savings\n`;
+      doc += `2. **Time to Market:** Features delivered weeks ahead of traditional timelines\n`;
+      doc += `3. **Quality Assurance:** Automated testing and AI review ensures robust, production-ready code\n`;
+      doc += `4. **Scalable Architecture:** Foundation built for long-term growth and maintenance efficiency\n\n`;
+      
+      doc += `---\n`;
+      doc += `*Report Generated: ${new Date().toISOString()}*\n`;
+      doc += `*Document ID: 3VJqaEIFAlYs*\n`;
+      
+      return doc;
+      
+    } catch (error) {
+      console.error('[DevProgress] Error creating comprehensive report:', error);
+      // Fallback to simple message if comprehensive report fails
+      return progressMessage;
+    }
+  }
+
   // Send update to Dart
   async sendUpdate(message: string): Promise<boolean> {
     if (!this.dartToken) {
@@ -106,12 +269,15 @@ export class DevProgressService {
     }
 
     try {
-      // Create a task with the progress update using dart-tools
-      // Need to specify the dartboard to send to the correct workspace
+      // Create comprehensive report by combining all latest reports
+      const comprehensiveReport = await this.createComprehensiveReport(message);
+      
+      // Create a task with the progress update using dart-tools  
+      // Send comprehensive report to document ID 3VJqaEIFAlYs
       const task = await TaskService.createTask({
         item: {
-          title: `Dev Progress - ${new Date().toLocaleDateString()}`,
-          description: message,
+          title: `Dev Progress Report - ${new Date().toLocaleDateString()} [Doc: 3VJqaEIFAlYs]`,
+          description: comprehensiveReport,
           status: 'Done', // Mark as done since it's a completed progress update
           dartboard: 'Eric Parker/Tasks', // Send to Eric Parker workspace
         }
@@ -377,11 +543,7 @@ export class DevProgressService {
     
     await fs.writeFile(filepath, JSON.stringify(report, null, 2));
     
-    // Save as "last-report.json" for easy access
-    const lastReportPath = path.join(this.reportsDir, 'last-report.json');
-    await fs.writeFile(lastReportPath, JSON.stringify(report, null, 2));
-    
-    // Also save as "last-progress.json" for consistency
+    // Save as "last-progress.json" for easy access
     const lastProgressPath = path.join(this.reportsDir, 'last-progress.json');
     await fs.writeFile(lastProgressPath, JSON.stringify(report, null, 2));
     

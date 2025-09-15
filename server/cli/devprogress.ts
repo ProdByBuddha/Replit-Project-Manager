@@ -25,14 +25,14 @@ function saveLastReport(report: any) {
     fs.mkdirSync(reportDir, { recursive: true });
   }
   
-  const reportFile = path.join(reportDir, 'last-report.json');
+  const reportFile = path.join(reportDir, 'last-progress.json');
   fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
   console.log(`💾 Report saved to ${reportFile}`);
 }
 
 // Helper to load last report
 function loadLastReport(): any {
-  const reportFile = path.join(process.cwd(), '.dart-reports', 'last-report.json');
+  const reportFile = path.join(process.cwd(), '.dart-reports', 'last-progress.json');
   if (fs.existsSync(reportFile)) {
     return JSON.parse(fs.readFileSync(reportFile, 'utf-8'));
   }
