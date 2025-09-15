@@ -218,6 +218,26 @@ export class DevProgressService {
   private formatProgressMessage(update: ProgressUpdate): string {
     let message = `📊 Development Progress Update\n${new Date().toLocaleDateString()}\n\n`;
 
+    // Add Replit Agent metrics if available
+    if (update.agentMetrics) {
+      const { totalTimeWorked, totalWorkDone, totalItemsRead, totalCodeChanged, totalAgentUsage, averagePerCommit } = update.agentMetrics;
+      
+      message += `**🤖 Replit Agent Performance Metrics:**\n`;
+      message += `• Time Worked: ${Math.round(totalTimeWorked / 60)} hours (${totalTimeWorked} minutes)\n`;
+      message += `• Work Done: ${totalWorkDone.toLocaleString()} actions performed\n`;
+      message += `• Items Read: ${totalItemsRead.toLocaleString()} lines analyzed\n`;
+      message += `• Code Changed: +${update.agentMetrics.totalCodeChanged || 0} lines\n`;
+      message += `• Agent Usage: $${totalAgentUsage.toFixed(2)}\n`;
+      
+      if (averagePerCommit) {
+        message += `\n**📈 Per-Commit Averages:**\n`;
+        message += `• Time: ${averagePerCommit.timeWorked} minutes\n`;
+        message += `• Actions: ${averagePerCommit.workDone}\n`;
+        message += `• Cost: $${averagePerCommit.agentUsage.toFixed(2)}\n`;
+      }
+      message += `\n`;
+    }
+
     // Add compelling savings headline if available
     if (update.savings?.calculationSucceeded) {
       const { calculation, summary } = update.savings;

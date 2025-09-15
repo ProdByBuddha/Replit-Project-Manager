@@ -107,8 +107,36 @@ program
         
         console.log('\n👥 TOP CONTRIBUTORS:');
         analysis.topContributors.forEach((contributor, index) => {
-          console.log(`  ${index + 1}. ${contributor.author}: ${contributor.commits} commits`);
+          let line = `  ${index + 1}. ${contributor.author}: ${contributor.commits} commits`;
+          if (contributor.timeWorked) {
+            line += ` | ${Math.round(contributor.timeWorked / 60)}h worked`;
+          }
+          if (contributor.agentUsage) {
+            line += ` | $${contributor.agentUsage.toFixed(2)} agent cost`;
+          }
+          console.log(line);
         });
+        
+        // Display agent metrics if available
+        if (analysis.agentMetrics) {
+          console.log('\n🤖 REPLIT AGENT METRICS:');
+          const { total, perCommit, trend } = analysis.agentMetrics;
+          console.log(`  Total Time Worked: ${Math.round((total.timeWorked || 0) / 60)} hours`);
+          console.log(`  Total Work Done: ${(total.workDone || 0).toLocaleString()} actions`);
+          console.log(`  Total Items Read: ${(total.itemsRead || 0).toLocaleString()} lines`);
+          console.log(`  Total Code Changed: +${total.codeAdded || 0}/-${total.codeDeleted || 0} lines`);
+          console.log(`  Total Agent Usage: $${(total.agentUsage || 0).toFixed(2)}`);
+          
+          console.log('\n  📈 Per-Commit Averages:');
+          console.log(`    Time: ${perCommit.timeWorked} minutes`);
+          console.log(`    Actions: ${perCommit.workDone}`);
+          console.log(`    Cost: $${(perCommit.agentUsage || 0).toFixed(2)}`);
+          
+          console.log('\n  📊 Productivity Trends:');
+          console.log(`    Time Efficiency: ${trend.timeEfficiency > 0 ? '✅' : '⚠️'} ${Math.abs(trend.timeEfficiency)}% ${trend.timeEfficiency > 0 ? 'improved' : 'slower'}`);
+          console.log(`    Cost Efficiency: ${trend.costEfficiency > 0 ? '✅' : '⚠️'} ${Math.abs(trend.costEfficiency)}% ${trend.costEfficiency > 0 ? 'cheaper' : 'more expensive'}`);
+          console.log(`    Overall Score: ${trend.productivityScore}/100`);
+        }
         
         // Display savings if available
         if (analysis.savings) {

@@ -78,6 +78,7 @@ export const ReportOptionsSchema = z.object({
 export const GitAnalysisConfigSchema = z.object({
   sinceDate: z.string().optional(),
   enableSavings: z.boolean().default(true),
+  enableAgentMetrics: z.boolean().default(true),
   confidenceThreshold: z.number().min(0).max(100).default(70),
   projectParameters: z.record(z.any()).optional(),
   sendToDart: z.boolean().default(false),

@@ -20,6 +20,7 @@ The tool analyzes your git repository and calculates:
 - **Cost Savings** in dollars, hours, and weeks compared to traditional methods
 - **ROI and Efficiency Metrics** including productivity multipliers
 - **Confidence Scoring** to validate the accuracy of estimates
+- **Replit Agent Metrics** - Time worked, actions performed, items read, code changes, and agent usage costs per commit
 
 ## 📦 Installation
 
@@ -215,6 +216,13 @@ Weeks Saved = Savings Hours ÷ Team Capacity Hours per Week
 ### Example Output
 
 ```
+🤖 REPLIT AGENT METRICS:
+  Total Time Worked: 42 hours
+  Total Work Done: 1,234 actions
+  Total Items Read: 15,678 lines
+  Total Code Changed: +2,345/-567 lines
+  Total Agent Usage: $45.67
+
 💰 MAJOR SAVINGS ACHIEVED: $127,500 (73% cost reduction)
 ⚡ 8.2 weeks ahead of traditional timeline  
 🚀 2.4x productivity multiplier vs industry standards

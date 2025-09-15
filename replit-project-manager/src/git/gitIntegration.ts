@@ -2,7 +2,8 @@ import simpleGit, { SimpleGit, LogResult } from 'simple-git';
 import { SavingsCalculator, SavingsCalculation, ExecutiveSummary, FeatureClusterSavings } from '../estimation/savingsCalculator.js';
 import { ProjectParameters } from '../estimation/benchmarks.js';
 import { GitAnalysisConfigSchema, sanitizeGitSinceDate } from '../validation.js';
-import { GitCommit, CommitCategory, FileStats, TopContributor, GitAnalysisResult, GitAnalysisConfig } from '../types.js';
+import { GitCommit, CommitCategory, FileStats, TopContributor, GitAnalysisResult, GitAnalysisConfig, EnhancedCommit, ReplitAgentMetrics } from '../types.js';
+import { AgentMetricsService } from '../metrics/agentMetrics.js';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -15,11 +16,13 @@ interface CategoryMapping {
 export class GitIntegratedProgressService {
   private static instance: GitIntegratedProgressService;
   private savingsCalculator: SavingsCalculator;
+  private agentMetricsService: AgentMetricsService;
   private savingsInitialized: boolean = false;
   private git: SimpleGit;
 
   private constructor() {
     this.savingsCalculator = SavingsCalculator.getInstance();
+    this.agentMetricsService = AgentMetricsService.getInstance();
     this.git = simpleGit();
   }
 
@@ -94,14 +97,31 @@ export class GitIntegratedProgressService {
       // Categorize commits
       const categories = await this.categorizeCommits(commits);
 
-      // Calculate top contributors
-      const contributorMap = new Map<string, number>();
-      commits.forEach(commit => {
-        contributorMap.set(commit.author, (contributorMap.get(commit.author) || 0) + 1);
+      // Enhance commits with agent metrics if enabled
+      let enhancedCommits: EnhancedCommit[] = commits;
+      if (validatedConfig.enableAgentMetrics !== false) {
+        enhancedCommits = await this.agentMetricsService.enhanceCommitsWithMetrics(commits);
+      }
+
+      // Calculate top contributors with agent metrics
+      const contributorMap = new Map<string, { commits: number; timeWorked: number; agentUsage: number }>();
+      enhancedCommits.forEach(commit => {
+        const existing = contributorMap.get(commit.author) || { commits: 0, timeWorked: 0, agentUsage: 0 };
+        const metrics = commit.estimatedMetrics || commit.agentMetrics;
+        contributorMap.set(commit.author, {
+          commits: existing.commits + 1,
+          timeWorked: existing.timeWorked + (metrics?.timeWorked || 0),
+          agentUsage: existing.agentUsage + (metrics?.agentUsage || 0)
+        });
       });
       
       const topContributors = Array.from(contributorMap.entries())
-        .map(([author, commits]) => ({ author, commits }))
+        .map(([author, data]) => ({ 
+          author, 
+          commits: data.commits,
+          timeWorked: data.timeWorked,
+          agentUsage: Math.round(data.agentUsage * 100) / 100
+        }))
         .sort((a, b) => b.commits - a.commits)
         .slice(0, 5);
 
@@ -118,6 +138,31 @@ export class GitIntegratedProgressService {
         topContributors,
         fileStats
       };
+
+      // Add agent metrics analysis if enabled
+      if (validatedConfig.enableAgentMetrics !== false && enhancedCommits.length > 0) {
+        const totalMetrics = this.agentMetricsService.calculateAggregateMetrics(enhancedCommits);
+        const avgMetrics = this.agentMetricsService.calculateAverageMetrics(enhancedCommits);
+        const trends = this.agentMetricsService.calculateProductivityTrends(enhancedCommits);
+        
+        // Calculate per-category metrics
+        const perCategoryMetrics: Record<string, ReplitAgentMetrics> = {};
+        for (const category of categories) {
+          const categoryCommits = enhancedCommits.filter(c => 
+            category.commits.some(cc => cc.hash === c.hash)
+          );
+          if (categoryCommits.length > 0) {
+            perCategoryMetrics[category.name] = this.agentMetricsService.calculateAggregateMetrics(categoryCommits);
+          }
+        }
+
+        result.agentMetrics = {
+          total: totalMetrics,
+          perCommit: avgMetrics,
+          perCategory: perCategoryMetrics,
+          trend: trends
+        };
+      }
 
       // Add savings analysis if enabled
       if (validatedConfig.enableSavings && commits.length > 0) {
@@ -354,7 +399,7 @@ export class GitIntegratedProgressService {
       if (status.files.length === 0) {
         return 'Working directory clean';
       }
-      return status.files.map(file => `${file.index}${file.working_tree} ${file.path}`).join('\n');
+      return status.files.map(file => `${file.index} ${file.path}`).join('\n');
     } catch (error) {
       return 'Could not determine git status';
     }

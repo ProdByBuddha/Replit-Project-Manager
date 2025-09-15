@@ -12,10 +12,43 @@ export interface GitCommit {
   linesDeleted?: number;
 }
 
+/**
+ * Replit Agent Metrics
+ * Metrics tracked by Replit Agent at each checkpoint/commit
+ */
+export interface ReplitAgentMetrics {
+  timeWorked?: number;        // Time in minutes
+  workDone?: number;          // Number of actions performed
+  itemsRead?: number;         // Lines of code read
+  codeAdded?: number;         // Lines added
+  codeDeleted?: number;       // Lines deleted
+  agentUsage?: number;        // Cost in dollars
+  checkpoint?: string;        // Checkpoint identifier
+  timestamp?: string;         // When metrics were captured
+}
+
+/**
+ * Enhanced commit with agent metrics
+ */
+export interface EnhancedCommit extends GitCommit {
+  agentMetrics?: ReplitAgentMetrics;
+  estimatedMetrics?: {
+    timeWorked: number;      // Estimated based on complexity
+    workDone: number;        // Estimated based on files changed
+    itemsRead: number;       // Estimated based on context needed
+    agentUsage: number;      // Estimated cost based on complexity
+  };
+}
+
 export interface CommitCategory {
   name: string;
   commits: GitCommit[];
   keywords: string[];
+  // Add aggregated agent metrics
+  totalTimeWorked?: number;
+  totalWorkDone?: number;
+  totalItemsRead?: number;
+  totalAgentUsage?: number;
 }
 
 export interface FileStats {
@@ -27,6 +60,8 @@ export interface FileStats {
 export interface TopContributor {
   author: string;
   commits: number;
+  timeWorked?: number;
+  agentUsage?: number;
 }
 
 export interface ProgressUpdate {
@@ -37,6 +72,21 @@ export interface ProgressUpdate {
   nextSteps?: string[];
   metadata?: Record<string, any>;
   savings?: SavingsData;
+  // Add agent metrics summary
+  agentMetrics?: {
+    totalTimeWorked: number;
+    totalWorkDone: number;
+    totalItemsRead: number;
+    totalCodeChanged: number;
+    totalAgentUsage: number;
+    averagePerCommit: {
+      timeWorked: number;
+      workDone: number;
+      itemsRead: number;
+      codeChanged: number;
+      agentUsage: number;
+    };
+  };
 }
 
 export interface SavingsData {
@@ -56,14 +106,29 @@ export interface GitAnalysisResult {
   topContributors: TopContributor[];
   fileStats: FileStats;
   savings?: SavingsData;
+  // Add agent metrics analysis
+  agentMetrics?: {
+    total: ReplitAgentMetrics;
+    perCommit: ReplitAgentMetrics;
+    perCategory: Record<string, ReplitAgentMetrics>;
+    trend: {
+      timeEfficiency: number;     // Trending up/down
+      costEfficiency: number;      // Trending up/down
+      productivityScore: number;   // Overall productivity
+    };
+  };
 }
 
 export interface GitAnalysisConfig {
   sinceDate?: string;
   enableSavings?: boolean;
+  enableAgentMetrics?: boolean;
   confidenceThreshold?: number;
   projectParameters?: Record<string, any>;
   sendToDart?: boolean;
+  // Agent metrics configuration
+  agentMetricsSource?: 'estimated' | 'checkpoint' | 'both';
+  includeHistoricalComparison?: boolean;
 }
 
 export interface RPMConfig {
@@ -72,6 +137,7 @@ export interface RPMConfig {
   dartboard?: string;
   reportsDir?: string;
   enableSavings?: boolean;
+  enableAgentMetrics?: boolean;
   confidenceThreshold?: number;
   projectType?: string;
   region?: string;

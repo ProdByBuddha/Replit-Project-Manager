@@ -11,6 +11,7 @@ export { WorkContributionEstimator } from './estimation/estimator.js';
 export { SavingsCalculator } from './estimation/savingsCalculator.js';
 export { GitIntegratedProgressService } from './git/gitIntegration.js';
 export { DevProgressService } from './progress/dartProgress.js';
+export { AgentMetricsService } from './metrics/agentMetrics.js';
 
 // Types and interfaces
 export type * from './types.js';
