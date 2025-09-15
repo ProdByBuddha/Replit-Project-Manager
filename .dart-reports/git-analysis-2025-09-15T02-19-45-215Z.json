@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-09-15T02:19:48.361Z",
+  "timestamp": "2025-09-15T02:19:45.215Z",
   "summary": "Git analysis for 1 month ago",
   "analysis": {
     "totalCommits": 111,
@@ -6399,7 +6399,7 @@
           }
         ],
         "metadata": {
-          "calculatedAt": "2025-09-15T02:19:48.360Z",
+          "calculatedAt": "2025-09-15T02:19:45.211Z",
           "dataSources": [
             "git-history",
             "wcu-estimation",
@@ -6416,7 +6416,7 @@
             "enableFeatureClustering": true,
             "enableExecutiveSummary": true,
             "includeConfidenceMetrics": true,
-            "confidenceThreshold": 60
+            "confidenceThreshold": 50
           }
         }
       },

@@ -289,6 +289,44 @@ export class DevProgressService {
     }
   }
 
+  // Get or create the cumulative document ID
+  private async getCumulativeDocId(): Promise<string | null> {
+    try {
+      // Check for a stored document ID file
+      const docIdPath = path.join(this.reportsDir, 'cumulative-doc-id.json');
+      
+      try {
+        const docIdData = await fs.readFile(docIdPath, 'utf-8');
+        const { docId, folder } = JSON.parse(docIdData);
+        console.log(`[DevProgress] Found existing cumulative doc ID: ${docId} in ${folder}`);
+        return docId;
+      } catch (e) {
+        // File doesn't exist, will create new document
+        console.log('[DevProgress] No existing cumulative doc ID found, will create new');
+        return null;
+      }
+    } catch (error) {
+      console.error('[DevProgress] Error checking for cumulative doc ID:', error);
+      return null;
+    }
+  }
+
+  // Store the cumulative document ID for future updates
+  private async storeCumulativeDocId(docId: string, folder: string): Promise<void> {
+    try {
+      const docIdPath = path.join(this.reportsDir, 'cumulative-doc-id.json');
+      await fs.writeFile(docIdPath, JSON.stringify({ 
+        docId, 
+        folder,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      }, null, 2));
+      console.log(`[DevProgress] Stored cumulative doc ID: ${docId}`);
+    } catch (error) {
+      console.error('[DevProgress] Error storing cumulative doc ID:', error);
+    }
+  }
+
   // Send update to Dart
   async sendUpdate(message: string): Promise<boolean> {
     if (!this.dartToken) {
@@ -300,17 +338,49 @@ export class DevProgressService {
       // Create comprehensive report by combining all latest reports
       const comprehensiveReport = await this.createComprehensiveReport(message);
       
-      // Create a document (not a task) in Eric Parker/Docs folder
+      // Use a consistent title for the cumulative document
+      const CUMULATIVE_DOC_TITLE = 'Development Progress Report - Cumulative';
+      const folder = 'Eric Parker/Docs';
+      
+      try {
+        // First, try to list documents to find an existing one with our title
+        console.log('[DevProgress] Checking for existing cumulative document...');
+        const docs = await DocService.listDocs({ 
+          folder: folder,
+          limit: 100 
+        });
+        
+        const existingDoc = docs.items?.find(doc => 
+          doc.title === CUMULATIVE_DOC_TITLE || 
+          doc.title?.startsWith('Development Progress Report - Cumulative')
+        );
+        
+        if (existingDoc) {
+          console.log(`[DevProgress] Found existing cumulative document: ${existingDoc.id}, deleting to replace...`);
+          // Delete the old document to replace it
+          try {
+            await DocService.deleteDoc({ id: existingDoc.id });
+            console.log('[DevProgress] Old cumulative document deleted');
+          } catch (deleteErr) {
+            console.log('[DevProgress] Could not delete old document, creating new anyway');
+          }
+        }
+      } catch (listError) {
+        console.log('[DevProgress] Could not list existing documents, proceeding with creation');
+      }
+      
+      // Create the cumulative document (always fresh to ensure it's up to date)
       const doc = await DocService.createDoc({
         item: {
-          title: `Dev Progress Report - ${new Date().toLocaleDateString()}`,
+          title: `${CUMULATIVE_DOC_TITLE} (Updated ${new Date().toLocaleDateString()})`,
           text: comprehensiveReport,
-          folder: 'Eric Parker/Docs' // Send to Eric Parker Docs folder
+          folder: folder
         }
       });
-
-      console.log('[DevProgress] Progress report sent successfully as document to Eric Parker/Docs');
+      
+      console.log(`[DevProgress] Cumulative document created/updated in ${folder} with ID: ${doc.item.id}`);
       return true;
+      
     } catch (error: any) {
       console.error('[DevProgress] Failed to send document to Eric Parker/Docs:', error.message);
       
@@ -319,11 +389,12 @@ export class DevProgressService {
         const comprehensiveReport = await this.createComprehensiveReport(message);
         const doc = await DocService.createDoc({
           item: {
-            title: `Dev Progress Report - ${new Date().toLocaleDateString()}`,
+            title: `Development Progress Report - Cumulative (Updated ${new Date().toLocaleDateString()})`,
             text: comprehensiveReport,
             folder: 'General/Docs' // Fallback to General/Docs
           }
         });
+        
         console.log('[DevProgress] Progress report sent to General/Docs as fallback');
         return true;
       } catch (docError: any) {
