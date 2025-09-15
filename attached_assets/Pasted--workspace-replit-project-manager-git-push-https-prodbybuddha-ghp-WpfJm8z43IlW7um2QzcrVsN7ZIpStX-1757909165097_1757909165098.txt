@@ -1,0 +1,35 @@
+~/workspace/replit-project-manager$ git push https://prodbybuddha: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@github.com/prodbybuddha/replit-project-manager.git main
+To https://github.com/prodbybuddha/replit-project-manager.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/prodbybuddha/replit-project-manager.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+~/workspace/replit-project-manager$ git pull
+remote: Enumerating objects: 26, done.
+remote: Counting objects: 100% (26/26), done.
+remote: Compressing objects: 100% (24/24), done.
+remote: Total 26 (delta 0), reused 26 (delta 0), pack-reused 0 (from 0)
+Unpacking objects: 100% (26/26), 36.11 KiB | 1.72 MiB/s, done.
+From https://github.com/prodbybuddha/replit-project-manager
+ * [new branch]      main       -> origin/main
+There is no tracking information for the current branch.
+Please specify which branch you want to merge with.
+See git-pull(1) for details.
+
+    git pull <remote> <branch>
+
+If you wish to set tracking information for this branch you can do so with:
+
+    git branch --set-upstream-to=origin/<branch> main
+
+~/workspace/replit-project-manager$ git push https://prodbybuddha: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@github.com/prodbybuddha/replit-project-manager.git main
+To https://github.com/prodbybuddha/replit-project-manager.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/prodbybuddha/replit-project-manager.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. If you want to integrate the remote changes,
+hint: use 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
