@@ -313,13 +313,6 @@ jobs:
           DART_TOKEN: ${{ secrets.DART_TOKEN }}
 ```
 
-## 📚 Documentation
-
-- [API Reference](./docs/api.md)
-- [Configuration Guide](./docs/configuration.md)
-- [Examples](./examples/)
-- [Contributing](./CONTRIBUTING.md)
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -332,12 +325,6 @@ jobs:
 
 MIT License - see [LICENSE](./LICENSE) file for details.
 
-## 🆘 Support
-
-- [GitHub Issues](https://github.com/yourusername/replit-project-manager/issues)
-- [Documentation](https://github.com/yourusername/replit-project-manager/wiki)
-- [Examples](./examples/)
-
 ---
 
-**Built for developers who want to demonstrate concrete value and savings to their clients through data-driven development progress reporting.**
+**Built for Replit-wielding developers who want to demonstrate concrete value and savings to their clients through data-driven development progress reporting.**
