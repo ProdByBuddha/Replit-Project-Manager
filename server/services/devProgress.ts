@@ -281,7 +281,7 @@ export class DevProgressService {
           title: `Dev Progress Report - ${new Date().toLocaleDateString()} [Doc: 3VJqaEIFAlYs]`,
           description: comprehensiveReport,
           status: 'Done', // Mark as done since it's a completed progress update
-          dartboard: 'Eric Parker/Docs', // Send to Eric Parker Docs workspace
+          dartboard: 'Eric Parker/Tasks', // Send to Eric Parker Tasks workspace
         }
       });
 
@@ -292,10 +292,12 @@ export class DevProgressService {
       
       // Try sending as a doc if task creation fails
       try {
+        const comprehensiveReport = await this.createComprehensiveReport(message);
         const doc = await DocService.createDoc({
           item: {
-            title: `Dev Progress - ${new Date().toLocaleDateString()}`,
-            text: message,
+            title: `Dev Progress - ${new Date().toLocaleDateString()} [Doc: 3VJqaEIFAlYs]`,
+            text: comprehensiveReport,
+            // Note: dartboard parameter doesn't work for docs, will go to default location
           }
         });
         console.log('[DevProgress] Progress update sent successfully as doc');
